@@ -4,7 +4,7 @@ node_modules/
 out/
 build/
 *.log
-logs/
+/logs/
 .DS_Store
 
 # secrets — never commit

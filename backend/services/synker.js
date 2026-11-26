@@ -30,6 +30,16 @@ const GOFRUGAL_OUTLET_MAP = {
   4: "6",
 };
 
+// Fallback name tokens if GoFrugal /outlets is unavailable; matched against branches.branch_name
+// so stock maps to the right branch even when branch_id auto-increments differ across DBs.
+const GOFRUGAL_OUTLET_KEYWORDS = {
+  2: "distribution",
+  3: "saron",
+  4: "vellore",
+  5: "manalurpet",
+  6: "production",
+};
+
 const GOFRUGAL_BASE_URL = "http://ayyappanhq.gofrugal.com/RayMedi_HQ/api/v1";
 /** GoFrugal items / eanCode API: fetch this many rows per page request */
 const GOFRUGAL_ITEMS_PAGE_SIZE = 10000;
@@ -66,6 +76,7 @@ class Synker {
 
     this._scheduledCronTasks = [];
     this._initCronJobsPromise = null;
+    this._productSyncPromise = null;
 
     // Create logged axios instances for each API
     this.gofrugalItemsClient = createLoggedAxios(
@@ -619,7 +630,18 @@ class Synker {
     }
   }
 
-  async syncProducts() {
+  syncProducts() {
+    if (this._productSyncPromise) {
+      console.log("Product sync already in progress; reusing active run.");
+      return this._productSyncPromise;
+    }
+    this._productSyncPromise = this._doSyncProducts().finally(() => {
+      this._productSyncPromise = null;
+    });
+    return this._productSyncPromise;
+  }
+
+  async _doSyncProducts() {
     try {
       if (!(await this._isSyncActive(SYNC_KEY_PRODUCT))) {
         console.log("product sync skipped: sync_config inactive");
@@ -627,44 +649,20 @@ class Synker {
       }
       console.log("Fetching Products!");
 
-      const goFrugalItemsCount = await this._fetchGoFrugalItemsCount();
+      let [goFrugalItemsCount, deliumItems, eanByItemId, outletMap] =
+        await Promise.all([
+          this._fetchGoFrugalItemsCount(),
+          this._fetchDeliumItems(),
+          this._fetchAllGoFrugalEanCodes(),
+          this._resolveGofrugalOutletMap(),
+        ]);
       console.log("GoFrugal Items Count Fetched!");
-      const [goFrugalItems, deliumItems, eanByItemId] = await Promise.all([
-        this._fetchAllGoFrugalItems(goFrugalItemsCount),
-        this._fetchDeliumItems(),
-        this._fetchAllGoFrugalEanCodes(),
-      ]);
-      console.log("GoFrugal Items Fetched!");
       console.log("Delium Items Fetched!");
       console.log(
         `GoFrugal EAN rows (distinct itemId): ${
           Object.keys(eanByItemId).length
         }`
       );
-
-      console.log("Products Fetched!");
-
-      const { itemPrices, outlets, products } =
-        this._transformGofrugalItems(goFrugalItems);
-
-      console.log(`Total Price Rows: ${itemPrices.length}`);
-
-      const transformedItemPrices = itemPrices.map((item) => [
-        item.product_id,
-        Number(item.outlet_id),
-        parseProductStockQty(item.stock),
-        Number(item.cost_price),
-        Number(item.selling_price),
-        Number(item.purchase_price),
-      ]);
-
-      // Bulk insert in batches of 1000 rows to avoid overly large queries
-      const BATCH_SIZE = 1000;
-      for (let i = 0; i < transformedItemPrices.length; i += BATCH_SIZE) {
-        const batch = transformedItemPrices.slice(i, i + BATCH_SIZE);
-        await this.productStockPriceUsecase.bulkUpsert(batch);
-      }
-      console.log("Product Stock Prices Upserted in batches!");
 
       const {
         brands,
@@ -676,6 +674,58 @@ class Synker {
         manufacturers,
         distributors,
       } = this.formatProducts(deliumItems);
+      deliumItems = null;
+
+      // Ensure Delium product rows exist before streaming GoFrugal stock pages
+      const PRODUCT_BATCH_SIZE = 1000;
+      for (let i = 0; i < formattedProduct.length; i += PRODUCT_BATCH_SIZE) {
+        const batch = formattedProduct.slice(i, i + PRODUCT_BATCH_SIZE);
+        await this.productUsecase.bulkCreate(batch);
+      }
+
+      const deliumProductIds = new Set(
+        formattedProduct.map((p) => Number(p.product_id))
+      );
+      const gfProductsById = {};
+      let totalPriceRows = 0;
+      const BATCH_SIZE = 1000;
+
+      // Stream GoFrugal items page-by-page to keep memory low on 512MB hosts
+      const total = Number(goFrugalItemsCount) || 0;
+      const limit = GOFRUGAL_ITEMS_PAGE_SIZE;
+      const totalPages = total > 0 ? Math.ceil(total / limit) : 0;
+
+      for (let page = 1; page <= totalPages; page++) {
+        const batch = await this._fetchGoFrugalItemsPage(page, limit);
+        const items = Array.isArray(batch) ? batch : [];
+        const { itemPrices, products } = this._transformGofrugalItems(
+          items,
+          outletMap,
+          deliumProductIds
+        );
+
+        Object.assign(gfProductsById, products);
+        totalPriceRows += itemPrices.length;
+
+        const transformedItemPrices = itemPrices.map((item) => [
+          item.product_id,
+          Number(item.outlet_id),
+          parseProductStockQty(item.stock),
+          Number(item.cost_price),
+          Number(item.selling_price),
+          Number(item.purchase_price),
+        ]);
+
+        for (let i = 0; i < transformedItemPrices.length; i += BATCH_SIZE) {
+          const priceBatch = transformedItemPrices.slice(i, i + BATCH_SIZE);
+          await this.productStockPriceUsecase.bulkUpsert(priceBatch);
+        }
+      }
+
+      console.log("GoFrugal Items Fetched!");
+      console.log("Products Fetched!");
+      console.log(`Total Price Rows: ${totalPriceRows}`);
+      console.log("Product Stock Prices Upserted in batches!");
 
       let productsProcessed = 0;
       let categoriesProcessed = 0;
@@ -683,16 +733,14 @@ class Synker {
       let brandsProcessed = 0;
       let departmentsProcessed = 0;
 
-      // Prepare products with GoFrugal data
-      const productsToInsert = formattedProduct.map((product) => ({
-        ...product,
-        ...products[product.product_id],
-      }));
-
-      // Bulk insert products in batches
-      const PRODUCT_BATCH_SIZE = 1000;
-      for (let i = 0; i < productsToInsert.length; i += PRODUCT_BATCH_SIZE) {
-        const batch = productsToInsert.slice(i, i + PRODUCT_BATCH_SIZE);
+      // Merge GoFrugal fields onto Delium products and update in batches
+      for (let i = 0; i < formattedProduct.length; i += PRODUCT_BATCH_SIZE) {
+        const batch = formattedProduct
+          .slice(i, i + PRODUCT_BATCH_SIZE)
+          .map((product) => ({
+            ...product,
+            ...gfProductsById[product.product_id],
+          }));
         await this.productUsecase.bulkCreate(batch);
         productsProcessed += batch.length;
       }
@@ -703,13 +751,11 @@ class Synker {
         ean,
       ]);
 
-      console.log(eanPairs);
-
       let eanNumbersUpdated = 0;
       if (eanPairs.length > 0) {
         await this.productUsecase.bulkUpdateEanNumbers(eanPairs);
         eanNumbersUpdated = eanPairs.length;
-        console.log("PRODUCT EAN NUMBERS Updated");
+        console.log(`PRODUCT EAN NUMBERS Updated (${eanNumbersUpdated})`);
       }
 
       // Bulk insert categories in batches
@@ -955,30 +1001,100 @@ class Synker {
     });
   }
 
-  _transformGofrugalItems(goFrugalItems) {
+  async _resolveGofrugalOutletMap() {
+    const resolved = { ...GOFRUGAL_OUTLET_MAP };
+    try {
+      const branchesRes = this.branchesUsecase
+        ? await this.branchesUsecase.getAll()
+        : null;
+      const branches = Array.isArray(branchesRes?.data)
+        ? branchesRes.data
+        : [];
+      if (!branches.length) return resolved;
+
+      const normalize = (s) =>
+        String(s || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, " ")
+          .replace(/\b(a1\s*mart|a1mart|warehouse)\b/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+
+      const normBranches = branches
+        .map((b) => ({
+          id: String(b.branch_id),
+          norm: normalize(b.branch_name),
+        }))
+        .filter((b) => b.norm && b.norm !== "none");
+
+      const outletNames = { ...GOFRUGAL_OUTLET_KEYWORDS };
+      try {
+        const res = await this.gofrugalItemsClient({
+          method: "GET",
+          url: `${GOFRUGAL_BASE_URL}/outlets`,
+          headers: { "X-Auth-Token": GOFRUGAL_API_KEY },
+          callerFunction: "_resolveGofrugalOutletMap",
+        });
+        for (const o of res?.data?.outlets || []) {
+          if (o?.outletId != null && o?.name) {
+            outletNames[o.outletId] = o.name;
+          }
+        }
+      } catch (err) {
+        console.warn("GoFrugal /outlets fetch failed, using keyword fallback:", err.message);
+      }
+
+      for (const [outletId, rawName] of Object.entries(outletNames)) {
+        const token = normalize(rawName);
+        if (!token || token === "ho") continue;
+        const match =
+          normBranches.find((b) => b.norm === token) ||
+          normBranches.find(
+            (b) => b.norm.includes(token) || token.includes(b.norm)
+          );
+        if (match) {
+          resolved[outletId] = match.id;
+        }
+      }
+      console.log("Resolved GoFrugal outlet -> branch_id map:", resolved);
+    } catch (err) {
+      console.warn("Failed to resolve GoFrugal outlet map:", err.message);
+    }
+    return resolved;
+  }
+
+  _transformGofrugalItems(
+    goFrugalItems,
+    outletMap = GOFRUGAL_OUTLET_MAP,
+    allowedProductIds = null
+  ) {
     try {
       const itemPrices = [];
       const outlets = {};
       const products = {};
 
       for (const item of goFrugalItems) {
-        products[item.itemId] = {
-          gf_item_name: item.itemName,
-          gf_description: item.description,
-          gf_detailed_description: item.detailedDescription,
-          gf_weight_grams: item.weightGrams,
-          gf_applies_online: item.appliesOnline,
-          gf_item_product_type: item.itemProductType,
-          gf_manufacturer: item.manufacturer,
-          gf_food_type: item.foodType,
-          gf_tax_id: item.taxId,
-          gf_status: item.status,
-        };
+        if (!allowedProductIds || allowedProductIds.has(Number(item.itemId))) {
+          products[item.itemId] = {
+            gf_item_name: item.itemName,
+            gf_description: item.description,
+            gf_detailed_description: item.detailedDescription,
+            gf_weight_grams: item.weightGrams,
+            gf_applies_online: item.appliesOnline,
+            gf_item_product_type: item.itemProductType,
+            gf_manufacturer: item.manufacturer,
+            gf_food_type: item.foodType,
+            gf_tax_id: item.taxId,
+            gf_status: item.status,
+          };
+        }
 
         for (const stock of item.stock) {
+          const mappedBranchId = outletMap[stock.outletId];
+          if (!mappedBranchId) continue;
           itemPrices.push({
             product_id: item.itemId,
-            outlet_id: GOFRUGAL_OUTLET_MAP[stock.outletId],
+            outlet_id: mappedBranchId,
             stock: parseProductStockQty(stock.stock),
             cost_price: stock.mrp,
             selling_price: stock.salePrice,

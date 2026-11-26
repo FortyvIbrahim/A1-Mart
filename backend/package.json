@@ -5,11 +5,11 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
+    "start": "node --max-old-space-size=384 server.js",
     "db:setup": "node scripts/setup-db.js",
     "seed:sample": "node scripts/seed-sample-data.js",
     "seed:sample:clean": "node scripts/seed-sample-data.js --clean",
-    "start:railway": "node scripts/setup-db.js && node server.js"
+    "start:railway": "node scripts/setup-db.js && node --max-old-space-size=384 server.js"
   },
   "keywords": [],
   "author": "",
