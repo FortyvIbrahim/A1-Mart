@@ -1116,10 +1116,14 @@ class Synker {
         };
 
       const distributor = transformed.distributor.replace("n", "");
-      if (distributors[distributor] == undefined)
+      if (
+        distributors[distributor] == undefined &&
+        product.distributor_name &&
+        String(product.distributor_name).trim() !== ""
+      )
         distributors[distributor] = {
           master_id: distributor + "846",
-          name: product.distributor_name,
+          name: String(product.distributor_name).trim(),
           person_type: 3,
         };
 
