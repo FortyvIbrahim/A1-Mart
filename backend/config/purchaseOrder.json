@@ -1,0 +1,14 @@
+{
+  "logo_url": "http://a1martonline.in/images/a1.png",
+  "company_name": "A1 Mart Online",
+  "phone": "9999999999",
+  "email": "info@a1martonline.in",
+  "address": {
+    "warehouse": "Address Line 1",
+    "city": "Placeholder City",
+    "state": "Placeholder State",
+    "pincode": "Placeholder Pincode"
+  },
+  "gst_number": "Placeholder GST Number"
+}
+

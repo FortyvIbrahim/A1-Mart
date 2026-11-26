@@ -1,0 +1,1 @@
+ALTER TABLE `master_list` ADD COLUMN `contact_person_name` VARCHAR(100) NULL;

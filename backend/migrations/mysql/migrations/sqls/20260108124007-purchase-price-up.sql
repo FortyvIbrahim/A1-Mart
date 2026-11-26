@@ -1,0 +1,1 @@
+ALTER TABLE `product_stock_price` ADD `purchase_price` FLOAT NULL AFTER `selling_price`;

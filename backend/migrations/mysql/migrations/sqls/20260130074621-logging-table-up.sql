@@ -1,0 +1,28 @@
+CREATE TABLE api_call_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    api_type VARCHAR(50) NOT NULL COMMENT 'Provider: GOFRUGAL, DELIUM, DIGISME, AWS_S3',
+    secondary_type VARCHAR(100) NOT NULL COMMENT 'Specific API: ITEMS, ITEMS_COUNT, ARTICLES, REPACKAGING, AUTHENTICATE, EMPLOYEES, UPLOAD',
+    api_url VARCHAR(500) NOT NULL,
+    http_method VARCHAR(10) NOT NULL COMMENT 'GET, POST, PUT, DELETE',
+    status_code INT NULL,
+    time_taken_ms INT NOT NULL COMMENT 'Duration in milliseconds',
+    is_success TINYINT(1) NOT NULL DEFAULT 0,
+    error_message TEXT NULL,
+    error_stack TEXT NULL,
+    request_headers JSON NULL COMMENT 'Sanitized headers (API keys redacted)',
+    request_body JSON NULL COMMENT 'Request payload if applicable',
+    response_error_body JSON NULL COMMENT 'Error response body only',
+    caller_function VARCHAR(100) NULL COMMENT 'Function that initiated the call',
+    caller_file VARCHAR(200) NULL COMMENT 'File path of the caller',
+    correlation_id VARCHAR(50) NULL COMMENT 'UUID to trace related calls',
+    retry_count INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_api_type (api_type),
+    INDEX idx_secondary_type (secondary_type),
+    INDEX idx_status_code (status_code),
+    INDEX idx_is_success (is_success),
+    INDEX idx_created_at (created_at),
+    INDEX idx_correlation_id (correlation_id),
+    INDEX idx_api_type_secondary (api_type, secondary_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,0 +1,375 @@
+/* A1 MART sidebar — Figma "Concept C · Pearl Orange" */
+
+.shell {
+  display: flex;
+  flex-direction: row;
+  height: 100dvh;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-right: 1px solid var(--a1-border, #f2e2d6);
+  position: relative;
+  z-index: 20;
+}
+
+/* ── Workspace rail ─────────────────────────────── */
+.rail {
+  width: 44px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0;
+  background: #ffffff;
+  border-right: 1px solid var(--a1-border, #f2e2d6);
+}
+
+.railButton {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--a1-primary, #f47721);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.railButton:hover {
+  background: var(--a1-tab-active, #fde9da);
+}
+
+.railButtonActive,
+.railButtonActive:hover {
+  background: var(--a1-primary, #f47721);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(244, 119, 33, 0.28);
+}
+
+/* ── Navigation panel ───────────────────────────── */
+.panel {
+  width: 224px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #ffffff;
+  transition: width 0.22s ease;
+}
+
+.panelCollapsed {
+  width: 64px;
+}
+
+.brandRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 16px 12px 14px 14px;
+  flex-shrink: 0;
+}
+
+.panelCollapsed .brandRow {
+  justify-content: center;
+  padding: 18px 0 14px;
+}
+
+.brand {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.brandLogo {
+  display: block;
+  width: 100%;
+  max-width: 168px;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(244, 119, 33, 0.22);
+}
+
+.brandName {
+  font-size: 22px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--a1-primary, #f47721);
+  white-space: nowrap;
+}
+
+.brandTagline {
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #c2652a;
+  white-space: nowrap;
+}
+
+.collapseButton {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.collapseButton:hover {
+  background: rgba(244, 119, 33, 0.1);
+  color: var(--a1-primary, #f47721);
+}
+
+.workspacePill {
+  margin: 0 10px 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #fff;
+  border: 1px solid var(--a1-border, #f2e2d6);
+  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.04);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--a1-text, #1f2937);
+  flex-shrink: 0;
+}
+
+.workspacePillIcon {
+  color: var(--a1-primary, #f47721);
+}
+
+.menuScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2px 10px 14px;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.panel:hover .menuScroll {
+  scrollbar-color: rgba(194, 101, 42, 0.28) transparent;
+}
+
+.panelCollapsed .menuScroll {
+  padding: 2px 10px 14px;
+}
+
+.group + .group {
+  margin-top: 6px;
+}
+
+.groupLabel {
+  padding: 10px 10px 5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a7d74;
+}
+
+.groupDivider {
+  height: 1px;
+  margin: 8px 6px;
+  background: rgba(194, 101, 42, 0.14);
+}
+
+.group:first-child .groupDivider {
+  display: none;
+}
+
+/* ── Items ──────────────────────────────────────── */
+.item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 8px 10px;
+  margin: 1px 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--a1-text, #1f2937);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.item:hover {
+  background: rgba(244, 119, 33, 0.09);
+}
+
+.itemIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  flex-shrink: 0;
+  color: var(--a1-primary, #f47721);
+}
+
+.itemLabel {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemActive,
+.itemActive:hover {
+  background: var(--a1-primary, #f47721);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(244, 119, 33, 0.22);
+}
+
+.itemActive .itemIcon {
+  color: #fff;
+}
+
+/* Warehouse workspace: active parent uses the soft tint (Figma) */
+.itemActiveSoft,
+.itemActiveSoft:hover {
+  background: var(--a1-tab-active, #fde9da);
+  color: var(--a1-primary-hover, #db6516);
+  box-shadow: none;
+}
+
+.itemActiveSoft .itemIcon {
+  color: var(--a1-primary, #f47721);
+}
+
+.itemCollapsed {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.itemChevron {
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: transform 0.18s ease;
+}
+
+.itemChevronOpen {
+  transform: rotate(180deg);
+}
+
+.subMenu {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 2px 0 6px 28px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(244, 119, 33, 0.25);
+}
+
+.subItem {
+  display: block;
+  padding: 6px 10px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #4b5563;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.subItem:hover {
+  background: rgba(244, 119, 33, 0.08);
+  color: var(--a1-text, #1f2937);
+}
+
+.subItemActive,
+.subItemActive:hover {
+  background: var(--a1-tab-active, #fde9da);
+  color: var(--a1-primary-hover, #db6516);
+  font-weight: 600;
+}
+
+.emptyMenu {
+  padding: 16px 8px;
+  font-size: 12px;
+  color: #8a7d74;
+}
+
+.footer {
+  flex-shrink: 0;
+  padding: 12px 18px 16px;
+  font-size: 10.5px;
+  color: #a3958b;
+  border-top: 1px solid var(--a1-border-subtle, #f7ece3);
+}
+
+/* ── Mobile drawer ──────────────────────────────── */
+.mobileShell {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 1400;
+  transform: translateX(-105%);
+  transition: transform 0.25s ease;
+  box-shadow: 0 10px 40px rgba(31, 41, 55, 0.18);
+}
+
+.mobileShellOpen {
+  transform: translateX(0);
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1399;
+  background: rgba(31, 41, 55, 0.32);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.backdropOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Loading placeholder while permissions load */
+.skeletonList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 4px;
+}
+
+.skeletonItem {
+  height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(244, 119, 33, 0.06), rgba(244, 119, 33, 0.14), rgba(244, 119, 33, 0.06));
+  background-size: 200% 100%;
+  animation: a1Shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes a1Shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

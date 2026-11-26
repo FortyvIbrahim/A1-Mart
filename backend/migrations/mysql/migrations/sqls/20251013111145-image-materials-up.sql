@@ -1,0 +1,1 @@
+ALTER TABLE `materials` ADD `image_url` TEXT NULL AFTER `live_stock`;

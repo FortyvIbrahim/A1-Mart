@@ -1,0 +1,1 @@
+ALTER TABLE `target_employee` CHANGE `employee_id` `employee_id` VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL;

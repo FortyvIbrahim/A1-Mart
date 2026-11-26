@@ -1,0 +1,3 @@
+CREATE TABLE `master_list` (`master_id` INT NOT NULL AUTO_INCREMENT , `name` VARCHAR(100) NOT NULL , `phone` VARCHAR(20) NULL , `person_type` INT NOT NULL , `status` BOOLEAN NOT NULL DEFAULT TRUE , `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , PRIMARY KEY (`master_id`)) ENGINE = InnoDB;
+ALTER TABLE `master_list` CHANGE `master_id` `master_id` BIGINT NOT NULL AUTO_INCREMENT;
+ALTER TABLE `materials` ADD `supplier_id` INT NULL AFTER `material_category_id`;

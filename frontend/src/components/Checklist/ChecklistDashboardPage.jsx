@@ -1,0 +1,663 @@
+"use client";
+
+import useBranches from "@/api/customHooks/useBranches";
+import useEmployee from "@/api/customHooks/useEmployee";
+import {
+  getChecklistFormsWithSubmissionAnswers,
+  getChecklistFormsWithSubmissionStats,
+} from "@/api/helpers/checklist_forms";
+import AgGrid from "@/components/AgGrid";
+import ChecklistDashboardChartsGrid from "@/components/Checklist/ChecklistDashboardChartsGrid";
+import ChecklistPendingQuestionsModal from "@/components/Checklist/ChecklistPendingQuestionsModal";
+import CustomContainer from "@/components/CustomContainer";
+import GlobalWrapper from "@/components/GlobalWrapper";
+import DashboardPageTitle, {
+  DashboardTitleSection,
+} from "@/components/dashboard/DashboardPageTitle";
+import CustomInput, { CustomDateTimeInput } from "@/components/CustomInput";
+import usePermission from "@/customHooks/usePermission";
+import { useUser } from "@/contexts/UserContext";
+import { DASHBOARD_ROUTES } from "@/constants/routes/index";
+import { buildChecklistDashboardFormsColumnDefs } from "@/utils/checklistResponseTableColDefs";
+import {
+  aggregateAnsweredAndPendingAcrossRange,
+  aggregateBranchStackedSlotsForFormRange,
+  aggregateContributorsStackedAnswerCounts,
+  eachDayInclusiveYmd,
+} from "@/utils/checklistDashboardMetrics";
+import {
+  normalizeChecklistBranchCatalog,
+  syntheticBranchStatNoSubmission,
+} from "@/utils/checklistBranchCatalog";
+import {
+  filterPendingSectionsByBranchIds,
+  loadChecklistPendingDetailRows,
+} from "@/utils/checklistPendingDetail";
+import {
+  formCreatedOnOrBeforeDate,
+  isCalendarFutureDate,
+  submissionStatsEntriesForFormDate,
+  submissionStatsKeyForYmd,
+} from "@/utils/checklistSubmissionStatsCalendar";
+import { Box, Button, Flex, NativeSelect } from "@chakra-ui/react";
+import moment from "moment";
+import { useRouter } from "next/navigation";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import toast from "react-hot-toast";
+
+const PIE_COLORS = {
+  "On time": "#38A169",
+  Late: "#E53E3E",
+  Pending: "#ECC94B",
+};
+
+function toYmd(d) {
+  return moment(d).format("YYYY-MM-DD");
+}
+
+export default function ChecklistDashboardPage() {
+  const router = useRouter();
+  const gridRef = useRef(null);
+
+  const [rowData, setRowData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState(() => ({
+    startDate: new Date(),
+    endDate: new Date(),
+  }));
+  const [selectedBarFormId, setSelectedBarFormId] = useState(null);
+  const [contributorAnswersForBar, setContributorAnswersForBar] = useState([]);
+  const [barLoading, setBarLoading] = useState(false);
+  const [pendingModalOpen, setPendingModalOpen] = useState(false);
+  const [pendingModalLoading, setPendingModalLoading] = useState(false);
+  const [pendingModalSections, setPendingModalSections] = useState([]);
+  const [branchFilterIds, setBranchFilterIds] = useState([]);
+
+  const { employees } = useEmployee({ allBranches: true });
+  const { branches: branchesApi } = useBranches();
+  const { employeeData } = useUser();
+  const canAccessAllBranches = usePermission("access_all_branches");
+
+  const branchCatalog = useMemo(
+    () => normalizeChecklistBranchCatalog(branchesApi),
+    [branchesApi]
+  );
+
+  const branchOptions = useMemo(
+    () =>
+      (branchesApi ?? []).map((b) => ({
+        value: b.branch_id,
+        label: b.branch_name,
+      })),
+    [branchesApi]
+  );
+
+  /** `null` = all branches; non-empty array = restrict to those ids. */
+  const effectiveDashboardBranchIds = useMemo(() => {
+    if (canAccessAllBranches) {
+      if (!branchFilterIds?.length) return null;
+      return branchFilterIds;
+    }
+    const bid = employeeData?.branch_id;
+    return bid != null ? [bid] : null;
+  }, [canAccessAllBranches, branchFilterIds, employeeData?.branch_id]);
+
+  const employeesByCode = useMemo(() => {
+    const m = new Map();
+    for (const e of employees ?? []) {
+      const c = e?.employee_code != null ? String(e.employee_code).trim() : "";
+      if (c) m.set(c, e);
+    }
+    return m;
+  }, [employees]);
+
+  const fromYmd = useMemo(
+    () => (dateRange.startDate ? toYmd(dateRange.startDate) : null),
+    [dateRange.startDate]
+  );
+  const toYmdStr = useMemo(
+    () => (dateRange.endDate ? toYmd(dateRange.endDate) : null),
+    [dateRange.endDate]
+  );
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await getChecklistFormsWithSubmissionStats();
+      if (res.code !== 200) {
+        toast.error(res.message || "Failed to load checklist forms");
+        setRowData([]);
+        return;
+      }
+      const rows = (res.data ?? []).map((f) => ({
+        ...f,
+        submissions: f.submissions ?? {},
+      }));
+      setRowData(rows);
+    } catch {
+      toast.error("Failed to load checklist forms");
+      setRowData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const { onTimeAnsweredTotal, lateAnsweredTotal, pendingTotal } = useMemo(
+    () =>
+      fromYmd && toYmdStr
+        ? aggregateAnsweredAndPendingAcrossRange(rowData, fromYmd, toYmdStr, {
+            branchCatalog,
+            branchIdsFilter: effectiveDashboardBranchIds,
+          })
+        : {
+            onTimeAnsweredTotal: 0,
+            lateAnsweredTotal: 0,
+            pendingTotal: 0,
+          },
+    [rowData, fromYmd, toYmdStr, branchCatalog, effectiveDashboardBranchIds]
+  );
+
+  const pieData = useMemo(() => {
+    const rows = [];
+    if (onTimeAnsweredTotal > 0) {
+      rows.push({
+        name: "On time",
+        value: onTimeAnsweredTotal,
+        color: PIE_COLORS["On time"],
+      });
+    }
+    if (lateAnsweredTotal > 0) {
+      rows.push({
+        name: "Late",
+        value: lateAnsweredTotal,
+        color: PIE_COLORS.Late,
+      });
+    }
+    if (pendingTotal > 0) {
+      rows.push({
+        name: "Pending",
+        value: pendingTotal,
+        color: PIE_COLORS.Pending,
+      });
+    }
+    return rows;
+  }, [onTimeAnsweredTotal, lateAnsweredTotal, pendingTotal]);
+
+  const formsTableRows = useMemo(() => {
+    if (!fromYmd || !toYmdStr) return [];
+    const branchIdAllow =
+      effectiveDashboardBranchIds != null &&
+      effectiveDashboardBranchIds.length > 0
+        ? new Set(effectiveDashboardBranchIds.map((id) => String(id)))
+        : null;
+    const out = [];
+    for (const ymd of eachDayInclusiveYmd(fromYmd, toYmdStr)) {
+      if (isCalendarFutureDate(ymd)) continue;
+      const statsKey = submissionStatsKeyForYmd(ymd);
+      const dayForms = rowData.filter((f) => formCreatedOnOrBeforeDate(f, ymd));
+      dayForms.sort((a, b) =>
+        String(a.title ?? "").localeCompare(String(b.title ?? ""))
+      );
+      for (const form of dayForms) {
+        if (!statsKey) {
+          out.push({
+            ...form,
+            _responseYmd: ymd,
+            _branchStat: null,
+            dashboardRowKey: `${form.id}-${ymd}-na`,
+          });
+          continue;
+        }
+        const entries = submissionStatsEntriesForFormDate(form, ymd);
+        const entriesByBranch = new Map();
+        for (const e of entries) {
+          const id = e?.branch_id != null ? Number(e.branch_id) : NaN;
+          if (!Number.isNaN(id)) entriesByBranch.set(id, e);
+        }
+
+        if (branchCatalog.length > 0) {
+          for (const br of branchCatalog) {
+            if (branchIdAllow && !branchIdAllow.has(String(br.id))) continue;
+            const stat = entriesByBranch.get(br.id);
+            out.push({
+              ...form,
+              _responseYmd: ymd,
+              _branchStat: stat ?? syntheticBranchStatNoSubmission(br),
+              dashboardRowKey: `${form.id}-${ymd}-${br.id}`,
+            });
+          }
+        } else if (entries.length === 0) {
+          if (branchIdAllow) continue;
+          out.push({
+            ...form,
+            _responseYmd: ymd,
+            _branchStat: null,
+            dashboardRowKey: `${form.id}-${ymd}-none`,
+          });
+        } else {
+          for (const stat of entries) {
+            const bid =
+              stat.branch_id != null && stat.branch_id !== ""
+                ? String(stat.branch_id)
+                : "x";
+            if (branchIdAllow && !branchIdAllow.has(bid)) continue;
+            out.push({
+              ...form,
+              _responseYmd: ymd,
+              _branchStat: stat,
+              dashboardRowKey: `${form.id}-${ymd}-${bid}`,
+            });
+          }
+        }
+      }
+    }
+    return out;
+  }, [rowData, fromYmd, toYmdStr, branchCatalog, effectiveDashboardBranchIds]);
+
+  const formsTableTitleSuffix = useMemo(() => {
+    if (!fromYmd || !toYmdStr) return "-";
+    const a = moment(fromYmd, "YYYY-MM-DD", true);
+    const b = moment(toYmdStr, "YYYY-MM-DD", true);
+    if (!a.isValid() || !b.isValid()) return "-";
+    if (a.isSame(b, "day")) return a.format("DD MMMM YYYY");
+    return `${a.format("DD MMMM YYYY")} - ${b.format("DD MMMM YYYY")}`;
+  }, [fromYmd, toYmdStr]);
+
+  const colDefs = useMemo(
+    () => buildChecklistDashboardFormsColumnDefs(router),
+    [router]
+  );
+
+  const openPendingDetailModal = useCallback(async () => {
+    if (!fromYmd || !toYmdStr || pendingTotal <= 0) return;
+    setPendingModalOpen(true);
+    setPendingModalLoading(true);
+    setPendingModalSections([]);
+    try {
+      const result = await loadChecklistPendingDetailRows(
+        rowData,
+        fromYmd,
+        toYmdStr,
+        branchCatalog
+      );
+      if (!result.ok) {
+        toast.error(result.message || "Could not load pending detail");
+        setPendingModalSections([]);
+      } else {
+        setPendingModalSections(result.sections ?? []);
+      }
+    } catch {
+      toast.error("Could not load pending detail");
+      setPendingModalSections([]);
+    } finally {
+      setPendingModalLoading(false);
+    }
+  }, [rowData, fromYmd, toYmdStr, pendingTotal, branchCatalog]);
+
+  const filteredPendingModalSections = useMemo(
+    () =>
+      filterPendingSectionsByBranchIds(
+        pendingModalSections,
+        effectiveDashboardBranchIds
+      ),
+    [pendingModalSections, effectiveDashboardBranchIds]
+  );
+
+  const formsForBarSelect = useMemo(() => {
+    if (!toYmdStr || isCalendarFutureDate(toYmdStr)) return [];
+    return rowData
+      .filter((f) => formCreatedOnOrBeforeDate(f, toYmdStr))
+      .slice()
+      .sort((a, b) =>
+        String(a.title ?? "").localeCompare(String(b.title ?? ""))
+      );
+  }, [rowData, toYmdStr]);
+
+  useEffect(() => {
+    setSelectedBarFormId((prev) => {
+      const ids = formsForBarSelect.map((f) => Number(f.id));
+      if (ids.length === 0) return null;
+      if (prev != null && ids.includes(prev)) return prev;
+      return ids[0];
+    });
+  }, [formsForBarSelect]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      if (
+        selectedBarFormId == null ||
+        Number.isNaN(selectedBarFormId) ||
+        !fromYmd ||
+        !toYmdStr ||
+        isCalendarFutureDate(toYmdStr)
+      ) {
+        setContributorAnswersForBar([]);
+        setBarLoading(false);
+        return;
+      }
+      const form = rowData.find((f) => Number(f.id) === selectedBarFormId);
+      if (!form || !formCreatedOnOrBeforeDate(form, toYmdStr)) {
+        setContributorAnswersForBar([]);
+        setBarLoading(false);
+        return;
+      }
+      setBarLoading(true);
+      try {
+        const res = await getChecklistFormsWithSubmissionAnswers();
+        if (cancelled) return;
+        if (res.code !== 200) {
+          toast.error(res.message || "Failed to load contributor answers");
+          setContributorAnswersForBar([]);
+          return;
+        }
+        const match = (res.data ?? []).find(
+          (f) => Number(f.id) === selectedBarFormId
+        );
+        const todayStart = moment().startOf("day");
+        const unionAnswers = [];
+        for (const ymd of eachDayInclusiveYmd(fromYmd, toYmdStr)) {
+          if (moment(ymd, "YYYY-MM-DD", true).isAfter(todayStart, "day")) {
+            continue;
+          }
+          if (!formCreatedOnOrBeforeDate(form, ymd)) continue;
+          const key = submissionStatsKeyForYmd(ymd);
+          if (!key) continue;
+          const rawSub = match?.submissions?.[key];
+          const subsForDay =
+            rawSub == null ? [] : Array.isArray(rawSub) ? rawSub : [rawSub];
+          for (const sub of subsForDay) {
+            const dayAnswers = sub?.answers ?? [];
+            for (const row of dayAnswers) {
+              unionAnswers.push({ ...row, _answerYmd: ymd });
+            }
+          }
+        }
+        if (!cancelled) {
+          setContributorAnswersForBar(unionAnswers);
+        }
+      } catch {
+        if (!cancelled) {
+          toast.error("Failed to load contributor answers");
+          setContributorAnswersForBar([]);
+        }
+      } finally {
+        if (!cancelled) setBarLoading(false);
+      }
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedBarFormId, fromYmd, toYmdStr, rowData]);
+
+  const contributorBarRows = useMemo(
+    () =>
+      aggregateContributorsStackedAnswerCounts(contributorAnswersForBar, {
+        employeeByCode: employeesByCode,
+      }),
+    [contributorAnswersForBar, employeesByCode]
+  );
+
+  const selectedFormForBars = useMemo(
+    () => rowData.find((f) => Number(f.id) === selectedBarFormId) ?? null,
+    [rowData, selectedBarFormId]
+  );
+
+  const branchBarRows = useMemo(() => {
+    if (!selectedFormForBars || !fromYmd || !toYmdStr) return [];
+    return aggregateBranchStackedSlotsForFormRange(
+      selectedFormForBars,
+      fromYmd,
+      toYmdStr,
+      { branchIdsFilter: effectiveDashboardBranchIds }
+    );
+  }, [selectedFormForBars, fromYmd, toYmdStr, effectiveDashboardBranchIds]);
+
+  const branchLegendItems = useMemo(() => {
+    let onTime = 0;
+    let late = 0;
+    let pending = 0;
+    for (const r of branchBarRows) {
+      onTime += r.onTime ?? 0;
+      late += r.late ?? 0;
+      pending += r.pending ?? 0;
+    }
+    return [
+      { name: "On time", value: onTime, fill: PIE_COLORS["On time"] },
+      { name: "Late", value: late, fill: PIE_COLORS.Late },
+      { name: "Pending", value: pending, fill: PIE_COLORS.Pending },
+    ];
+  }, [branchBarRows]);
+
+  const branchGraphHeight = useMemo(() => {
+    const n = branchBarRows.length;
+    if (n <= 0) return undefined;
+    return Math.min(560, Math.max(220, 36 + n * 52));
+  }, [branchBarRows.length]);
+
+  const contributorLegendItems = useMemo(() => {
+    let onTime = 0;
+    let late = 0;
+    for (const r of contributorBarRows) {
+      onTime += r.onTime ?? 0;
+      late += r.late ?? 0;
+    }
+    return [
+      { name: "On time", value: onTime, fill: PIE_COLORS["On time"] },
+      { name: "Late", value: late, fill: PIE_COLORS.Late },
+    ];
+  }, [contributorBarRows]);
+
+  const contributorGraphHeight = useMemo(() => {
+    const n = contributorBarRows.length;
+    if (n <= 0) return undefined;
+    return Math.min(560, Math.max(220, 36 + n * 52));
+  }, [contributorBarRows.length]);
+
+  const formSelectControl =
+    formsForBarSelect.length > 0 ? (
+      <NativeSelect.Root
+        width={{ base: "100%", md: "220px" }}
+        size="sm"
+        colorPalette="secondary"
+      >
+        <NativeSelect.Field
+          fontSize="xs"
+          minH="32px"
+          h="32px"
+          py={0}
+          pl={2}
+          pr={10}
+          value={selectedBarFormId != null ? String(selectedBarFormId) : ""}
+          color={selectedBarFormId != null ? "secondary.800" : "secondary.500"}
+          borderColor="secondary.200"
+          bg="secondary.50"
+          _hover={{ borderColor: "secondary.300", bg: "secondary.50" }}
+          _focusVisible={{
+            borderColor: "secondary.500",
+            boxShadow: "0 0 0 1px var(--chakra-colors-secondary-500)",
+          }}
+          onChange={(e) => {
+            const v = e.target.value;
+            setSelectedBarFormId(v ? Number(v) : null);
+          }}
+        >
+          {formsForBarSelect.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.title ?? `Form ${f.id}`}
+            </option>
+          ))}
+        </NativeSelect.Field>
+        <NativeSelect.Indicator color="secondary.600" />
+      </NativeSelect.Root>
+    ) : null;
+
+  return (
+    <GlobalWrapper permissionKey={DASHBOARD_ROUTES.checklist.permissionKey}>
+      <Flex
+        flexDirection="column"
+        gap="22px"
+        w="100%"
+        maxW="100%"
+        overflow="hidden"
+      >
+        <DashboardTitleSection pb={0}>
+          <Flex
+            w="100%"
+            align="center"
+            justify="space-between"
+            gap={3}
+            flexWrap={{ base: "wrap", lg: "nowrap" }}
+            rowGap={2}
+          >
+            <DashboardPageTitle title="Checklist Dashboard" />
+            <Flex
+              gap={3}
+              alignItems="center"
+              flexWrap="wrap"
+              justifyContent={{ base: "flex-start", lg: "flex-end" }}
+              flexShrink={{ lg: 1 }}
+              minW={0}
+              ml={{ base: 0, lg: "auto" }}
+              w={{ base: "100%", lg: "auto" }}
+            >
+              {/* CustomDateTimeInput uses flex={1} on Input — constrain width so it cannot span the page */}
+              <Box flex="0 0 auto" w="158px" maxW="calc(50% - 8px)">
+                <DatePicker
+                  selected={dateRange.startDate}
+                  onChange={(date) =>
+                    setDateRange((prev) => ({ ...prev, startDate: date }))
+                  }
+                  selectsStart
+                  startDate={dateRange.startDate}
+                  endDate={dateRange.endDate}
+                  customInput={
+                    <CustomDateTimeInput
+                      format="DD/MM/YYYY"
+                      placeholder="From Date"
+                    />
+                  }
+                  dateFormat="dd/MM/yyyy"
+                  portalId="root-portal"
+                />
+              </Box>
+              <Box flex="0 0 auto" w="158px" maxW="calc(50% - 8px)">
+                <DatePicker
+                  selected={dateRange.endDate}
+                  onChange={(date) =>
+                    setDateRange((prev) => ({ ...prev, endDate: date }))
+                  }
+                  selectsEnd
+                  startDate={dateRange.startDate}
+                  endDate={dateRange.endDate}
+                  minDate={dateRange.startDate}
+                  customInput={
+                    <CustomDateTimeInput
+                      format="DD/MM/YYYY"
+                      placeholder="To Date"
+                    />
+                  }
+                  dateFormat="dd/MM/yyyy"
+                  portalId="root-portal"
+                />
+              </Box>
+              {canAccessAllBranches ? (
+                <Box
+                  flex="0 1 auto"
+                  w={{ base: "min(100%, 280px)", lg: "260px" }}
+                  minW="200px"
+                  maxW="320px"
+                  marginBottom="26px"
+                >
+                  <CustomInput
+                    label="Branch"
+                    name="checklist_dashboard_branch_ids"
+                    method="multiple-dropdown"
+                    placeholder="All branches"
+                    options={branchOptions}
+                    value={branchFilterIds}
+                    onChange={(ids) => setBranchFilterIds(ids ?? [])}
+                  />
+                </Box>
+              ) : null}
+              <Button
+                size="sm"
+                variant="outline"
+                flexShrink={0}
+                onClick={() => {
+                  const t = new Date();
+                  setDateRange({ startDate: t, endDate: t });
+                }}
+              >
+                Reset
+              </Button>
+            </Flex>
+          </Flex>
+        </DashboardTitleSection>
+
+        <ChecklistDashboardChartsGrid
+          loading={loading}
+          barLoading={barLoading}
+          fromYmd={fromYmd}
+          toYmdStr={toYmdStr}
+          pieData={pieData}
+          pendingTotal={pendingTotal}
+          onPendingPieClick={openPendingDetailModal}
+          formsForBarSelect={formsForBarSelect}
+          contributorBarRows={contributorBarRows}
+          contributorLegendItems={contributorLegendItems}
+          contributorGraphHeight={contributorGraphHeight}
+          branchBarRows={branchBarRows}
+          branchLegendItems={branchLegendItems}
+          branchGraphHeight={branchGraphHeight}
+          formSelectControl={formSelectControl}
+        />
+
+        <CustomContainer
+          title={`Forms - ${formsTableTitleSuffix}`}
+          color="secondary"
+          size="sm"
+        >
+          <AgGrid
+            ref={gridRef}
+            rowData={loading ? [] : formsTableRows}
+            columnDefs={colDefs}
+            tableKey={`checklist-dashboard-forms-${fromYmd ?? "x"}-${
+              toYmdStr ?? "x"
+            }`}
+            gridOptions={{
+              getRowId: (p) =>
+                p.data?.dashboardRowKey != null
+                  ? String(p.data.dashboardRowKey)
+                  : String(p.data?.id ?? ""),
+            }}
+          />
+        </CustomContainer>
+
+        <ChecklistPendingQuestionsModal
+          open={pendingModalOpen}
+          onOpenChange={(e) => {
+            if (!e.open) setPendingModalOpen(false);
+          }}
+          loading={pendingModalLoading}
+          sections={filteredPendingModalSections}
+          fromYmd={fromYmd}
+          toYmdStr={toYmdStr}
+        />
+      </Flex>
+    </GlobalWrapper>
+  );
+}

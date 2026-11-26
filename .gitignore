@@ -1,0 +1,18 @@
+# dependencies & builds
+node_modules/
+.next/
+out/
+build/
+*.log
+logs/
+.DS_Store
+
+# secrets — never commit
+.env
+.env.*
+!.env.example
+backend/config.json
+backend/keys/jwt/*.key
+backend/migrations/*/database.json
+backend/sample-data/.manifest.json
+frontend/scripts/.sample-data-manifest.json

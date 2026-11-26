@@ -1,0 +1,1 @@
+ALTER TABLE `accounts_preload_data` CHANGE `no_of_items` `no_of_items` INT NOT NULL DEFAULT '0.00';

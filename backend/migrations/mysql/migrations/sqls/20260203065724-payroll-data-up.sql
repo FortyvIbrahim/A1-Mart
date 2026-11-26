@@ -1,0 +1,1 @@
+ALTER TABLE payroll_employees ADD COLUMN late_early_hours DECIMAL(10,2) NULL;

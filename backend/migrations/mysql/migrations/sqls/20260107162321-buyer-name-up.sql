@@ -1,0 +1,1 @@
+ALTER TABLE `products` ADD `de_buyer_name` VARCHAR(300) NULL AFTER `de_combo_name`;

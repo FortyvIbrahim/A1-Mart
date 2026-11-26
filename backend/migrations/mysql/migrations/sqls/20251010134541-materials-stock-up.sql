@@ -1,0 +1,1 @@
+ALTER TABLE `materials` ADD `live_stock` INT NULL DEFAULT NULL AFTER `material_category_id`;

@@ -1,0 +1,2 @@
+ALTER TABLE stickering
+MODIFY COLUMN employee_code VARCHAR(100) NULL;

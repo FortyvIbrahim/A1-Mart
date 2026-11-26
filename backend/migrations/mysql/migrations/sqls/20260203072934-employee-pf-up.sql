@@ -1,0 +1,1 @@
+ALTER TABLE employees ADD COLUMN pf_uan VARCHAR(20) NULL;

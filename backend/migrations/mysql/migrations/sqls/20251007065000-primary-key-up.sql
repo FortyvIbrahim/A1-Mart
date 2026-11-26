@@ -1,0 +1,1 @@
+ALTER TABLE `repack_items_master` ADD PRIMARY KEY(`item_id`);

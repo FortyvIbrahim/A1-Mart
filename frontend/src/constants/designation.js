@@ -1,0 +1,9 @@
+const IS_PROD = process.env.NEXT_PUBLIC_IS_PROD === "true";
+
+export const BILLING_CHECKER_DESIGNATION_ID = IS_PROD ? 6 : 10;
+
+export const BILLING_OPERATOR_DESIGNATION_ID = IS_PROD ? 5 : 9;
+
+export const SUPERVISOR_DESIGNATION_ID = IS_PROD ? 1 : 5;
+
+export const DRIVER_DESIGNATION_ID = IS_PROD ? 14 : 18;
