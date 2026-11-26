@@ -123,13 +123,62 @@ async function clean(mysql) {
   return res;
 }
 
-/** Called by server.js once the HTTP server is listening. Never throws. */
+/** Reference data the seeder builds on (filled by the Digisme/GoFrugal syncs). */
+async function referenceCounts(mysql) {
+  const one = async (sql) => {
+    try {
+      return Number((await query(mysql, sql))[0]?.n || 0);
+    } catch {
+      return 0;
+    }
+  };
+  return {
+    branches: await one("SELECT COUNT(*) n FROM branches"),
+    employees: await one("SELECT COUNT(*) n FROM employees"),
+    productDepartments: await one("SELECT COUNT(*) n FROM products_department"),
+    stockRows: await one("SELECT COUNT(*) n FROM product_stock_price"),
+  };
+}
+
+/**
+ * Called by server.js once the HTTP server is listening. Never throws.
+ * On a fresh database the syncs need a few minutes to create branches,
+ * employees, products and GoFrugal stock (stock lands on the 2nd product
+ * sync, ≤30 min), so wait (checking every minute, up to 45 min)
+ * before seeding; after the cap, seed with whatever exists.
+ */
 function runOnStartup(mysql) {
   if (process.env.SEED_SAMPLE_DATA !== "true") return;
-  // Give routes/crons a moment to finish booting.
-  setTimeout(() => {
-    seed(mysql).catch((err) => log(`Startup seed failed: ${err.message}`));
-  }, 5000);
+  const MAX_WAIT_MIN = Number(process.env.SEED_SAMPLE_WAIT_MINUTES || 45);
+  let waited = 0;
+
+  const attempt = async () => {
+    try {
+      const c = await referenceCounts(mysql);
+      const ready =
+        c.branches > 0 && c.employees > 1 && c.productDepartments > 0 && c.stockRows > 0;
+      if (!ready && waited < MAX_WAIT_MIN) {
+        if (waited === 0 || waited % 5 === 0) {
+          log(
+            `Waiting for synced data (branches ${c.branches}, employees ${c.employees}, ` +
+              `product departments ${c.productDepartments}, stock rows ${c.stockRows}) — retrying every minute.`
+          );
+        }
+        waited += 1;
+        setTimeout(attempt, 60000);
+        return;
+      }
+      if (!c.branches) {
+        log("No branches after waiting — skipping sample data. Check the Digisme sync.");
+        return;
+      }
+      await seed(mysql);
+    } catch (err) {
+      log(`Startup seed failed: ${err.message}`);
+    }
+  };
+
+  setTimeout(attempt, 5000);
 }
 
 module.exports = { seed, clean, runOnStartup };

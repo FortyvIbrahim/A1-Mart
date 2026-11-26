@@ -293,14 +293,19 @@ async function main() {
     db.connect((err) => (err ? reject(err) : resolve()));
   });
 
-  // If designations exists, ensure designation 16 is present before running migrations
-  const tables = await query(db, "SHOW TABLES LIKE 'designations'");
-  if (tables.length > 0) {
+  // Some early migrations insert permissions for the Admin designation (16), so
+  // it must exist before they run. Create it with whatever columns the table
+  // has at that moment, then (re)run migrations until they are all applied.
+  async function ensureAdminDesignationMinimal() {
+    const t = await query(db, "SHOW TABLES LIKE 'designations'");
+    if (!t.length) return;
+    const cols = (await query(db, "SHOW COLUMNS FROM designations")).map((c) => c.Field);
+    const row = { designation_id: 16, designation_code: "ADMIN", designation_name: "Admin", is_active: 1 };
+    const keys = Object.keys(row).filter((k) => cols.includes(k));
     await query(
       db,
-      `INSERT INTO designations (designation_id, designation_code, designation_name, is_active, requires_2fa)
-       VALUES (16, 'ADMIN', 'Admin', 1, 0)
-       ON DUPLICATE KEY UPDATE designation_name = 'Admin', requires_2fa = 0`
+      `INSERT IGNORE INTO designations (${keys.join(", ")}) VALUES (${keys.map(() => "?").join(", ")})`,
+      keys.map((k) => row[k])
     );
   }
 
@@ -310,13 +315,22 @@ async function main() {
   if (fs.existsSync(nestedMysql)) {
     fs.rmSync(nestedMysql, { recursive: true, force: true });
   }
-  try {
-    execSync("npx db-migrate up -e " + env, {
-      cwd: path.join(rootDir, "migrations", "mysql"),
-      stdio: "inherit",
-    });
-  } catch (migErr) {
-    console.error("[setup-db] Migration command returned an error:", migErr.message);
+  let migrated = false;
+  for (let attempt = 1; attempt <= 4 && !migrated; attempt++) {
+    await ensureAdminDesignationMinimal();
+    try {
+      execSync("npx db-migrate up -e " + env, {
+        cwd: path.join(rootDir, "migrations", "mysql"),
+        stdio: "inherit",
+      });
+      migrated = true;
+    } catch (migErr) {
+      console.error(`[setup-db] Migration attempt ${attempt} failed: ${migErr.message}`);
+    }
+  }
+  if (!migrated) {
+    console.error("[setup-db] Migrations did not complete — fix the error above and re-run.");
+    process.exit(1);
   }
 
   // 5. Seed / Ensure Admin Designation (ID: 16)
