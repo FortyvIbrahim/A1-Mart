@@ -15,6 +15,7 @@ import toast from "react-hot-toast";
 import {
   ReorderListTabs,
   ViewProductsModal,
+  ReorderedProductsView,
   ImportDialog,
   NotFoundDialog,
   ConfirmSaveDialog,
@@ -357,6 +358,16 @@ export default function ReorderListing() {
 
   return (
     <GlobalWrapper permissionKey="view_purchase_reorders">
+      {productsModalOpen ? (
+        <ReorderedProductsView
+          onBack={() => {
+            setProductsModalOpen(false);
+            setSelectedGroupItems([]);
+          }}
+          items={selectedGroupItems}
+          mode={productsModalMode}
+        />
+      ) : (
       <CustomContainer
         contentCard
         title="Purchase Reorders"
@@ -380,6 +391,7 @@ export default function ReorderListing() {
           loading={loading}
         />
       </CustomContainer>
+      )}
 
       <ImportDialog
         open={importModalOpen}
@@ -406,17 +418,6 @@ export default function ReorderListing() {
         buyersNotFound={buyersNotFound}
         onClose={() => setNotFoundModalOpen(false)}
       />
-
-      <ViewProductsModal
-        open={productsModalOpen}
-        onClose={() => {
-          setProductsModalOpen(false);
-          setSelectedGroupItems([]);
-        }}
-        items={selectedGroupItems}
-        mode={productsModalMode}
-      />
-
       <ConfirmSaveDialog
         open={confirmSaveModalOpen}
         onOpenChange={(e) => {

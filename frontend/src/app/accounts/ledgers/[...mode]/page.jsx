@@ -116,7 +116,7 @@ function LedgersForm({ params }) {
   if ((isEditMode || isViewMode) && loading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer pageForm title={getTitle()}>
+        <CustomContainer pageForm backHref="/accounts/ledgers" title={getTitle()}>
           <Flex justifyContent="center" p={8}>
             Loading...
           </Flex>
@@ -128,7 +128,7 @@ function LedgersForm({ params }) {
   if ((isEditMode || isViewMode) && !ledger && !loading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer pageForm title={getTitle()}>
+        <CustomContainer pageForm backHref="/accounts/ledgers" title={getTitle()}>
           <Flex flexDirection="column" gap="22px" alignItems="center" p={8}>
             <Text>Master not found</Text>
             <Button
@@ -145,7 +145,7 @@ function LedgersForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer pageForm title={getTitle()}>
+      <CustomContainer pageForm backHref="/accounts/ledgers" title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}
@@ -178,12 +178,12 @@ function LedgersForm({ params }) {
                 />
               </Grid>
 
-              <Flex gap="22px" justifyContent="flex-end">
+              <Flex gap="12px" justifyContent="flex-end">
                 <Button
                   variant="subtle"
                   onClick={() => router.push("/accounts/ledgers")}
                 >
-                  Back
+                  {isViewMode ? "Back" : "Cancel"}
                 </Button>
                 {!isViewMode && (
                   <Button onClick={handleSubmit}>

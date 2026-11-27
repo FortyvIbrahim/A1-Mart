@@ -4,7 +4,6 @@ import React, { useMemo, useState, useRef, useEffect } from "react";
 import { Stack, Flex, Badge, Box, Tabs, Text } from "@chakra-ui/react";
 import usePurchaseAcknowledgments from "@/api/customHooks/usePurchaseAcknowledgments";
 import { transformPurchaseAckData } from "@/utils/purchaseAck";
-import CustomDrawer from "@/components/CustomDrawer";
 import CustomContainer from "@/components/CustomContainer";
 import { capitalizeWordsLatest, purchaseAckStatusBadgeLabel } from "@/utils/string";
 import moment from "moment";
@@ -13,7 +12,8 @@ import DashboardPageTitle, {
 } from "@/components/dashboard/DashboardPageTitle";
 import FiltersBar from "@/components/wms-dashboard/FiltersBar";
 import SummaryChartsRow from "@/components/wms-dashboard/SummaryChartsRow";
-import StatusTimelineContent from "@/components/wms-dashboard/StatusTimelineContent";
+import PurchaseAckDetailsView from "@/components/wms-dashboard/PurchaseAckDetailsView";
+import PurchaseReturnDetailsView from "@/components/wms-dashboard/PurchaseReturnDetailsView";
 import PurchasesTabContent from "@/components/wms-dashboard/tabs/PurchasesTabContent";
 import PurchaseReturnTabContent from "@/components/wms-dashboard/tabs/PurchaseReturnTabContent";
 import PurchaseReturnByBuyersTabContent from "@/components/wms-dashboard/tabs/PurchaseReturnByBuyersTabContent";
@@ -1306,6 +1306,18 @@ function Dashboard() {
       { headerName: "Pending", field: "total_jobs_pending" },
       { headerName: "Done", field: "total_jobs_done" },
       { headerName: "Pending qty", field: "pending_qty", type: "number" },
+      {
+        headerName: "Action",
+        field: "actions",
+        type: "action-column",
+        valueGetter: (params) => [
+          {
+            label: "View",
+            value: "view",
+            onClick: () => setSelectedAck(params.data),
+          },
+        ],
+      },
     ],
     [worksheetStatusCol]
   );
@@ -1319,6 +1331,18 @@ function Dashboard() {
       { headerName: "Pending", field: "total_jobs_pending" },
       { headerName: "Done", field: "total_jobs_done" },
       { headerName: "Pending qty", field: "repack_pending_qty", type: "number" },
+      {
+        headerName: "Action",
+        field: "actions",
+        type: "action-column",
+        valueGetter: (params) => [
+          {
+            label: "View",
+            value: "view",
+            onClick: () => setSelectedAck(params.data),
+          },
+        ],
+      },
     ],
     [worksheetStatusCol]
   );
@@ -1655,6 +1679,18 @@ function Dashboard() {
           };
         },
       },
+      {
+        headerName: "Action",
+        field: "actions",
+        type: "action-column",
+        valueGetter: (params) => [
+          {
+            label: "View",
+            value: "view",
+            onClick: () => setSelectedAck(params.data),
+          },
+        ],
+      },
     ],
     []
   );
@@ -1698,7 +1734,7 @@ function Dashboard() {
 
   const purchaseReturnColDefs = useMemo(
     () => [
-      // Figma: Buyer · Supplier · Total bills · Total value · Status.
+      // Figma: Buyer · Supplier · Total bills · Total value · Status · Action.
       { headerName: "Buyer", field: "buyer_name", type: "capitalized" },
       { headerName: "Supplier", field: "supplier_name", type: "capitalized" },
       { headerName: "Total bills", field: "total_bills", type: "number" },
@@ -1708,6 +1744,18 @@ function Dashboard() {
         field: "status",
         type: "badge-column",
         valueGetter: () => ({ label: "Not Returned", colorScheme: "red" }),
+      },
+      {
+        headerName: "Action",
+        field: "actions",
+        type: "action-column",
+        valueGetter: (params) => [
+          {
+            label: "View",
+            value: "view",
+            onClick: () => setSelectedPurchaseReturnSupplier(params.data),
+          },
+        ],
       },
     ],
     []
@@ -1743,6 +1791,29 @@ function Dashboard() {
     ],
     []
   );
+
+  if (selectedAck) {
+    return (
+      <GlobalWrapper permissionKey="view_wms_dashboard">
+        <PurchaseAckDetailsView
+          ack={selectedAck}
+          onBack={() => setSelectedAck(null)}
+        />
+      </GlobalWrapper>
+    );
+  }
+
+  if (selectedPurchaseReturnSupplier) {
+    return (
+      <GlobalWrapper permissionKey="view_wms_dashboard">
+        <PurchaseReturnDetailsView
+          supplierRow={selectedPurchaseReturnSupplier}
+          itemColDefs={purchaseReturnItemsColDefs}
+          onBack={() => setSelectedPurchaseReturnSupplier(null)}
+        />
+      </GlobalWrapper>
+    );
+  }
 
   return (
     <GlobalWrapper permissionKey="view_wms_dashboard">
@@ -1921,58 +1992,6 @@ function Dashboard() {
             </Box>
           </Box>
         </Stack>
-
-        <CustomDrawer
-          title={
-            selectedAck
-              ? `Purchase Ack #${selectedAck.purchase_acknowledgment_id} - Progress`
-              : "Purchase Ack Progress"
-          }
-          isOpen={!!selectedAck}
-          setIsOpen={(open) => {
-            if (!open) setSelectedAck(null);
-          }}
-          content={
-            selectedAck ? <StatusTimelineContent ack={selectedAck} /> : null
-          }
-          footer={null}
-          size="sm"
-        >
-          <Box display="none" />
-        </CustomDrawer>
-
-        <CustomDrawer
-          title={
-            selectedPurchaseReturnSupplier
-              ? `Purchase Return - ${selectedPurchaseReturnSupplier.supplier_name}`
-              : "Purchase Return"
-          }
-          isOpen={!!selectedPurchaseReturnSupplier}
-          setIsOpen={(open) => {
-            if (!open) setSelectedPurchaseReturnSupplier(null);
-          }}
-          content={
-            selectedPurchaseReturnSupplier ? (
-              <CustomContainer title="Pending Items" fullWidth>
-                {(selectedPurchaseReturnSupplier.items || []).length === 0 ? (
-                  <Flex minH="180px" align="center" justify="center">
-                    <Text color="gray.500">No pending items.</Text>
-                  </Flex>
-                ) : (
-                  <AgGrid
-                    rowData={selectedPurchaseReturnSupplier.items || []}
-                    columnDefs={purchaseReturnItemsColDefs}
-                    tableKey="purchase-return-supplier-items"
-                    defaultRows={10}
-                  />
-                )}
-              </CustomContainer>
-            ) : null
-          }
-          size="full"
-        >
-          <Box display="none" />
-        </CustomDrawer>
       </Box>
     </GlobalWrapper>
   );

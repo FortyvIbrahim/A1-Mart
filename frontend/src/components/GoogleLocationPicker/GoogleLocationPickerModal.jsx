@@ -3,19 +3,17 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dialog,
-  DialogBackdrop,
-  DialogContent,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
   Button,
   Text,
   Flex,
   Box,
+  Input,
+  IconButton,
 } from "@chakra-ui/react";
+import { LuX, LuSearch, LuMapPin } from "react-icons/lu";
 import { loadGoogleMaps } from "./loadGoogleMaps";
 
-const DEFAULT_CENTER = { lat: 12.9716, lng: 77.5946 };
+const DEFAULT_CENTER = { lat: 11.6643, lng: 78.146 };
 const DEFAULT_ZOOM = 13;
 
 /**
@@ -56,6 +54,7 @@ export default function GoogleLocationPickerModal({
 }) {
   const mapRef = useRef(null);
   const autocompleteContainerRef = useRef(null);
+  const fallbackSearchInputRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
   const placeAutocompleteRef = useRef(null);
@@ -65,12 +64,20 @@ export default function GoogleLocationPickerModal({
   const [address, setAddress] = useState(initial?.address ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [mapsReady, setMapsReady] = useState(false);
+  const [usingFallbackSearch, setUsingFallbackSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
 
   const resetState = useCallback(() => {
-    setPosition(initial);
-    setAddress(initial?.address ?? "");
+    const parsed = parseLocationValue(initialValue);
+    setPosition(parsed);
+    setAddress(parsed?.address ?? "");
     setError("");
-  }, [initial?.lat, initial?.lng, initial?.address]);
+    setSearchQuery("");
+    setSearchResults([]);
+  }, [initialValue]);
 
   useEffect(() => {
     if (isOpen) {
@@ -90,34 +97,54 @@ export default function GoogleLocationPickerModal({
       return;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setPosition({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        });
+        setPosition((prev) =>
+          prev
+            ? prev
+            : {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+              }
+        );
       },
       () => {},
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   }, [isOpen, initialValue]);
 
-  const [mapsReady, setMapsReady] = useState(false);
-
   useEffect(() => {
     if (!isOpen) return;
+    let active = true;
     setLoading(true);
     setError("");
+    setUsingFallbackSearch(false);
+
     loadGoogleMaps()
       .then((google) => {
-        if (!google?.maps) return;
+        if (!active) return;
+        if (!google?.maps) {
+          setMapsReady(false);
+          setUsingFallbackSearch(true);
+          setError(
+            "Google Maps API key is not configured. Use place search or enter coordinates below."
+          );
+          return;
+        }
         setMapsReady(true);
       })
       .catch(() => {
-        setError("Failed to load Google Maps. Check API key.");
+        if (!active) return;
+        setMapsReady(false);
+        setUsingFallbackSearch(true);
+        setError("Failed to load Google Maps. Use place search below.");
       })
       .finally(() => {
-        setLoading(false);
+        if (active) setLoading(false);
       });
-    return () => setMapsReady(false);
+
+    return () => {
+      active = false;
+      setMapsReady(false);
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -128,7 +155,8 @@ export default function GoogleLocationPickerModal({
 
     let cancelled = false;
     let geocodeTimeoutId = null;
-    const GEOCODE_DEBOUNCE_MS = 500;
+    let classicAutocomplete = null;
+    const GEOCODE_DEBOUNCE_MS = 400;
 
     const runReverseGeocode = (location) => {
       if (cancelled) return;
@@ -137,8 +165,6 @@ export default function GoogleLocationPickerModal({
         if (cancelled) return;
         if (status === "OK" && results?.[0]) {
           setAddress(results[0].formatted_address);
-        } else {
-          setAddress("");
         }
       });
     };
@@ -155,6 +181,18 @@ export default function GoogleLocationPickerModal({
       ? { lat: position.lat, lng: position.lng }
       : DEFAULT_CENTER;
 
+    const applyPickedLocation = (latLng, formattedAddress, map, marker) => {
+      setPosition({ lat: latLng.lat, lng: latLng.lng });
+      if (formattedAddress) {
+        setAddress(formattedAddress);
+      } else {
+        scheduleReverseGeocode(latLng);
+      }
+      marker?.setPosition?.(latLng);
+      map?.panTo?.(latLng);
+      map?.setZoom?.(16);
+    };
+
     (async () => {
       try {
         const { Map } = await google.maps.importLibrary("maps");
@@ -166,7 +204,7 @@ export default function GoogleLocationPickerModal({
           zoom: DEFAULT_ZOOM,
           mapTypeControl: true,
           streetViewControl: false,
-          colorScheme: ColorScheme.LIGHT,
+          colorScheme: ColorScheme?.LIGHT ?? "LIGHT",
         });
         mapInstanceRef.current = map;
 
@@ -193,44 +231,86 @@ export default function GoogleLocationPickerModal({
           scheduleReverseGeocode(e.latLng);
         });
 
-        const { PlaceAutocompleteElement } = await google.maps.importLibrary(
-          "places"
-        );
-        if (cancelled || !autocompleteContainerRef.current) return;
+        const placesLib = await google.maps.importLibrary("places");
+        if (cancelled) return;
 
-        const placeAutocomplete = new PlaceAutocompleteElement({
-          types: ["establishment", "geocode"],
-        });
-        autocompleteContainerRef.current.innerHTML = "";
-        autocompleteContainerRef.current.appendChild(placeAutocomplete);
+        const PlaceAutocompleteElement = placesLib?.PlaceAutocompleteElement;
 
-        placeAutocomplete.placeholder = "Search for a location";
-        placeAutocomplete.style = "border: 1px solid #e2e8f0";
-        placeAutocompleteRef.current = placeAutocomplete;
+        if (PlaceAutocompleteElement && autocompleteContainerRef.current) {
+          try {
+            // Avoid passing legacy `types` option; PlaceAutocompleteElement uses no filter or `includedPrimaryTypes`
+            const placeAutocomplete = new PlaceAutocompleteElement();
+            autocompleteContainerRef.current.innerHTML = "";
+            autocompleteContainerRef.current.appendChild(placeAutocomplete);
 
-        placeAutocomplete.addEventListener("gmp-select", async (e) => {
-          if (cancelled) return;
-          const placePrediction =
-            e.placePrediction ?? e.detail?.placePrediction;
-          const place = placePrediction?.toPlace?.();
-          if (!place) return;
-          await place.fetchFields({
-            fields: ["formattedAddress", "location"],
+            placeAutocomplete.placeholder = "Search for a location";
+            placeAutocomplete.style.width = "100%";
+            placeAutocomplete.style.display = "block";
+            placeAutocomplete.style.border = "1px solid #F1E3D9";
+            placeAutocomplete.style.borderRadius = "8px";
+            placeAutocomplete.style.colorScheme = "light";
+            placeAutocompleteRef.current = placeAutocomplete;
+
+            const handlePlacePicked = async (placeObj) => {
+              if (cancelled || !placeObj) return;
+              try {
+                if (typeof placeObj.fetchFields === "function") {
+                  await placeObj.fetchFields({
+                    fields: ["formattedAddress", "location", "displayName"],
+                  });
+                }
+                const loc = placeObj.location;
+                if (!loc) return;
+                const lat = typeof loc.lat === "function" ? loc.lat() : loc.lat;
+                const lng = typeof loc.lng === "function" ? loc.lng() : loc.lng;
+                applyPickedLocation(
+                  { lat, lng },
+                  placeObj.formattedAddress || placeObj.displayName || "",
+                  map,
+                  marker
+                );
+              } catch (fetchErr) {
+                console.error("Failed to fetch place fields:", fetchErr);
+              }
+            };
+
+            // Support both modern `gmp-select` (placePrediction) and legacy `gmp-placeselect` (place)
+            placeAutocomplete.addEventListener("gmp-select", async (e) => {
+              const prediction =
+                e?.placePrediction ?? e?.detail?.placePrediction;
+              const place = prediction?.toPlace?.() ?? e?.place ?? e?.detail?.place;
+              await handlePlacePicked(place);
+            });
+
+            placeAutocomplete.addEventListener("gmp-placeselect", async (e) => {
+              const place = e?.place ?? e?.detail?.place;
+              await handlePlacePicked(place);
+            });
+          } catch (paeErr) {
+            console.warn("PlaceAutocompleteElement unavailable, falling back:", paeErr);
+            setUsingFallbackSearch(true);
+          }
+        } else {
+          setUsingFallbackSearch(true);
+        }
+
+        // Attach classic Autocomplete if fallback input is rendered
+        if (placesLib?.Autocomplete && fallbackSearchInputRef.current) {
+          classicAutocomplete = new placesLib.Autocomplete(
+            fallbackSearchInputRef.current,
+            { fields: ["formatted_address", "geometry", "name"] }
+          );
+          classicAutocomplete.addListener("place_changed", () => {
+            const place = classicAutocomplete.getPlace();
+            const loc = place?.geometry?.location;
+            if (!loc) return;
+            applyPickedLocation(
+              { lat: loc.lat(), lng: loc.lng() },
+              place.formatted_address || place.name || "",
+              map,
+              marker
+            );
           });
-          const loc = place.location;
-          if (!loc) return;
-          const lat = typeof loc.lat === "function" ? loc.lat() : loc.lat;
-          const lng = typeof loc.lng === "function" ? loc.lng() : loc.lng;
-          const latLng = { lat, lng };
-          setPosition({ lat, lng });
-          setAddress(place.formattedAddress ?? "");
-          marker.setPosition(latLng);
-          map.panTo(latLng);
-          if (map.getDiv) google.maps.event.trigger(map, "resize");
-        });
-
-        if (position) {
-          map.panTo(center);
         }
 
         const resizeWhenVisible = () => {
@@ -239,16 +319,22 @@ export default function GoogleLocationPickerModal({
             map.panTo(map.getCenter());
           }
         };
-        setTimeout(resizeWhenVisible, 100);
-        setTimeout(resizeWhenVisible, 500);
+        setTimeout(resizeWhenVisible, 120);
+        setTimeout(resizeWhenVisible, 450);
       } catch (err) {
-        if (!cancelled) setError("Failed to load map or places.");
+        if (!cancelled) {
+          setError("Failed to initialize map. Use place search below.");
+          setUsingFallbackSearch(true);
+        }
       }
     })();
 
     return () => {
       cancelled = true;
       if (geocodeTimeoutId) clearTimeout(geocodeTimeoutId);
+      if (classicAutocomplete && window.google?.maps?.event) {
+        window.google.maps.event.clearInstanceListeners(classicAutocomplete);
+      }
       if (autocompleteContainerRef.current && placeAutocompleteRef.current) {
         try {
           autocompleteContainerRef.current.removeChild(
@@ -271,11 +357,65 @@ export default function GoogleLocationPickerModal({
     }
   }, [position?.lat, position?.lng, isOpen]);
 
+  const handleFallbackSearch = async () => {
+    const q = searchQuery.trim();
+    if (!q) return;
+
+    // Try Google Geocoder first if Maps loaded cleanly
+    if (window.google?.maps?.Geocoder) {
+      setSearching(true);
+      try {
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ address: q }, (results, status) => {
+          setSearching(false);
+          if (status === "OK" && Array.isArray(results) && results.length) {
+            const mapped = results.slice(0, 5).map((r) => ({
+              label: r.formatted_address,
+              lat: r.geometry.location.lat(),
+              lng: r.geometry.location.lng(),
+            }));
+            setSearchResults(mapped);
+            if (mapped.length === 1) {
+              setPosition({ lat: mapped[0].lat, lng: mapped[0].lng });
+              setAddress(mapped[0].label);
+            }
+          } else {
+            setSearchResults([]);
+          }
+        });
+        return;
+      } catch (_) {
+        setSearching(false);
+      }
+    }
+
+    // Fallback: OpenStreetMap Nominatim search when Google API key is missing
+    try {
+      setSearching(true);
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(
+          q
+        )}`
+      );
+      const data = await res.json();
+      const mapped = (Array.isArray(data) ? data : []).map((item) => ({
+        label: item.display_name,
+        lat: parseFloat(item.lat),
+        lng: parseFloat(item.lon),
+      }));
+      setSearchResults(mapped);
+    } catch (_) {
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const handleConfirm = useCallback(() => {
     if (position) {
       onSelect({
-        lat: position.lat,
-        lng: position.lng,
+        lat: Number(position.lat),
+        lng: Number(position.lng),
         address: address || undefined,
       });
     }
@@ -289,80 +429,229 @@ export default function GoogleLocationPickerModal({
   if (!isOpen) return null;
 
   return (
-    <Flex
-      position="fixed"
-      top={0}
-      left={0}
-      right={0}
-      bottom={0}
-      zIndex={1000}
-      justifyContent="center"
-      alignItems="center"
-      h="100dvh"
+    <Dialog.Root
+      open={isOpen}
+      modal={false}
+      closeOnInteractOutside={false}
+      onOpenChange={(e) => !e.open && handleClose()}
     >
-      <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && handleClose()}>
-        <DialogBackdrop bg="blackAlpha.600" backdropFilter="blur(4px)" />
-        <DialogContent
-          mx={4}
-          borderRadius="8px"
-          overflow="hidden"
+      <Dialog.Backdrop
+        bg="rgba(31, 41, 55, 0.45)"
+        backdropFilter="blur(3px)"
+        zIndex={1000}
+      />
+      <Dialog.Positioner zIndex={1001} p={4}>
+        <Dialog.Content
+          borderRadius="14px"
+          borderWidth="1px"
+          borderColor="#E4E7F2"
+          overflow="visible"
           maxW="90vw"
-          w="640px"
+          w="660px"
+          bg="white"
+          boxShadow="0 24px 60px rgba(31, 41, 55, 0.2)"
         >
-          <DialogHeader pb={2}>
-            <Text fontSize="md" fontWeight="semibold" color="gray.800">
+          <Dialog.Header
+            px="24px"
+            py="18px"
+            borderBottomWidth="1px"
+            borderColor="#F0E9E5"
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+          >
+            <Text fontSize="18px" fontWeight="600" color="#202938">
               Select location on map
             </Text>
-          </DialogHeader>
-          <DialogBody pt={0} pb={4}>
-            <Text fontSize="sm" color="gray.600" mb={2}>
+            <IconButton
+              type="button"
+              aria-label="Close"
+              size="sm"
+              w="32px"
+              h="32px"
+              minW="32px"
+              bg="app.tableHeader"
+              color="#C95C18"
+              borderRadius="8px"
+              _hover={{ bg: "brand.100" }}
+              onClick={handleClose}
+            >
+              <LuX size={16} />
+            </IconButton>
+          </Dialog.Header>
+
+          <Dialog.Body px="24px" py="20px">
+            <Text fontSize="12.5px" color="fg.muted" mb={3}>
               Search for a place or click on the map to set the marker.
             </Text>
-            <Box
-              ref={autocompleteContainerRef}
-              mb={3}
-              minH="40px"
-              sx={{ colorScheme: "light" }}
-            />
+
+            {mapsReady && !usingFallbackSearch && (
+              <Box
+                ref={autocompleteContainerRef}
+                mb={3}
+                minH="44px"
+                position="relative"
+                zIndex={20}
+              />
+            )}
+
+            {(usingFallbackSearch || mapsReady) && (
+              <Flex gap={2} mb={3} alignItems="center">
+                <Input
+                  ref={fallbackSearchInputRef}
+                  placeholder="Search address or place name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleFallbackSearch();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="md"
+                  variant="subtle"
+                  loading={searching}
+                  onClick={handleFallbackSearch}
+                  flexShrink={0}
+                >
+                  <LuSearch size={15} />
+                  Search
+                </Button>
+              </Flex>
+            )}
+
+            {searchResults.length > 0 && (
+              <Box
+                mb={3}
+                borderWidth="1px"
+                borderColor="#F1E3D9"
+                borderRadius="8px"
+                maxH="160px"
+                overflowY="auto"
+                bg="white"
+              >
+                {searchResults.map((item, idx) => (
+                  <Flex
+                    key={`${item.lat}-${item.lng}-${idx}`}
+                    as="button"
+                    type="button"
+                    w="100%"
+                    textAlign="left"
+                    px="12px"
+                    py="8px"
+                    gap="8px"
+                    alignItems="flex-start"
+                    borderBottomWidth={
+                      idx === searchResults.length - 1 ? 0 : "1px"
+                    }
+                    borderColor="#F7ECE3"
+                    _hover={{ bg: "#FFF5ED" }}
+                    cursor="pointer"
+                    onClick={() => {
+                      const nextPos = { lat: item.lat, lng: item.lng };
+                      setPosition(nextPos);
+                      setAddress(item.label);
+                      setSearchResults([]);
+                      if (mapInstanceRef.current && markerRef.current) {
+                        markerRef.current.setPosition(nextPos);
+                        mapInstanceRef.current.panTo(nextPos);
+                        mapInstanceRef.current.setZoom(16);
+                      }
+                    }}
+                  >
+                    <Box mt="2px" color="#C95C18" flexShrink={0}>
+                      <LuMapPin size={14} />
+                    </Box>
+                    <Text fontSize="12.5px" color="#202938">
+                      {item.label}
+                    </Text>
+                  </Flex>
+                ))}
+              </Box>
+            )}
+
             {error && (
-              <Text fontSize="sm" color="red.500" mb={2}>
+              <Text fontSize="12.5px" color="#C95C18" bg="#FFF5ED" px={3} py={2} borderRadius="6px" mb={3}>
                 {error}
               </Text>
             )}
+
             {loading && (
-              <Flex align="center" justify="center" h="300px">
-                <Text color="gray.500">Loading map...</Text>
+              <Flex align="center" justify="center" h="300px" bg="#FFFBF8" borderRadius="8px">
+                <Text fontSize="13px" color="fg.muted">
+                  Loading map...
+                </Text>
               </Flex>
             )}
-            <Box
-              ref={mapRef}
-              width="100%"
-              height="300px"
-              borderRadius="8px"
-              overflow="hidden"
-              display={loading ? "none" : "block"}
-            />
+
+            {mapsReady ? (
+              <Box
+                ref={mapRef}
+                width="100%"
+                height="300px"
+                borderRadius="8px"
+                borderWidth="1px"
+                borderColor="#F1E3D9"
+                overflow="hidden"
+                display={loading ? "none" : "block"}
+              />
+            ) : (
+              !loading &&
+              position && (
+                <Box
+                  as="iframe"
+                  title="Selected Location Preview"
+                  width="100%"
+                  height="260px"
+                  borderRadius="8px"
+                  borderWidth="1px"
+                  borderColor="#F1E3D9"
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${
+                    position.lng - 0.01
+                  }%2C${position.lat - 0.01}%2C${position.lng + 0.01}%2C${
+                    position.lat + 0.01
+                  }&layer=mapnik&marker=${position.lat}%2C${position.lng}`}
+                />
+              )
+            )}
+
             {position && !loading && (
-              <Text fontSize="xs" color="gray.500" mt={2}>
-                {address ||
-                  `${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`}
+              <Text fontSize="12px" color="fg.muted" mt={2}>
+                {address
+                  ? `${address} (${Number(position.lat).toFixed(5)}, ${Number(
+                      position.lng
+                    ).toFixed(5)})`
+                  : `${Number(position.lat).toFixed(6)}, ${Number(
+                      position.lng
+                    ).toFixed(6)}`}
               </Text>
             )}
-          </DialogBody>
-          <DialogFooter pt={2} gap={3}>
-            <Button variant="outline" colorScheme="gray" onClick={handleClose}>
+          </Dialog.Body>
+
+          <Dialog.Footer
+            px="24px"
+            py="16px"
+            borderTopWidth="1px"
+            borderColor="#F0E9E5"
+            gap={3}
+          >
+            <Button type="button" variant="subtle" onClick={handleClose}>
               Cancel
             </Button>
             <Button
+              type="button"
               colorPalette="brand"
               onClick={handleConfirm}
               disabled={!position}
             >
               Confirm
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog.Root>
-    </Flex>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog.Positioner>
+    </Dialog.Root>
   );
 }

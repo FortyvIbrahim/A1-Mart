@@ -1,3 +1,4 @@
+import { LuX } from "react-icons/lu";
 import {
   Dialog,
   DialogBackdrop,
@@ -9,6 +10,7 @@ import {
   Text,
   VStack,
   Flex,
+  Box,
 } from "@chakra-ui/react";
 import React from "react";
 
@@ -56,15 +58,33 @@ function DeleteModal({
           maxW="440px"
           boxShadow="0 24px 60px rgba(31, 41, 55, 0.18)"
         >
-          <DialogHeader pt="22px" px="24px" pb={2}>
-            <Text fontSize="17px" fontWeight="700" color="gray.800">
+          {/* Figma PUR/03.03: 16/600 title with a peach close button. */}
+          <DialogHeader pt="20px" px="24px" pb={2} display="flex" alignItems="center" justifyContent="space-between" gap="12px">
+            <Text fontSize="16px" fontWeight="600" color="fg">
               {title}
             </Text>
+            <Box
+              as="button"
+              type="button"
+              aria-label="Close"
+              onClick={handleBack}
+              display="inline-flex"
+              alignItems="center"
+              justifyContent="center"
+              w="28px"
+              h="28px"
+              borderRadius="8px"
+              bg="#FFF5ED"
+              color="#C95C18"
+              flexShrink={0}
+            >
+              <LuX size={14} />
+            </Box>
           </DialogHeader>
 
           <DialogBody pt={0} px="24px">
             <VStack spacing={4} align="stretch">
-              <Text color="gray.600" fontSize="sm" lineHeight="1.5">
+              <Text color="fg.muted" fontSize="12px" lineHeight="18px">
                 {message}
               </Text>
             </VStack>
@@ -81,7 +101,9 @@ function DeleteModal({
               Cancel
             </Button>
             <Button
-              colorPalette="brand"
+              bg="#C63732"
+              color="white"
+              _hover={{ bg: "#A92D29" }}
               onClick={handleDelete}
               loading={isLoading}
               loadingText="Deleting..."

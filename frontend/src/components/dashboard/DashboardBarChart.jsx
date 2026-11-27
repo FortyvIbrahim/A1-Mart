@@ -636,7 +636,6 @@ export default React.memo(DashboardBarChart);
 export {
   XAxisTick,
   YAxisTick,
-  wrapLabelLines,
   TICK_FILL,
   TICK_FONT_SIZE,
   CHART_MARGIN,

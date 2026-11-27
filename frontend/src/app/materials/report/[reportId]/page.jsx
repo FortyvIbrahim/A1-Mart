@@ -71,6 +71,12 @@ function ReportResultsGrid({
           maxWidth: 120,
           resizable: false,
           filter: false,
+          cellStyle: {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+          },
           cellRenderer: (props) => {
             if (props.node?.rowPinned === "bottom") {
               return null;
@@ -80,18 +86,21 @@ function ReportResultsGrid({
                 <Flex
                   justifyContent="center"
                   alignItems="center"
-                  height={"100%"}
+                  w="100%"
+                  height="100%"
                 >
                   <Flex
                     justifyContent="center"
                     alignItems="center"
-                    height="80%"
-                    width="100%"
-                    backgroundColor="gray.100"
-                    borderRadius="md"
+                    height="56px"
+                    width="56px"
+                    backgroundColor="#FFF5ED"
+                    borderWidth="1px"
+                    borderColor="border"
+                    borderRadius="8px"
                     padding="4px"
                   >
-                    <Text color="gray.500" fontSize="2xs">
+                    <Text color="#C95C18" fontSize="10px" fontWeight="500" textAlign="center">
                       No Image
                     </Text>
                   </Flex>
@@ -99,13 +108,26 @@ function ReportResultsGrid({
               );
             }
             return (
-              <Flex justifyContent="center" alignItems="center" height={"100%"}>
-                <Image
-                  src={props.value}
-                  alt="Material Image"
-                  width={100}
-                  height={100}
-                />
+              <Flex justifyContent="center" alignItems="center" w="100%" height="100%">
+                <Flex
+                  w="60px"
+                  h="60px"
+                  borderRadius="8px"
+                  overflow="hidden"
+                  bg="#FFFBF8"
+                  borderWidth="1px"
+                  borderColor="border.subtle"
+                  justifyContent="center"
+                  alignItems="center"
+                >
+                  <Image
+                    src={props.value}
+                    alt="Material Image"
+                    width={60}
+                    height={60}
+                    style={{ objectFit: "contain", width: "100%", height: "100%" }}
+                  />
+                </Flex>
               </Flex>
             );
           },
@@ -125,6 +147,12 @@ function ReportResultsGrid({
         field: key,
         headerName: headerName,
         resizable: true,
+        cellStyle: {
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+        },
         cellRenderer: (props) => {
           const value = props.value;
           if (isStatusField && typeof value === "string") {
@@ -209,8 +237,8 @@ function ReportResultsGrid({
       getRowStyle: (params) => {
         if (params.node?.rowPinned === "bottom") {
           return {
-            fontWeight: "bold",
-            backgroundColor: "var(--chakra-colors-gray-100)",
+            fontWeight: "600",
+            backgroundColor: "#FFF5ED",
           };
         }
         return null;
@@ -221,6 +249,7 @@ function ReportResultsGrid({
 
   return (
     <AgGrid
+      bare
       rowData={reportResults}
       tableKey={`materials-report-${reportId}`}
       gridOptions={gridOptions}
@@ -424,21 +453,28 @@ function ReportFilterPage({ params }) {
 
   return (
     <GlobalWrapper permissionKey="view_materials_report">
-      <CustomContainer title={reportDefinition.name}>
-        <VStack gap={6} align="stretch">
-          <Box>
-            <Text fontSize="sm" color="gray.600" mb={4}>
-              {reportDefinition.description}
+      <CustomContainer
+        headerBand
+        title={reportDefinition.name}
+        subtitle={reportDefinition.description}
+      >
+        <VStack gap="20px" align="stretch">
+          <Box
+            bg="white"
+            borderWidth="1px"
+            borderColor="border"
+            borderRadius="12px"
+            p={{ base: "16px", md: "20px" }}
+          >
+            <Text fontSize="15px" fontWeight="600" color="fg" mb="16px">
+              Filters
             </Text>
-          </Box>
-
-          <CustomContainer title="Filters" size="sm" color="secondary">
             <Formik
               initialValues={getInitialValues()}
               onSubmit={handleGenerateReport}
               enableReinitialize
             >
-              {({ handleSubmit, values }) => {
+              {({ handleSubmit }) => {
                 return (
                   <Box>
                     <Grid
@@ -447,8 +483,8 @@ function ReportFilterPage({ params }) {
                         md: "repeat(2, 1fr)",
                         lg: "repeat(3, 1fr)",
                       }}
-                      gap={4}
-                      mb={4}
+                      gap="16px"
+                      mb="16px"
                     >
                       {reportDefinition.filters?.map((filter, index) => {
                         if (filter === "Date Range") {
@@ -582,11 +618,17 @@ function ReportFilterPage({ params }) {
                       })}
                     </Grid>
 
-                    <Flex gap={4} justifyContent="flex-end">
+                    <Flex gap="12px" justifyContent="flex-end">
                       <Link href="/materials/report">
-                        <Button variant="outline">Cancel</Button>
+                        <Button variant="subtle">Cancel</Button>
                       </Link>
-                      <Button onClick={handleSubmit} isLoading={isGenerating}>
+                      <Button
+                        bg="#F47721"
+                        color="white"
+                        _hover={{ bg: "#E06612" }}
+                        onClick={handleSubmit}
+                        isLoading={isGenerating}
+                      >
                         Generate Report
                       </Button>
                     </Flex>
@@ -594,18 +636,21 @@ function ReportFilterPage({ params }) {
                 );
               }}
             </Formik>
-          </CustomContainer>
+          </Box>
 
           {/* Report Results Section */}
           {reportResults.length > 0 && (
             <CustomContainer
+              headerBand
               title="Report Results"
               size="sm"
               color="secondary"
               rightSection={
                 <Button
                   size="xs"
-                  colorPalette="secondary"
+                  bg="#F47721"
+                  color="white"
+                  _hover={{ bg: "#E06612" }}
                   onClick={handleExportPDF}
                 >
                   Export
@@ -621,11 +666,20 @@ function ReportFilterPage({ params }) {
           )}
 
           {reportResults.length === 0 && !isGenerating && (
-            <CustomContainer title="Report Results" size="sm" color="secondary">
-              <Text fontSize="sm" color="gray.500" textAlign="center" py={8}>
+            <Box
+              bg="white"
+              borderWidth="1px"
+              borderColor="border"
+              borderRadius="12px"
+              p={{ base: "16px", md: "24px" }}
+            >
+              <Text fontSize="15px" fontWeight="600" color="fg" mb="12px">
+                Report Results
+              </Text>
+              <Text fontSize="13px" color="fg.muted" textAlign="center" py="24px">
                 Select filters and click "Generate Report" to view results
               </Text>
-            </CustomContainer>
+            </Box>
           )}
         </VStack>
       </CustomContainer>

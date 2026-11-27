@@ -3,7 +3,8 @@ import CustomContainer from "@/components/CustomContainer";
 import CustomInput from "@/components/CustomInput";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import RangeSelector from "@/components/RangeSelector";
-import { Box, Button, Flex, Grid, Tabs, Text } from "@chakra-ui/react";
+import IncentiveTypeRadioGroup from "@/components/IncentiveCommon/IncentiveTypeRadioGroup";
+import { Box, Button, Flex, Grid, Text } from "@chakra-ui/react";
 import { ErrorMessage, Formik } from "formik";
 import * as Yup from "yup";
 import Link from "next/link";
@@ -492,7 +493,7 @@ export default function IncentiveCommonForm({
 
   return (
     <GlobalWrapper permissionKey={permissionKey}>
-      <CustomContainer pageForm headerBand title={getTitleText()}>
+      <CustomContainer pageForm headerBand backHref={basePath} title={getTitleText()}>
         <Formik
           initialValues={initialValues}
           validationSchema={getValidationSchema(showClusterSelection)}
@@ -537,7 +538,7 @@ export default function IncentiveCommonForm({
                     name="selected_month"
                     type="month"
                     method="date-picker"
-                    placeholder="Select month (optional)"
+                    placeholder="Optional"
                     viewOnly={isViewMode}
                     showClearButton={true}
                     onChange={async (date) => {
@@ -614,7 +615,7 @@ export default function IncentiveCommonForm({
                   </Box>
                 )}
 
-                {/* Tabs for Incentive Types */}
+                {/* Radio Buttons for Incentive Types */}
                 <Box
                   position="relative"
                   opacity={existingEntryId && isCreateMode ? 0.5 : 1}
@@ -622,32 +623,17 @@ export default function IncentiveCommonForm({
                     existingEntryId && isCreateMode ? "none" : "auto"
                   }
                 >
-                  <Tabs.Root
-                    value={values.incentive_type}
-                    onValueChange={(details) => {
-                      setFieldValue("incentive_type", details.value);
-                    }}
-                    variant="line"
-                  >
-                    <Tabs.List>
-                      <Tabs.Trigger value="single_percentage">
-                        Single Percentage
-                      </Tabs.Trigger>
-                      <Tabs.Trigger value="ranged_percentage">
-                        Ranged Percentage
-                      </Tabs.Trigger>
-                      <Tabs.Trigger value="fixed">Fixed</Tabs.Trigger>
-                      <Tabs.Trigger value="ranged_fixed">
-                        Ranged Fixed
-                      </Tabs.Trigger>
-                    </Tabs.List>
+                  <Flex flexDirection="column" gap="18px">
+                    <IncentiveTypeRadioGroup
+                      value={values.incentive_type}
+                      disabled={isViewMode}
+                      onChange={(val) => setFieldValue("incentive_type", val)}
+                    />
 
-                    {/* Single Percentage Tab */}
-                    <Tabs.Content value="single_percentage">
+                    {values.incentive_type === "single_percentage" && (
                       <Grid
                         templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
                         gap="22px"
-                        mt="22px"
                       >
                         <CustomInput
                           label="Percentage (%)"
@@ -658,11 +644,10 @@ export default function IncentiveCommonForm({
                           isRequired
                         />
                       </Grid>
-                    </Tabs.Content>
+                    )}
 
-                    {/* Ranged Percentage Tab */}
-                    <Tabs.Content value="ranged_percentage">
-                      <Box mt="22px">
+                    {values.incentive_type === "ranged_percentage" && (
+                      <Box>
                         <RangeSelector
                           name="ranged_percentage"
                           label="Percentage Ranges"
@@ -678,14 +663,12 @@ export default function IncentiveCommonForm({
                           )}
                         </ErrorMessage>
                       </Box>
-                    </Tabs.Content>
+                    )}
 
-                    {/* Fixed Tab */}
-                    <Tabs.Content value="fixed">
+                    {values.incentive_type === "fixed" && (
                       <Grid
                         templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
                         gap="22px"
-                        mt="22px"
                       >
                         <CustomInput
                           label="Fixed Value"
@@ -696,11 +679,10 @@ export default function IncentiveCommonForm({
                           isRequired
                         />
                       </Grid>
-                    </Tabs.Content>
+                    )}
 
-                    {/* Ranged Fixed Tab */}
-                    <Tabs.Content value="ranged_fixed">
-                      <Box mt="22px">
+                    {values.incentive_type === "ranged_fixed" && (
+                      <Box>
                         <RangeSelector
                           name="ranged_fixed"
                           label="Fixed Value Ranges"
@@ -716,14 +698,14 @@ export default function IncentiveCommonForm({
                           )}
                         </ErrorMessage>
                       </Box>
-                    </Tabs.Content>
-                  </Tabs.Root>
+                    )}
+                  </Flex>
                 </Box>
 
                 {/* Action Buttons */}
-                <Flex gap="22px" justifyContent="flex-end">
+                <Flex gap="12px" justifyContent="flex-end">
                   <Link href={basePath}>
-                    <Button variant="subtle">Back</Button>
+                    <Button variant="subtle">{isViewMode ? "Back" : "Cancel"}</Button>
                   </Link>
                   {(isCreateMode || isEditMode) && (
                     <Button

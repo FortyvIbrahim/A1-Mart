@@ -1,33 +1,40 @@
-import React from 'react'
-import CustomContainer from '../CustomContainer';
-import AgGrid from '../AgGrid';
-import { Box, Stat, Wrap } from '@chakra-ui/react';
+import React from "react";
+import { Box, Grid, Text } from "@chakra-ui/react";
 
-function InfoCard({ title, value }) {
-    return <Stat.Root>
-        <Stat.Label color="brand500">{title}</Stat.Label>
-        <Stat.ValueText color="brand800">
-            {value}
-        </Stat.ValueText>
-    </Stat.Root>
+/** Figma "GRN Details" box: bordered r8 panel, 2 columns of orange label + 16/500 value. */
+function Info({ title, value }) {
+  return (
+    <Box>
+      <Text fontSize="11px" lineHeight="14px" color="#C95C18" mb="6px">
+        {title}
+      </Text>
+      <Text fontSize="16px" lineHeight="20px" fontWeight="500" color="fg">
+        {value ?? "-"}
+      </Text>
+    </Box>
+  );
 }
 
 function GRNDetails({ grn }) {
+  if (!grn) return null;
 
-    if (!grn) return null;
-
-    return (
-        <CustomContainer title="GRN Details" size="sm">
-            <Wrap>
-                <InfoCard title="GRN ID" value={grn.grn_id} />
-                <InfoCard title="Handled By" value={grn.employee?.employee_name || "-"} />
-                {grn.is_product_stock_missing && <>
-                    <InfoCard title="Missing Qty" value={grn.missing_qty} />
-                    <InfoCard title="Missing value" value={grn.missing_value} />
-                </>}
-            </Wrap>
-        </CustomContainer>
-    )
+  return (
+    <Box borderWidth="1px" borderColor="border" borderRadius="8px" p="16px" bg="white">
+      <Text fontSize="14px" fontWeight="500" color="fg" mb="12px">
+        GRN Details
+      </Text>
+      <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap="16px">
+        <Info title="GRN ID" value={grn.grn_id} />
+        <Info title="Handled by" value={grn.employee?.employee_name || "-"} />
+        {grn.is_product_stock_missing && (
+          <>
+            <Info title="Missing Qty" value={grn.missing_qty} />
+            <Info title="Missing Value" value={grn.missing_value} />
+          </>
+        )}
+      </Grid>
+    </Box>
+  );
 }
 
-export default GRNDetails
+export default GRNDetails;

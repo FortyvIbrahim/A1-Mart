@@ -366,7 +366,6 @@ function Cashbook() {
                 label: "Edit",
                 value: "edit-payment",
                 redirectionUrl: `/accounts/payments/edit/${row.payment_id}`,
-                target: "_blank",
               },
             ];
           }
@@ -380,7 +379,6 @@ function Cashbook() {
                 label: "Edit",
                 value: "edit-receipt",
                 redirectionUrl: `/accounts/receipts/edit/${row.receipt_id}`,
-                target: "_blank",
               },
             ];
           }
@@ -394,20 +392,19 @@ function Cashbook() {
   return (
     <GlobalWrapper permissionKey="view_cashbook">
       <CustomContainer title="Ledger">
-        {/* Filters */}
-        <Flex
+        {/* Figma ACC/Ledger: Branch · Current Asset · Master · From · To in one row. */}
+        <Grid
           mb={4}
-          gap={4}
-          flexDirection={{ base: "column", md: "row" }}
-          alignItems={{ base: "flex-start", md: "center" }}
+          gap="16px"
+          templateColumns={{ base: "1fr", md: "repeat(3, 1fr)", xl: "repeat(5, 1fr)" }}
         >
-          <Box minW={{ base: "100%", md: "220px" }}>
-            <Text fontSize="xs" mb={1} color="gray.500">
+          <Box minW={0}>
+            <Text fontSize="12px" fontWeight="500" mb="7px" color="#30384B">
               Branch
             </Text>
             <CustomSelect
-              width={{ base: "100%", md: "220px" }}
-              h="40px"
+              width="100%"
+              h="44px"
               disabled={!canAccessAllBranches}
               value={selectedBranch ? String(selectedBranch) : ""}
               emptyLabel="All Branches"
@@ -421,13 +418,13 @@ function Cashbook() {
             />
           </Box>
 
-          <Box minW={{ base: "100%", md: "220px" }}>
-            <Text fontSize="xs" mb={1} color="gray.500">
+          <Box minW={0}>
+            <Text fontSize="12px" fontWeight="500" mb="7px" color="#30384B">
               Current Asset
             </Text>
             <CustomSelect
-              width={{ base: "100%", md: "220px" }}
-              h="40px"
+              width="100%"
+              h="44px"
               value={selectedAccountAsset ? String(selectedAccountAsset) : ""}
               emptyLabel="All Assets"
               onChange={(val) => {
@@ -440,13 +437,13 @@ function Cashbook() {
             />
           </Box>
 
-          <Box minW={{ base: "100%", md: "220px" }}>
-            <Text fontSize="xs" mb={1} color="gray.500">
+          <Box minW={0}>
+            <Text fontSize="12px" fontWeight="500" mb="7px" color="#30384B">
               Master
             </Text>
             <CustomSelect
-              width={{ base: "100%", md: "220px" }}
-              h="40px"
+              width="100%"
+              h="44px"
               value={selectedLedger ? String(selectedLedger) : ""}
               emptyLabel="All Masters"
               onChange={(val) => {
@@ -465,15 +462,8 @@ function Cashbook() {
             />
           </Box>
 
-          <Flex
-            gap={3}
-            flexWrap="wrap"
-            alignItems="center"
-            w={"100%"}
-            justifyContent={{ base: "flex-start", md: "flex-end" }}
-          >
-            <Box>
-              <Text fontSize="xs" mb={1} color="gray.500">
+            <Box minW={0}>
+              <Text fontSize="12px" fontWeight="500" mb="7px" color="#30384B">
                 From
               </Text>
               <DatePicker
@@ -488,8 +478,8 @@ function Cashbook() {
                 }
               />
             </Box>
-            <Box>
-              <Text fontSize="xs" mb={1} color="gray.500">
+            <Box minW={0}>
+              <Text fontSize="12px" fontWeight="500" mb="7px" color="#30384B">
                 To
               </Text>
               <DatePicker
@@ -504,8 +494,7 @@ function Cashbook() {
                 }
               />
             </Box>
-          </Flex>
-        </Flex>
+        </Grid>
 
         {loading ? (
           <Flex justifyContent="center" py={10}>

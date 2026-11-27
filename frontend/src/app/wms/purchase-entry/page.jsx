@@ -2,6 +2,7 @@
 
 import useWMSPurchaseEntries from "@/api/customHooks/useWMSPurchaseEntries";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import useDeleteModal from "@/customHooks/useDeleteModal";
@@ -12,6 +13,33 @@ import moment from "moment";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
+
+const LIST_FILTERS = [
+  {
+    key: "q",
+    type: "search",
+    label: "Search",
+    placeholder: "Search supplier, invoice, or ID...",
+    getText: (r) =>
+      `${r.purchase_entry_id ?? ""} ${r.supplier_name ?? ""} ${
+        r.invoice_no ?? ""
+      } ${r.employee_name ?? ""}`,
+  },
+  {
+    key: "supplier",
+    type: "select",
+    label: "Supplier",
+    placeholder: "All suppliers",
+    getValue: (r) => r.supplier_name,
+  },
+  {
+    key: "handledBy",
+    type: "select",
+    label: "Handled By",
+    placeholder: "All employees",
+    getValue: (r) => r.employee_name,
+  },
+];
 
 function WMSPurchaseEntry() {
   const router = useRouter();
@@ -123,6 +151,11 @@ function WMSPurchaseEntry() {
     },
   ];
 
+  const { filtered: filteredEntries, filterCard } = useListFilters(
+    wmsPurchaseEntries,
+    LIST_FILTERS
+  );
+
   return (
     <GlobalWrapper permissionKey="view_wms_purchase_entry">
       <DeleteModalComponent />
@@ -137,8 +170,9 @@ function WMSPurchaseEntry() {
           )
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={wmsPurchaseEntries}
+          rowData={filteredEntries}
           columnDefs={colDefs}
           loading={loading}
           tableKey="wms-purchase-entry"

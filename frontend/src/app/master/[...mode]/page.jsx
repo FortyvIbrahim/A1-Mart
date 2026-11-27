@@ -3,7 +3,7 @@ import CustomContainer from "@/components/CustomContainer";
 import CustomInput from "@/components/CustomInput";
 import EmployeeDropdownOption from "@/components/EmployeeDropdownOption";
 import GlobalWrapper from "@/components/GlobalWrapper";
-import { Button, Flex } from "@chakra-ui/react";
+import { Button, Flex, Grid } from "@chakra-ui/react";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import Link from "next/link";
@@ -113,74 +113,84 @@ function MasterFormFields({
 
   return (
     <Flex flexDirection="column" gap="22px">
-      <CustomInput
-        label="Name"
-        isRequired
-        placeholder="Enter Name"
-        name="name"
-        type="text"
-        method="text"
-        viewOnly={isViewMode}
-      />
-      <CustomInput
-        label="Contact Person"
-        isRequired
-        placeholder="Enter Contact Person Name"
-        name="contact_person_name"
-        type="text"
-        method="text"
-        viewOnly={isViewMode}
-      />
-      <CustomInput
-        label="Phone"
-        isRequired
-        placeholder="Enter Phone"
-        name="phone"
-        type="text"
-        method="text"
-        viewOnly={isViewMode}
-      />
-      <CustomInput
-        label="Select Type"
-        isRequired
-        placeholder="Click here to select type..."
-        name="type"
-        method="dropdown"
-        options={PERSON_TYPES}
-        viewOnly={isViewMode}
-      />
-      <CustomInput
-        label="Buyers"
-        placeholder="Select buyers..."
-        name="buyer_ids"
-        method="multiple-dropdown"
-        options={employeeOptions}
-        customRender={EmployeeDropdownOption}
-        viewOnly={isViewMode}
-      />
-      <CustomInput
-        label="Office Location"
-        placeholder="Select location on map"
-        name="office_location"
-        method="location"
-        viewOnly={isViewMode}
-      />
-      <CustomInput
-        label="Warehouse Location 1"
-        placeholder="Select location on map"
-        name="warehouse_location_1"
-        method="location"
-        viewOnly={isViewMode}
-      />
-      <CustomInput
-        label="Warehouse Location 2"
-        placeholder="Select location on map"
-        name="warehouse_location_2"
-        method="location"
-        viewOnly={isViewMode}
-      />
+      <Grid
+        templateColumns={{
+          base: "1fr",
+          md: isViewMode
+            ? "repeat(3, minmax(0, 1fr))"
+            : "repeat(2, minmax(0, 1fr))",
+        }}
+        gap="22px"
+      >
+        <CustomInput
+          label="Name"
+          isRequired
+          placeholder="Enter Name"
+          name="name"
+          type="text"
+          method="text"
+          viewOnly={isViewMode}
+        />
+        <CustomInput
+          label="Contact Person"
+          isRequired
+          placeholder="Enter Contact Person Name"
+          name="contact_person_name"
+          type="text"
+          method="text"
+          viewOnly={isViewMode}
+        />
+        <CustomInput
+          label="Phone"
+          isRequired
+          placeholder="Enter Phone"
+          name="phone"
+          type="text"
+          method="text"
+          viewOnly={isViewMode}
+        />
+        <CustomInput
+          label="Select Type"
+          isRequired
+          placeholder="Click here to select type..."
+          name="type"
+          method="dropdown"
+          options={PERSON_TYPES}
+          viewOnly={isViewMode}
+        />
+        <CustomInput
+          label="Buyers"
+          placeholder="Select buyers..."
+          name="buyer_ids"
+          method="multiple-dropdown"
+          options={employeeOptions}
+          customRender={EmployeeDropdownOption}
+          viewOnly={isViewMode}
+        />
+        <CustomInput
+          label="Office Location"
+          placeholder="Select location on map"
+          name="office_location"
+          method="location"
+          viewOnly={isViewMode}
+        />
+        <CustomInput
+          label="Warehouse Location 1"
+          placeholder="Select location on map"
+          name="warehouse_location_1"
+          method="location"
+          viewOnly={isViewMode}
+        />
+        <CustomInput
+          label="Warehouse Location 2"
+          placeholder="Select location on map"
+          name="warehouse_location_2"
+          method="location"
+          viewOnly={isViewMode}
+        />
+      </Grid>
 
-      <Flex gap="22px" justifyContent="flex-end">
+      <Flex gap="12px" justifyContent="flex-end">
         <Link href="/master">
           <Button variant="subtle">Back</Button>
         </Link>
@@ -235,8 +245,7 @@ export default function MasterForm({ params }) {
       return "Edit Master List";
     }
 
-    // return `EB Consumption : #${ebConsumption?.id ?? ""}`;
-    return `Master List`;
+    return "Master List Details";
   };
 
   const getPermissionKey = () => {
@@ -287,7 +296,7 @@ export default function MasterForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer pageForm title={getTitle()}>
+      <CustomContainer pageForm backHref="/master" title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={MASTER_VALIDATION_SCHEMA}

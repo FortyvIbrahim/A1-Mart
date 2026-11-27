@@ -2,7 +2,9 @@
 
 import React, { useMemo } from "react";
 import { Box, Button } from "@chakra-ui/react";
+import { LuChevronLeft } from "react-icons/lu";
 import CustomDialog from "@/components/CustomDialog";
+import CustomContainer from "@/components/CustomContainer";
 import AgGrid from "@/components/AgGrid";
 
 const getProductModalColumnDefs = (mode) => {
@@ -117,5 +119,53 @@ export default function ViewProductsModal({
         />
       </Box>
     </CustomDialog>
+  );
+}
+
+/**
+ * Figma PUR/01.03 "Reordered Products": shown in place of the list, with a
+ * back chevron before the title that returns to the reorder list.
+ */
+export function ReorderedProductsView({ onBack, items = [], mode = "all" }) {
+  const columnDefs = useMemo(() => getProductModalColumnDefs(mode), [mode]);
+  const rowData = useMemo(
+    () =>
+      items.map((row) => ({
+        ...row,
+        product_image: row.product?.image_url ?? null,
+        product_name:
+          row.product?.product_name ?? row.product?.product_display_name ?? "—",
+      })),
+    [items]
+  );
+
+  return (
+    <CustomContainer
+      headerBand
+      title={
+        <Box as="span" display="inline-flex" alignItems="center" gap="8px">
+          <Box
+            as="button"
+            type="button"
+            onClick={onBack}
+            aria-label="Back to purchase reorders"
+            display="inline-flex"
+            color="fg"
+            _hover={{ color: "#C95C18" }}
+          >
+            <LuChevronLeft size={20} />
+          </Box>
+          Reordered Products
+        </Box>
+      }
+    >
+      <AgGrid
+        tableKey="reorder-view-products-modal"
+        rowData={rowData}
+        columnDefs={columnDefs}
+        pagination={true}
+        paginationPageSize={10}
+      />
+    </CustomContainer>
   );
 }

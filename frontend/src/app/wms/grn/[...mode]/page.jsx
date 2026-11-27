@@ -257,7 +257,7 @@ function GRNForm({ params }) {
   if (grnLoading && (isEditMode || isViewMode)) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer pageForm title={getTitle()}>
+        <CustomContainer pageForm backHref="/wms/grn" title={getTitle()}>
           <Text>Loading...</Text>
         </CustomContainer>
       </GlobalWrapper>
@@ -266,7 +266,7 @@ function GRNForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer pageForm title={getTitle()}>
+      <CustomContainer pageForm backHref="/wms/grn" title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={getGRNValidationSchema()}
@@ -306,7 +306,8 @@ function GRNForm({ params }) {
                     />
                   </Grid>
 
-                  <Grid templateColumns="repeat(2, 1fr)" gap="22px">
+                  {/* Figma 04.01: GRN Method · Product Stock Missing · Is Material in one row. */}
+                  <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap="22px">
                     <CustomInput
                       label="GRN Method"
                       name="grn_method"
@@ -318,10 +319,6 @@ function GRNForm({ params }) {
                       isRequired={isCreateMode}
                       viewOnly={isViewMode}
                     />
-                    <Box />
-                  </Grid>
-
-                  <Grid templateColumns="repeat(2, 1fr)" gap="22px">
                     <CustomInput
                       label="Product Stock Missing"
                       name="is_product_stock_missing"
@@ -333,7 +330,18 @@ function GRNForm({ params }) {
                       isRequired={isCreateMode}
                       viewOnly={isViewMode}
                     />
-                    <Box />
+                    <CustomInput
+                      label="Is Material"
+                      name="is_material"
+                      method="radio"
+                      options={[
+                        { value: true, label: "Yes" },
+                        { value: false, label: "No" },
+                      ]}
+                      isRequired={isCreateMode}
+                      viewOnly={isViewMode}
+                      onChange={(value) => handleMaterialChange(value)}
+                    />
                   </Grid>
 
                   {values.is_product_stock_missing && (
@@ -360,22 +368,6 @@ function GRNForm({ params }) {
                     </Grid>
                   )}
 
-                  <Grid templateColumns="repeat(2, 1fr)" gap="22px">
-                    <CustomInput
-                      label="Is Material"
-                      name="is_material"
-                      method="radio"
-                      options={[
-                        { value: true, label: "Yes" },
-                        { value: false, label: "No" },
-                      ]}
-                      isRequired={isCreateMode}
-                      viewOnly={isViewMode}
-                      onChange={(value) => handleMaterialChange(value)}
-                    />
-                    <Box />
-                  </Grid>
-
                   {values.is_material && (
                     <Grid templateColumns="repeat(2, 1fr)" gap="22px">
                       <CustomInput
@@ -392,18 +384,18 @@ function GRNForm({ params }) {
                     </Grid>
                   )}
                 </Flex>
-                <Flex gap="12px" justifyContent="flex-end" mt="24px">
-                  <Link href="/wms/grn">
-                    <Button variant="outline">
-                      {isCreateMode || isEditMode ? "Cancel" : "Back"}
-                    </Button>
-                  </Link>
-                  {(isCreateMode || isEditMode) && (
-                    <Button onClick={handleSubmit}>
-                      {isCreateMode ? "Create" : "Update"}
-                    </Button>
-                  )}
-                </Flex>
+                  <Flex gap="12px" justifyContent="flex-end" mt="24px">
+                    <Link href="/wms/grn">
+                      <Button variant="subtle">
+                        {isViewMode ? "Back" : "Cancel"}
+                      </Button>
+                    </Link>
+                    {(isCreateMode || isEditMode) && (
+                      <Button onClick={handleSubmit}>
+                        {isCreateMode ? "Create" : "Update"}
+                      </Button>
+                    )}
+                  </Flex>
               </Box>
             );
           }}

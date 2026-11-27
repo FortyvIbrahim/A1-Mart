@@ -4,7 +4,7 @@ import AgGrid from "@/components/AgGrid";
 import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import GlobalWrapper from "@/components/GlobalWrapper";
-import { PayslipDetailsDrawer } from "@/components/payroll";
+import { PayslipDetailsView } from "@/components/payroll";
 import { roundOff } from "@/utils/payroll";
 import React, { useState } from "react";
 import moment from "moment";
@@ -12,7 +12,6 @@ import usePayslips from "@/api/customHooks/usePayslips";
 
 function PayslipPage({ type = "all_payslips" }) {
   const { payrolls, handleGeneratePayslip } = usePayslips({ type });
-  const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
   const [selectedPayslip, setSelectedPayslip] = useState(null);
 
   const columnDefs = [
@@ -77,7 +76,6 @@ function PayslipPage({ type = "all_payslips" }) {
             value: "view_details",
             onClick: () => {
               setSelectedPayslip(params.data);
-              setDetailsDrawerOpen(true);
             },
           },
         ];
@@ -126,22 +124,21 @@ function PayslipPage({ type = "all_payslips" }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer headerBand title={getTitle()}>
-        {filterCard}
-        <AgGrid
-          rowData={filteredPayrolls}
-          columnDefs={columnDefs}
-          tableKey="payslips"
-        />
-        <PayslipDetailsDrawer
-          isOpen={detailsDrawerOpen}
-          onClose={() => {
-            setDetailsDrawerOpen(false);
-            setSelectedPayslip(null);
-          }}
+      {selectedPayslip ? (
+        <PayslipDetailsView
           selectedRow={selectedPayslip}
+          onBack={() => setSelectedPayslip(null)}
         />
-      </CustomContainer>
+      ) : (
+        <CustomContainer headerBand title={getTitle()}>
+          {filterCard}
+          <AgGrid
+            rowData={filteredPayrolls}
+            columnDefs={columnDefs}
+            tableKey="payslips"
+          />
+        </CustomContainer>
+      )}
     </GlobalWrapper>
   );
 }

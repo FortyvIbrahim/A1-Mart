@@ -41,6 +41,17 @@ body {
 
 gmp-place-autocomplete {
   color-scheme: light;
+  display: block;
+  width: 100%;
+}
+
+.pac-container {
+  z-index: 9999 !important;
+  pointer-events: auto !important;
+  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
+  border-radius: 8px;
+  border: 1px solid #F1E3D9;
+  box-shadow: 0 12px 32px rgba(32, 41, 56, 0.14);
 }
 
 * {

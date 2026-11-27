@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Flex, Portal, Text } from "@chakra-ui/react";
 import { LuCheck, LuChevronDown, LuChevronUp } from "react-icons/lu";
+import { useDialogPortal } from "@/components/CustomDialog";
 
 /**
  * Custom styled select / multi-select dropdown matching the Figma design:
@@ -32,15 +33,27 @@ function CustomSelect({
   portalContainer,
   customRender,
 }) {
+  const dialogPortalRef = useDialogPortal();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
+  const fallbackDialogRef = useRef(null);
   const [menuPos, setMenuPos] = useState({
     top: 0,
+    bottom: 0,
     left: 0,
     width: 0,
     placement: "bottom",
+    inDialog: false,
   });
+
+  const activePortalContainer = portalContainer?.current
+    ? portalContainer
+    : dialogPortalRef?.current
+      ? dialogPortalRef
+      : fallbackDialogRef.current
+        ? fallbackDialogRef
+        : undefined;
 
   const normalizedOptions = useMemo(
     () =>
@@ -97,15 +110,39 @@ function CustomSelect({
   const updatePosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
+    if (!portalContainer?.current && !dialogPortalRef?.current) {
+      fallbackDialogRef.current = triggerRef.current.closest(
+        '[role="dialog"], [role="alertdialog"]'
+      );
+    }
+    const hostEl = portalContainer?.current
+      ? portalContainer.current
+      : dialogPortalRef?.current
+        ? dialogPortalRef.current
+        : fallbackDialogRef.current;
     const spaceBelow = window.innerHeight - rect.bottom;
     const openUp = spaceBelow < 220 && rect.top > 220;
-    setMenuPos({
-      top: openUp ? rect.top - 6 : rect.bottom + 6,
-      left: rect.left,
-      width: rect.width,
-      placement: openUp ? "top" : "bottom",
-    });
-  }, []);
+    if (hostEl) {
+      const hostRect = hostEl.getBoundingClientRect();
+      setMenuPos({
+        top: rect.bottom - hostRect.top + 6,
+        bottom: hostRect.bottom - rect.top + 6,
+        left: rect.left - hostRect.left,
+        width: rect.width,
+        placement: openUp ? "top" : "bottom",
+        inDialog: true,
+      });
+    } else {
+      setMenuPos({
+        top: openUp ? rect.top - 6 : rect.bottom + 6,
+        bottom: window.innerHeight - rect.top + 6,
+        left: rect.left,
+        width: rect.width,
+        placement: openUp ? "top" : "bottom",
+        inDialog: false,
+      });
+    }
+  }, [portalContainer, dialogPortalRef]);
 
   useEffect(() => {
     if (!open) return;
@@ -221,17 +258,16 @@ function CustomSelect({
       </Flex>
 
       {open && !disabled && (
-        <Portal {...(portalContainer ? { container: portalContainer } : {})}>
+        <Portal {...(activePortalContainer ? { container: activePortalContainer } : {})}>
           <Box
             ref={menuRef}
             role="listbox"
             aria-multiselectable={multiple || undefined}
-            position="fixed"
+            position={menuPos.inDialog ? "absolute" : "fixed"}
+            pointerEvents="auto"
             top={menuPos.placement === "top" ? undefined : `${menuPos.top}px`}
             bottom={
-              menuPos.placement === "top"
-                ? `${window.innerHeight - menuPos.top}px`
-                : undefined
+              menuPos.placement === "top" ? `${menuPos.bottom}px` : undefined
             }
             left={`${menuPos.left}px`}
             w={`${Math.max(menuPos.width, 160)}px`}
@@ -243,7 +279,7 @@ function CustomSelect({
             borderRadius="12px"
             p="6px"
             boxShadow="0 12px 32px rgba(31, 41, 55, 0.12), 0 2px 6px rgba(244, 119, 33, 0.06)"
-            zIndex={1600}
+            zIndex={menuPos.inDialog ? 1800 : 1600}
             onMouseDown={(e) => e.stopPropagation()}
           >
             {allItems.length === 0 ? (
@@ -277,7 +313,14 @@ function CustomSelect({
                     cursor="pointer"
                     transition="background-color 0.12s ease"
                     _hover={{ bg: "#FFF5ED" }}
-                    onClick={() => handleSelect(opt.value)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelect(opt.value);
+                    }}
                   >
                     <Box flex={1} minW={0}>
                       {customRender ? (

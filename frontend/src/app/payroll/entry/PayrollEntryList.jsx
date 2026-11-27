@@ -5,6 +5,7 @@ import AgGrid from "@/components/AgGrid";
 import CustomContainer from "@/components/CustomContainer";
 import CustomInput from "@/components/CustomInput";
 import CustomDialog from "@/components/CustomDialog";
+import CustomSelect from "@/components/CustomSelect";
 import FileUploaderWithColumnMapping from "@/components/FileUploaderWithColumnMapping";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import {
@@ -37,6 +38,8 @@ import {
   preparePayslipData,
 } from "@/api/helpers/payroll";
 import usePayrolls from "@/api/customHooks/usePayrolls";
+import useBranches from "@/api/customHooks/useBranches";
+import { useUser } from "@/contexts/UserContext";
 import useDeleteModal from "@/customHooks/useDeleteModal";
 import usePermission from "@/customHooks/usePermission";
 import useEmployee from "@/api/customHooks/useEmployee";
@@ -45,7 +48,6 @@ import {
   getEmployeeCategoryBadgeValue,
   getEmployeeCategoryFromRow,
 } from "@/utils/employeeCategoryBadges";
-import BranchFilter from "@/components/BranchFilter";
 
 function getEmployeeDesignationFromRow(row, mappedEmployees = {}) {
   const designation =
@@ -223,7 +225,9 @@ function PayrollEntryList({ type = "entry" }) {
     useState(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedNetPayTotal, setSelectedNetPayTotal] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [selectedCategoryType, setSelectedCategoryType] = useState("");
   const [isAutoSelectModalOpen, setIsAutoSelectModalOpen] = useState(false);
   const [autoSelectAmount, setAutoSelectAmount] = useState("");
   const [autoSelectCategories, setAutoSelectCategories] = useState([]);
@@ -238,6 +242,9 @@ function PayrollEntryList({ type = "entry" }) {
   const gridRef = useRef(null);
   const autoSelectDialogContentRef = useRef(null);
   const { payrolls, refetch: refetchPayrolls } = usePayrolls();
+  const { branches } = useBranches();
+  const { employeeData } = useUser();
+  const canAccessAllBranches = usePermission("access_all_branches");
   const { openDeleteModal, DeleteModalComponent } = useDeleteModal();
   const allowAdd = usePermission("add_payroll_entry");
   const canMarkOnHold = usePermission("mark_payroll_on_hold");
@@ -1502,20 +1509,76 @@ function PayrollEntryList({ type = "entry" }) {
     ]
   );
 
+  useEffect(() => {
+    if (canAccessAllBranches) return;
+    const userBranchId = employeeData?.branch_id;
+    if (userBranchId && !selectedBranchId) {
+      setSelectedBranchId(String(userBranchId));
+    }
+  }, [canAccessAllBranches, employeeData?.branch_id, selectedBranchId]);
+
+  const branchFilterOptions = useMemo(
+    () =>
+      (branches || []).map((b) => ({
+        value: String(b.branch_id),
+        label: b.branch_name,
+      })),
+    [branches]
+  );
+
   const filteredData = useMemo(() => {
-    if (!isBankSubmissionMode || !calculatedData) return calculatedData;
-    if (!selectedBranchId) return calculatedData;
+    if (!calculatedData) return calculatedData;
+    const q = searchQuery.trim().toLowerCase();
+
     return calculatedData.filter((row) => {
-      const branchId =
-        row.branch_id ?? row.employee?.branch_id ?? row.employee?.branch?.id;
-      if (!branchId) return false;
-      return String(branchId) === String(selectedBranchId);
+      if (selectedBranchId) {
+        const branchId =
+          row.branch_id ??
+          row.employee?.branch_id ??
+          row.employee?.branch?.id ??
+          mappedEmployees[row?.employee_code]?.branch_id;
+        if (!branchId || String(branchId) !== String(selectedBranchId)) {
+          return false;
+        }
+      }
+
+      if (selectedCategoryType) {
+        const cat = getEmployeeCategoryFromRow(row, mappedEmployees);
+        if (cat !== selectedCategoryType) return false;
+      }
+
+      if (q) {
+        const code = String(row.employee_code ?? "").toLowerCase();
+        const name = String(
+          row.employee_name ??
+            row.employee?.employee_name ??
+            mappedEmployees[row?.employee_code]?.employee_name ??
+            ""
+        ).toLowerCase();
+        const branchName = String(
+          row.branch_name ??
+            row.employee?.branch_name ??
+            mappedEmployees[row?.employee_code]?.branch_name ??
+            ""
+        ).toLowerCase();
+        if (!code.includes(q) && !name.includes(q) && !branchName.includes(q)) {
+          return false;
+        }
+      }
+
+      return true;
     });
-  }, [isBankSubmissionMode, calculatedData, selectedBranchId]);
+  }, [
+    calculatedData,
+    selectedBranchId,
+    selectedCategoryType,
+    searchQuery,
+    mappedEmployees,
+  ]);
 
   const autoSelectCategoryOptions = useMemo(() => {
     const categories = new Set();
-    (filteredData || []).forEach((row) => {
+    (calculatedData || []).forEach((row) => {
       const category = getEmployeeCategoryFromRow(row, mappedEmployees);
       if (category) categories.add(category);
     });
@@ -1525,7 +1588,7 @@ function PayrollEntryList({ type = "entry" }) {
         value: category,
         label: capitalizeWordsLatest(category),
       }));
-  }, [filteredData, mappedEmployees]);
+  }, [calculatedData, mappedEmployees]);
 
   const autoSelectDesignationOptions = useMemo(() => {
     const designations = new Set();
@@ -1556,7 +1619,7 @@ function PayrollEntryList({ type = "entry" }) {
     return arr;
   }, [filteredData, isSelectionMode, selectedEmployeeCodes]);
 
-  const hasData = filteredData && filteredData.length > 0;
+  const hasData = Array.isArray(calculatedData) && calculatedData.length > 0;
   const showFileUpload =
     selectedMonth &&
     calculatedData === null &&
@@ -1778,7 +1841,7 @@ function PayrollEntryList({ type = "entry" }) {
     <GlobalWrapper permissionKey={getPermissionKey()}>
       <DeleteModalComponent />
       <CustomContainer
-        headerBand={!isApprovalMode}
+        headerBand
         breadcrumb={isApprovalMode ? "Approvals  /  Payroll Approval" : undefined}
         title={getTitle()}
         rightSection={
@@ -1893,30 +1956,73 @@ function PayrollEntryList({ type = "entry" }) {
               />
             </CustomDialog>
             {selectedMonth && hasData && (
-              <Box>
-                {isBankSubmissionMode && (
-                  <Flex
-                    mb={4}
-                    gap={3}
-                    align="flex-end"
-                    wrap="wrap"
-                    justifyContent="space-between"
-                  >
-                    <BranchFilter
-                      value={selectedBranchId}
-                      onChange={setSelectedBranchId}
+              <Flex
+                direction="column"
+                gap="16px"
+                bg="white"
+                borderWidth="1px"
+                borderColor="#F1E3D9"
+                borderRadius="10px"
+                p={{ base: "14px", md: "20px" }}
+              >
+                <Flex
+                  gap="12px"
+                  align="center"
+                  wrap="wrap"
+                  justifyContent="space-between"
+                >
+                  <Flex gap="12px" align="center" wrap="wrap" flex={1}>
+                    <Input
+                      h="44px"
+                      px="12px"
+                      fontSize="12.5px"
+                      w={{ base: "100%", sm: "240px" }}
+                      placeholder="Search by ID or branch"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                     />
+                    <Box w={{ base: "100%", sm: "210px" }}>
+                      <CustomSelect
+                        h="44px"
+                        fontSize="12.5px"
+                        w="100%"
+                        value={selectedBranchId}
+                        placeholder="All Branches"
+                        disabled={
+                          !canAccessAllBranches && !!employeeData?.branch_id
+                        }
+                        onChange={(v) => setSelectedBranchId(v || "")}
+                        options={branchFilterOptions}
+                        ariaLabel="Branch"
+                      />
+                    </Box>
+                    <Box w={{ base: "100%", sm: "210px" }}>
+                      <CustomSelect
+                        h="44px"
+                        fontSize="12.5px"
+                        w="100%"
+                        value={selectedCategoryType}
+                        placeholder="All Type"
+                        onChange={(v) => setSelectedCategoryType(v || "")}
+                        options={autoSelectCategoryOptions}
+                        ariaLabel="All Type"
+                      />
+                    </Box>
+                  </Flex>
+
+                  {isBankSubmissionMode && (
                     <Button
-                      size="xs"
+                      size="sm"
                       variant="subtle"
                       colorPalette="brand"
                       onClick={() => setIsAutoSelectModalOpen(true)}
+                      flexShrink={0}
                     >
                       <i className="fa fa-bolt" />
                       Auto Select by Amount
                     </Button>
-                  </Flex>
-                )}
+                  )}
+                </Flex>
                 <AgGrid
                   ref={gridRef}
                   tableKey={`payroll-data-${type}`}
@@ -1975,7 +2081,7 @@ function PayrollEntryList({ type = "entry" }) {
                       : undefined
                   }
                 />
-              </Box>
+              </Flex>
             )}
           </Box>
         </Flex>

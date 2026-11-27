@@ -2,9 +2,10 @@
 
 import React, { use, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import * as Yup from "yup";
 import toast from "react-hot-toast";
-import { Button, Flex, Grid, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Grid, Tabs, Text } from "@chakra-ui/react";
 import { Formik } from "formik";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import CustomContainer from "@/components/CustomContainer";
@@ -119,6 +120,7 @@ function TransportForm({ params }) {
   const { branches } = useBranches();
 
   const [initialValues, setInitialValues] = useState(INITIAL_VALUES);
+  const [activeTab, setActiveTab] = useState("basic");
 
   const branchOptions = useMemo(
     () =>
@@ -169,8 +171,8 @@ function TransportForm({ params }) {
 
   const getTitle = () => {
     if (isAddMode) return "New Transport";
-    if (isEditMode) return `Edit Transport #${transportId}`;
-    return `Transport #${transportId}`;
+    if (isEditMode) return "Edit Transport";
+    return "Transport Details";
   };
 
   const getPermissionKey = () => {
@@ -284,7 +286,7 @@ function TransportForm({ params }) {
   if ((isEditMode || isViewMode) && transportLoading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer pageForm title={getTitle()}>
+        <CustomContainer pageForm backHref="/tms/transports" title={getTitle()}>
           <Flex justifyContent="center" p={8}>
             Loading...
           </Flex>
@@ -296,7 +298,7 @@ function TransportForm({ params }) {
   if ((isEditMode || isViewMode) && !transport && !transportLoading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer pageForm title={getTitle()}>
+        <CustomContainer pageForm backHref="/tms/transports" title={getTitle()}>
           <Flex flexDirection="column" gap="22px" alignItems="center" p={8}>
             <Text>Transport not found</Text>
             <Button
@@ -313,267 +315,370 @@ function TransportForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer pageForm title={getTitle()}>
+      <CustomContainer
+        pageForm
+        backHref="/tms/transports"
+        title={getTitle()}
+        rightSection={
+          isViewMode && transportId ? (
+            <Link href={`/tms/transports/edit/${transportId}`}>
+              <Button size="sm">Edit</Button>
+            </Link>
+          ) : null
+        }
+      >
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}
           onSubmit={handleSubmit}
           enableReinitialize
         >
-          {({ handleSubmit }) => (
-            <Flex flexDirection="column" gap="22px">
-              <CustomContainer pageForm title="Basic info" size="sm" fullWidth>
-                <Flex flexDirection="column" gap="22px">
-                  <Grid
-                    templateColumns={{
-                      base: "1fr",
-                      md: "repeat(2, minmax(0, 1fr))",
-                    }}
-                    gap="22px"
+          {({ handleSubmit, validateForm, setTouched }) => {
+            const onFormSubmit = async () => {
+              const errs = await validateForm();
+              if (Object.keys(errs).length > 0) {
+                const touchedFields = Object.keys(errs).reduce(
+                  (acc, key) => ({ ...acc, [key]: true }),
+                  {}
+                );
+                setTouched(touchedFields, true);
+                setActiveTab("basic");
+                toast.error("Please fill all required fields in Basic Info");
+                return;
+              }
+              handleSubmit();
+            };
+
+            return (
+              <Flex flexDirection="column" gap="22px">
+                <Tabs.Root
+                  value={activeTab}
+                  onValueChange={(e) => setActiveTab(e.value)}
+                  variant="line"
+                  colorPalette="brand"
+                >
+                  <Tabs.List
+                    borderBottomWidth="1px"
+                    borderColor="#E5E7EB"
+                    gap="24px"
+                    mb="20px"
                   >
-                    <CustomInput
-                      label="Asset Code"
-                      name="asset_code"
-                      method="text"
-                      viewOnly={isViewMode}
-                      isRequired
-                    />
-                    <CustomInput
-                      label="Asset Name"
-                      name="asset_name"
-                      method="text"
-                      viewOnly={isViewMode}
-                      isRequired
-                    />
-                    <CustomInput
-                      label="Vehicle Number"
-                      name="vehicle_number"
-                      method="text"
-                      viewOnly={isViewMode}
-                    />
-                    <CustomInput
-                      label="Engine Number"
-                      name="engine_number"
-                      method="text"
-                      viewOnly={isViewMode}
-                    />
-                    <CustomInput
-                      label="Chassis Number"
-                      name="chassis_number"
-                      method="text"
-                      viewOnly={isViewMode}
-                    />
-                    <CustomInput
-                      label="Acquisition Type"
-                      name="acquisition_type"
-                      method="text"
-                      viewOnly={isViewMode}
-                      isRequired
-                    />
-                    <CustomInput
-                      label="Dependency Type"
-                      name="dependency_type"
-                      method="text"
-                      viewOnly={isViewMode}
-                      isRequired
-                    />
-                    <CustomInput
-                      label="Working Status"
-                      name="working_status"
-                      method="text"
-                      viewOnly={isViewMode}
-                      isRequired
-                    />
-                    <CustomInput
-                      label="Branch"
-                      name="branch_id"
-                      method="dropdown"
-                      options={branchOptions}
-                      placeholder="Select branch"
-                      viewOnly={isViewMode}
-                    />
-                    <CustomInput
-                      label="Is Depreciation Applicable"
-                      name="is_depreciation_applicable"
-                      method="dropdown"
-                      options={DEPRECIATION_OPTIONS}
-                      viewOnly={isViewMode}
-                      isRequired
-                    />
-                  </Grid>
-                  <CustomInput
-                    label="Asset Description"
-                    name="asset_description"
-                    method="text"
-                    viewOnly={isViewMode}
-                  />
-                </Flex>
-              </CustomContainer>
+                    <Tabs.Trigger
+                      value="basic"
+                      px="12px"
+                      py="10px"
+                      fontSize="13px"
+                      fontWeight="500"
+                      color="fg.muted"
+                      _selected={{
+                        color: "#C95C18",
+                        borderBottomWidth: "2px",
+                        borderColor: "#F47721",
+                      }}
+                    >
+                      Basic Info
+                    </Tabs.Trigger>
+                    <Tabs.Trigger
+                      value="additional"
+                      px="12px"
+                      py="10px"
+                      fontSize="13px"
+                      fontWeight="500"
+                      color="fg.muted"
+                      _selected={{
+                        color: "#C95C18",
+                        borderBottomWidth: "2px",
+                        borderColor: "#F47721",
+                      }}
+                    >
+                      Additional Details
+                    </Tabs.Trigger>
+                    <Tabs.Trigger
+                      value="financial"
+                      px="12px"
+                      py="10px"
+                      fontSize="13px"
+                      fontWeight="500"
+                      color="fg.muted"
+                      _selected={{
+                        color: "#C95C18",
+                        borderBottomWidth: "2px",
+                        borderColor: "#F47721",
+                      }}
+                    >
+                      Financial & Dates
+                    </Tabs.Trigger>
+                    <Tabs.Trigger
+                      value="images"
+                      px="12px"
+                      py="10px"
+                      fontSize="13px"
+                      fontWeight="500"
+                      color="fg.muted"
+                      _selected={{
+                        color: "#C95C18",
+                        borderBottomWidth: "2px",
+                        borderColor: "#F47721",
+                      }}
+                    >
+                      Images
+                    </Tabs.Trigger>
+                  </Tabs.List>
 
-              <CustomContainer pageForm title="Additional details" size="sm" fullWidth>
-                <Grid
-                  templateColumns={{
-                    base: "1fr",
-                    md: "repeat(2, minmax(0, 1fr))",
-                  }}
-                  gap="22px"
-                >
-                  <CustomInput
-                    label="Customer Asset No"
-                    name="customer_asset_no"
-                    method="text"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Sub Category"
-                    name="sub_category"
-                    method="text"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="HSN Code"
-                    name="hsn_code"
-                    method="text"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Barcode Option"
-                    name="barcode_option"
-                    method="text"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Barcode No"
-                    name="barcode_no"
-                    method="text"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Serial Number"
-                    name="serial_number"
-                    method="text"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Model Number"
-                    name="model_number"
-                    method="text"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Seller"
-                    name="seller"
-                    method="text"
-                    viewOnly={isViewMode}
-                  />
-                </Grid>
-              </CustomContainer>
+                  <Tabs.Content value="basic" pt={0}>
+                    <Grid
+                      templateColumns={{
+                        base: "1fr",
+                        md: "repeat(2, minmax(0, 1fr))",
+                      }}
+                      gap="22px"
+                    >
+                      <CustomInput
+                        label="Asset Code"
+                        name="asset_code"
+                        method="text"
+                        viewOnly={isViewMode}
+                        isRequired
+                      />
+                      <CustomInput
+                        label="Asset Name"
+                        name="asset_name"
+                        method="text"
+                        viewOnly={isViewMode}
+                        isRequired
+                      />
+                      <CustomInput
+                        label="Vehicle Number"
+                        name="vehicle_number"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Engine Number"
+                        name="engine_number"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Chassis Number"
+                        name="chassis_number"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Acquisition Type"
+                        name="acquisition_type"
+                        method="text"
+                        viewOnly={isViewMode}
+                        isRequired
+                      />
+                      <CustomInput
+                        label="Dependency Type"
+                        name="dependency_type"
+                        method="text"
+                        viewOnly={isViewMode}
+                        isRequired
+                      />
+                      <CustomInput
+                        label="Working Status"
+                        name="working_status"
+                        method="text"
+                        viewOnly={isViewMode}
+                        isRequired
+                      />
+                      <CustomInput
+                        label="Branch"
+                        name="branch_id"
+                        method="dropdown"
+                        options={branchOptions}
+                        placeholder="Select branch"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Is Depreciation Applicable"
+                        name="is_depreciation_applicable"
+                        method="dropdown"
+                        options={DEPRECIATION_OPTIONS}
+                        viewOnly={isViewMode}
+                        isRequired
+                      />
+                      <CustomInput
+                        label="Asset Description"
+                        name="asset_description"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                    </Grid>
+                  </Tabs.Content>
 
-              <CustomContainer pageForm title="Financial & dates" size="sm" fullWidth>
-                <Grid
-                  templateColumns={{
-                    base: "1fr",
-                    md: "repeat(2, minmax(0, 1fr))",
-                  }}
-                  gap="22px"
-                >
-                  <CustomInput
-                    label="Purchased Price"
-                    name="purchased_price"
-                    type="number"
-                    method="text"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Salvage Value"
-                    name="salvage_value"
-                    type="number"
-                    method="text"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Asset Life Span"
-                    name="asset_life_span"
-                    type="number"
-                    method="text"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Purchased Date"
-                    name="purchased_date"
-                    method="date-picker"
-                    type="date"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Placed in Service"
-                    name="placed_in_service"
-                    method="date-picker"
-                    type="date"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Capitalization Date"
-                    name="capitalization_date"
-                    method="date-picker"
-                    type="date"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Exp End Date"
-                    name="exp_end_date"
-                    method="date-picker"
-                    type="date"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Bill No"
-                    name="bill_no"
-                    method="text"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Bill Date"
-                    name="bill_date"
-                    method="date-picker"
-                    type="date"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Received Date"
-                    name="received_date"
-                    method="date-picker"
-                    type="date"
-                    viewOnly={isViewMode}
-                  />
-                </Grid>
-              </CustomContainer>
+                  <Tabs.Content value="additional" pt={0}>
+                    <Grid
+                      templateColumns={{
+                        base: "1fr",
+                        md: "repeat(2, minmax(0, 1fr))",
+                      }}
+                      gap="22px"
+                    >
+                      <CustomInput
+                        label="Customer Asset No"
+                        name="customer_asset_no"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Sub Category"
+                        name="sub_category"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="HSN Code"
+                        name="hsn_code"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Barcode Option"
+                        name="barcode_option"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Barcode No"
+                        name="barcode_no"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Serial Number"
+                        name="serial_number"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Model Number"
+                        name="model_number"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Seller"
+                        name="seller"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                    </Grid>
+                  </Tabs.Content>
 
-              <CustomContainer pageForm title="Image" size="sm" fullWidth>
-                <CustomInput
-                  label="Transport Image"
-                  name="image_url"
-                  method="image-upload"
-                  placeholder="Upload transport image"
-                  viewOnly={isViewMode}
-                />
-              </CustomContainer>
+                  <Tabs.Content value="financial" pt={0}>
+                    <Grid
+                      templateColumns={{
+                        base: "1fr",
+                        md: "repeat(2, minmax(0, 1fr))",
+                      }}
+                      gap="22px"
+                    >
+                      <CustomInput
+                        label="Purchased Price"
+                        name="purchased_price"
+                        type="number"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Salvage Value"
+                        name="salvage_value"
+                        type="number"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Asset Life Span"
+                        name="asset_life_span"
+                        type="number"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Purchased Date"
+                        name="purchased_date"
+                        method="date-picker"
+                        type="date"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Placed in Service"
+                        name="placed_in_service"
+                        method="date-picker"
+                        type="date"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Capitalization Date"
+                        name="capitalization_date"
+                        method="date-picker"
+                        type="date"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Exp End Date"
+                        name="exp_end_date"
+                        method="date-picker"
+                        type="date"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Bill No"
+                        name="bill_no"
+                        method="text"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Bill Date"
+                        name="bill_date"
+                        method="date-picker"
+                        type="date"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Received Date"
+                        name="received_date"
+                        method="date-picker"
+                        type="date"
+                        viewOnly={isViewMode}
+                      />
+                    </Grid>
+                  </Tabs.Content>
 
-              <Flex gap="22px" justifyContent="flex-end">
-                <Button
-                  variant="subtle"
-                  onClick={() => router.push("/tms/transports")}
-                >
-                  Back
-                </Button>
+                  <Tabs.Content value="images" pt={0}>
+                    <Box maxW="480px">
+                      <CustomInput
+                        label="Transport Image"
+                        name="image_url"
+                        method="image-upload"
+                        placeholder="Upload transport image"
+                        viewOnly={isViewMode}
+                      />
+                    </Box>
+                  </Tabs.Content>
+                </Tabs.Root>
+
                 {!isViewMode && (
-                  <Button onClick={handleSubmit}>
-                    {isEditMode ? "Update" : "Create"}
-                  </Button>
+                  <Flex gap="12px" justifyContent="flex-end">
+                    <Button
+                      variant="subtle"
+                      onClick={() => router.push("/tms/transports")}
+                    >
+                      Cancel
+                    </Button>
+                    <Button onClick={onFormSubmit}>
+                      {isEditMode ? "Update" : "Create"}
+                    </Button>
+                  </Flex>
                 )}
               </Flex>
-            </Flex>
-          )}
+            );
+          }}
         </Formik>
       </CustomContainer>
     </GlobalWrapper>

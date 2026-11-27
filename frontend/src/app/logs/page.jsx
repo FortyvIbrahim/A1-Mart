@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Button } from "@chakra-ui/react";
 import useApiCallLogs from "@/api/customHooks/useApiCallLogs";
 import AgGrid from "@/components/AgGrid";
 import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
-import CustomDialog from "@/components/CustomDialog";
 import GlobalWrapper from "@/components/GlobalWrapper";
 
 const isLogSuccess = (row) =>
@@ -35,7 +34,6 @@ function formatSuccessRate(totalCalls, totalErrors) {
 
 function ApiCallLogsPage() {
   const { logs, loading, refetch } = useApiCallLogs({ limit: 500, offset: 0 });
-  const [selectedGroup, setSelectedGroup] = useState(null);
 
   const summaryRows = useMemo(() => {
     const groups = new Map();
@@ -145,61 +143,11 @@ function ApiCallLogsPage() {
           {
             label: "View",
             value: "view",
-            onClick: () => setSelectedGroup(p.data),
+            redirectionUrl: `/logs/details?api=${encodeURIComponent(
+              p.data?.api_type || "-"
+            )}&secondary=${encodeURIComponent(p.data?.secondary_type || "-")}`,
           },
         ],
-      },
-    ],
-    []
-  );
-
-  const detailColDefs = useMemo(
-    () => [
-      { field: "id", type: "id" },
-      { field: "http_method", headerName: "Method", maxWidth: 100 },
-      {
-        field: "status_code",
-        headerName: "Status",
-        type: "number",
-        maxWidth: 100,
-      },
-      {
-        field: "is_success",
-        headerName: "Result",
-        type: "badge-column",
-        maxWidth: 120,
-        valueGetter: (p) => {
-          if (p.node?.rowPinned === "bottom") return null;
-          const ok = isLogSuccess(p.data);
-          return {
-            label: ok ? "Success" : "Failed",
-            colorScheme: ok ? "green" : "red",
-          };
-        },
-      },
-      {
-        field: "time_taken_ms",
-        headerName: "Time Taken",
-        minWidth: 120,
-        valueFormatter: (p) => formatDuration(p.value),
-      },
-      {
-        field: "caller_function",
-        headerName: "Caller",
-        minWidth: 170,
-        valueGetter: (p) => p.data?.caller_function || "-",
-      },
-      {
-        field: "error_message",
-        headerName: "Error",
-        minWidth: 200,
-        valueGetter: (p) => p.data?.error_message || "-",
-      },
-      {
-        field: "created_at",
-        headerName: "Time",
-        type: "datetime",
-        minWidth: 190,
       },
     ],
     []
@@ -224,31 +172,6 @@ function ApiCallLogsPage() {
           tableKey="api-call-logs"
           loading={loading}
         />
-
-        <CustomDialog
-          open={Boolean(selectedGroup)}
-          onOpenChange={(e) => {
-            if (!e.open) setSelectedGroup(null);
-          }}
-          title={
-            selectedGroup
-              ? `${selectedGroup.api_type} — ${selectedGroup.secondary_type}`
-              : "API Calls"
-          }
-          maxW="1100px"
-          footer={
-            <Button size="sm" onClick={() => setSelectedGroup(null)}>
-              Close
-            </Button>
-          }
-        >
-          <AgGrid
-            rowData={selectedGroupCalls}
-            columnDefs={detailColDefs}
-            tableKey="api-call-logs-detail"
-            noMobileVersion
-          />
-        </CustomDialog>
       </CustomContainer>
     </GlobalWrapper>
   );

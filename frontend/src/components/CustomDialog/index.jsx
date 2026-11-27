@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { createContext, useContext, useRef } from "react";
 import {
+  Box,
   Dialog,
   DialogBackdrop,
   DialogContent,
@@ -14,6 +15,12 @@ import {
 } from "@chakra-ui/react";
 import { LuX } from "react-icons/lu";
 import { ContainerContext, EMPTY_CONTAINER_CONTEXT } from "../CustomContainer";
+
+const DialogPortalContext = createContext(null);
+
+export function useDialogPortal() {
+  return useContext(DialogPortalContext);
+}
 
 /**
  * A centered modal dialog. Renders a full-screen overlay with the dialog content
@@ -40,6 +47,7 @@ function CustomDialog({
   contentProps = {},
   bodyProps = {},
 }) {
+  const dialogPortalRef = useRef(null);
   if (!open) return null;
 
   return (
@@ -57,13 +65,14 @@ function CustomDialog({
       <Dialog.Root open={open} onOpenChange={onOpenChange}>
         <DialogBackdrop bg="rgba(31, 41, 55, 0.35)" backdropFilter="blur(3px)" />
         <DialogContent
+          position="relative"
           mx={4}
           maxW={maxW}
           maxH={maxH}
           borderRadius="14px"
           borderWidth="1px"
           borderColor="#E4E7F2"
-          overflow="hidden"
+          overflow="visible"
           bg="white"
           boxShadow="0 24px 60px rgba(31, 41, 55, 0.18)"
           {...contentProps}
@@ -77,6 +86,7 @@ function CustomDialog({
             display="flex"
             alignItems="center"
             justifyContent="space-between"
+            borderTopRadius="14px"
             borderBottomWidth="1px"
             borderColor="#F0E9E5"
           >
@@ -106,7 +116,9 @@ function CustomDialog({
           </DialogHeader>
           <DialogBody overflowY="auto" px="28px" pt="24px" pb="22px" {...bodyProps}>
             <ContainerContext.Provider value={EMPTY_CONTAINER_CONTEXT}>
-              {children}
+              <DialogPortalContext.Provider value={dialogPortalRef}>
+                {children}
+              </DialogPortalContext.Provider>
             </ContainerContext.Provider>
           </DialogBody>
           {footer != null && (
@@ -115,12 +127,20 @@ function CustomDialog({
               gap="12px"
               px="24px"
               py="16px"
+              borderBottomRadius="14px"
               borderTopWidth="1px"
               borderColor="#F0E9E5"
             >
               {footer}
             </DialogFooter>
           )}
+          <Box
+            ref={dialogPortalRef}
+            position="absolute"
+            inset={0}
+            pointerEvents="none"
+            zIndex={1700}
+          />
         </DialogContent>
       </Dialog.Root>
     </Flex>

@@ -1,4 +1,5 @@
 "use client";
+import moment from "moment";
 
 import usePurchaseAcknowledgmentById from "@/api/customHooks/usePurchaseAcknowledgmentById";
 import usePurchaseReturns from "@/api/customHooks/usePurchaseReturns";
@@ -302,7 +303,11 @@ function PurchaseAcknowledgmentForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer pageForm title={getTitle()}>
+      <CustomContainer
+        pageForm
+        backHref="/purchase-acknowledgment"
+        title={getTitle()}
+      >
         <Formik
           initialValues={initialValues}
           validationSchema={PURCHASE_ACKNOWLEDGMENT_VALIDATION_SCHEMA}
@@ -358,47 +363,34 @@ function PurchaseAcknowledgmentForm({ params }) {
                       type="number"
                       isRequired={isCreateMode}
                       viewOnly={isViewMode}
+                      viewFormatter={(v) =>
+                        v == null || v === ""
+                          ? "-"
+                          : `₹${Number(v).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                      }
                     />
                   </Grid>
 
                   {isViewMode && purchaseAcknowledgment && (
-                    <Grid templateColumns="repeat(2, 1fr)" gap="22px" mt="22px">
-                      <VStack align="start" spacing={1}>
-                        <Text
-                          fontSize="sm"
-                          fontWeight="medium"
-                          color="gray.600"
-                        >
-                          Created At
-                        </Text>
-                        <Text fontSize="md" color="gray.800">
-                          {purchaseAcknowledgment.created_at
-                            ? new Date(
-                                purchaseAcknowledgment.created_at
-                              ).toLocaleString()
-                            : "-"}
-                        </Text>
-                      </VStack>
-                      <VStack align="start" spacing={1}>
-                        <Text
-                          fontSize="sm"
-                          fontWeight="medium"
-                          color="gray.600"
-                        >
-                          Updated At
-                        </Text>
-                        <Text fontSize="md" color="gray.800">
-                          {purchaseAcknowledgment.updated_at
-                            ? new Date(
-                                purchaseAcknowledgment.updated_at
-                              ).toLocaleString()
-                            : "-"}
-                        </Text>
-                      </VStack>
+                    <Grid templateColumns="repeat(2, 1fr)" gap="22px">
+                      {[
+                        ["Created At", purchaseAcknowledgment.created_at],
+                        ["Updated At", purchaseAcknowledgment.updated_at],
+                      ].map(([label, v]) => (
+                        <VStack key={label} align="start" gap="4px">
+                          <Text fontSize="11px" lineHeight="14px" color="#C95C18">
+                            {label}
+                          </Text>
+                          <Text fontSize="13px" lineHeight="18px" fontWeight="500" color="fg">
+                            {v ? moment(v).format("DD/MM/YYYY, h:mm:ss A") : "-"}
+                          </Text>
+                        </VStack>
+                      ))}
                     </Grid>
                   )}
                 </Flex>
-                {values.supplier_id != null &&
+                {!isViewMode &&
+                  values.supplier_id != null &&
                   values.supplier_id !== "" &&
                   undeliveredByPR.length > 0 && (
                     <CustomContainer pageForm
@@ -478,11 +470,10 @@ function PurchaseAcknowledgmentForm({ params }) {
                       </VStack>
                     </CustomContainer>
                   )}
-                {/* Figma: outlined Cancel + primary action, 12px apart. */}
                 <Flex gap="12px" justifyContent="flex-end" mt="24px">
                   <Link href="/purchase-acknowledgment">
-                    <Button variant="outline">
-                      {isCreateMode || isEditMode ? "Cancel" : "Back"}
+                    <Button variant="subtle">
+                      {isViewMode ? "Back" : "Cancel"}
                     </Button>
                   </Link>
                   {(isCreateMode || isEditMode) && (

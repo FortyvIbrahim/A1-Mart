@@ -1,6 +1,7 @@
-import { Box, Flex, Icon, Text } from "@chakra-ui/react";
+import { Box, Flex, Icon, IconButton, Text } from "@chakra-ui/react";
 import React, { createContext, useCallback, useContext, useState } from "react";
-import { LuChevronDown } from "react-icons/lu";
+import { useRouter } from "next/navigation";
+import { LuChevronDown, LuChevronLeft } from "react-icons/lu";
 
 export const EMPTY_CONTAINER_CONTEXT = {
   depth: -1,
@@ -74,9 +75,41 @@ function CustomContainer({
   contentCard = false,
   // Add / edit / view page: title outside, form in a white card (Figma forms).
   pageForm = false,
+  // Optional route or callback for the header back arrow icon (<) left of title.
+  backHref,
+  onBack,
 }) {
+  const router = useRouter();
   const parent = useContext(ContainerContext);
   const depth = parent.depth + 1;
+  const handleBackClick =
+    onBack ||
+    (backHref
+      ? () => router.push(backHref)
+      : depth === 0 && pageForm
+        ? () => router.back()
+        : null);
+
+  const renderBackButton = (mb = 0) =>
+    handleBackClick ? (
+      <IconButton
+        type="button"
+        aria-label="Go back"
+        variant="ghost"
+        size="sm"
+        minW="28px"
+        w="28px"
+        h="28px"
+        borderRadius="6px"
+        color="#202938"
+        _hover={{ bg: "rgba(244, 119, 33, 0.12)", color: "#C95C18" }}
+        onClick={handleBackClick}
+        flexShrink={0}
+        mb={mb}
+      >
+        <LuChevronLeft size={20} />
+      </IconButton>
+    ) : null;
   const [hasGrid, setHasGrid] = useState(false);
   const [open, setOpen] = useState(defaultOpen);
   const [settingsSlotEl, setSettingsSlotEl] = useState(null);
@@ -148,16 +181,19 @@ function CustomContainer({
           borderColor="border.subtle"
           flexWrap="wrap"
         >
-          <Box minW={0}>
-            <Text as="h1" fontSize="20px" lineHeight="26px" fontWeight="600" color="fg">
-              {title}
-            </Text>
-            {subtitle && (
-              <Text fontSize="12px" lineHeight="16px" color="fg.muted" mt="2px">
-                {subtitle}
+          <Flex align="center" gap="8px" minW={0}>
+            {renderBackButton()}
+            <Box minW={0}>
+              <Text as="h1" fontSize="20px" lineHeight="26px" fontWeight="600" color="fg">
+                {title}
               </Text>
-            )}
-          </Box>
+              {subtitle && (
+                <Text fontSize="12px" lineHeight="16px" color="fg.muted" mt="2px">
+                  {subtitle}
+                </Text>
+              )}
+            </Box>
+          </Flex>
           <Flex align="center" gap="10px" flexShrink={0} flexWrap="wrap">
             <Flex
               ref={setSettingsSlotEl}
@@ -199,16 +235,19 @@ function CustomContainer({
           borderColor="border.subtle"
           flexWrap="wrap"
         >
-          <Box minW={0}>
-            <Text as={depth === 0 ? "h1" : "h2"} fontSize={depth === 0 ? "20px" : "15px"} lineHeight="24px" fontWeight="600" color="fg">
-              {title}
-            </Text>
-            {subtitle && (
-              <Text fontSize="12px" lineHeight="16px" color="fg.muted" mt="2px">
-                {subtitle}
+          <Flex align="center" gap="8px" minW={0}>
+            {renderBackButton()}
+            <Box minW={0}>
+              <Text as={depth === 0 ? "h1" : "h2"} fontSize={depth === 0 ? "20px" : "15px"} lineHeight="24px" fontWeight="600" color="fg">
+                {title}
               </Text>
-            )}
-          </Box>
+              {subtitle && (
+                <Text fontSize="12px" lineHeight="16px" color="fg.muted" mt="2px">
+                  {subtitle}
+                </Text>
+              )}
+            </Box>
+          </Flex>
           <Flex align="center" gap="10px" flexShrink={0} flexWrap="wrap">
             <Flex
               ref={setSettingsSlotEl}
@@ -242,9 +281,12 @@ function CustomContainer({
       >
         {title && (
           <Flex alignItems="center" justifyContent="space-between" gap="12px" flexWrap="wrap" minH="36px">
-            <Text as="h1" fontSize="18px" lineHeight="23px" fontWeight="600" color="#30384B">
-              {title}
-            </Text>
+            <Flex align="center" gap="8px" minW={0}>
+              {renderBackButton()}
+              <Text as="h1" fontSize="18px" lineHeight="23px" fontWeight="600" color="#30384B">
+                {title}
+              </Text>
+            </Flex>
             {rightSection && <Box>{rightSection}</Box>}
           </Flex>
         )}

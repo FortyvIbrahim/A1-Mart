@@ -259,7 +259,7 @@ export default function WMSPurchaseEntryForm({ params }) {
     if (isEditMode) {
       return "Edit WMS Purchase Entry";
     }
-    return `WMS Purchase Entry : #${wmsPurchaseEntryId ?? ""}`;
+    return `WMS Purchase Entry #${wmsPurchaseEntryId ?? ""}`;
   };
 
   // Calculate total from file items
@@ -565,6 +565,8 @@ export default function WMSPurchaseEntryForm({ params }) {
             return (
               <Flex flexDirection="column" gap="22px">
                 <Flex gap="22px" flexDirection="column">
+                  {/* Figma 05.02: the details screen shows the GRN card only. */}
+                  {!isViewMode && (
                   <CustomInput
                     label="GRN"
                     placeholder="Select GRN Entry ID..."
@@ -575,9 +577,11 @@ export default function WMSPurchaseEntryForm({ params }) {
                     isRequired
                     viewOnly={isViewMode}
                   />
+                  )}
 
                   <GRNDetails grn={selectedGRN} />
 
+                  {!isViewMode && (
                   <CustomInput
                     label="Purchase Entry By"
                     placeholder="Select employee..."
@@ -587,7 +591,25 @@ export default function WMSPurchaseEntryForm({ params }) {
                     isRequired
                     viewOnly={isViewMode}
                   />
+                  )}
 
+                  {/* Figma 05.01: the two yes/no questions share a row; 05.02 adds
+                      Purchase Entry By as the first of three columns. */}
+                  <Grid
+                    templateColumns={{ base: "1fr", md: isViewMode ? "repeat(3, 1fr)" : "repeat(2, 1fr)" }}
+                    gap="22px"
+                  >
+                  {isViewMode && (
+                  <CustomInput
+                    label="Purchase Entry By"
+                    placeholder="Select employee..."
+                    name="handled_by"
+                    method="searchable-dropdown"
+                    options={employeeOptions}
+                    isRequired
+                    viewOnly={isViewMode}
+                  />
+                  )}
                   <CustomInput
                     label="Is Job Entry Needed?"
                     name="is_job_entry_needed"
@@ -612,6 +634,7 @@ export default function WMSPurchaseEntryForm({ params }) {
                       if (!value) setFieldValue("credit_note_link", null);
                     }}
                   />
+                  </Grid>
 
                   {values.is_credit_need_available && (
                     <CustomInput
@@ -666,12 +689,11 @@ export default function WMSPurchaseEntryForm({ params }) {
 
                 {!dataParsed && (
                   <Box>
-                    <Text mb="8px" fontSize="sm" fontWeight="semibold">
-                      Upload Purchase Entry File (XLSX/CSV)
+                    <Text mb="6px" fontSize="13px" fontWeight="500" color="fg">
+                      Upload purchase entry file (XLSX/CSV)
                     </Text>
-                    <Text mb="16px" fontSize="xs" color="gray.600">
-                      Upload a file with columns: Item Code, Item Name, Qty,
-                      Amount
+                    <Text mb="12px" fontSize="11px" color="fg.muted">
+                      Item Code, Item Name, Qty, Amount
                     </Text>
                     <Flex gap={4} alignItems="flex-start">
                       <Box flex={1}>
@@ -680,8 +702,8 @@ export default function WMSPurchaseEntryForm({ params }) {
                           onDataMapped={handleDataMapped}
                           disabled={dataParsed}
                           fileUploaderProps={{
-                            color: "brand",
-                            size: "md",
+                            title: "Upload file",
+                            placeholder: "Drag & drop files here, or click to select",
                             showClipboardButton: false,
                           }}
                         />
@@ -690,16 +712,16 @@ export default function WMSPurchaseEntryForm({ params }) {
                   </Box>
                 )}
 
-                <Flex gap="12px" justifyContent="flex-end">
-                  <Link href="/wms/purchase-entry">
-                    <Button variant="outline">{isViewMode ? "Back" : "Cancel"}</Button>
-                  </Link>
-                  {!isViewMode && (
+                {!isViewMode && (
+                  <Flex gap="12px" justifyContent="flex-end">
+                    <Link href="/wms/purchase-entry">
+                      <Button variant="outline">Cancel</Button>
+                    </Link>
                     <Button onClick={handleSubmit}>
                       {isCreateMode ? "Create" : "Update"}
                     </Button>
-                  )}
-                </Flex>
+                  </Flex>
+                )}
               </Flex>
             );
           }}

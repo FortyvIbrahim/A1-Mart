@@ -193,7 +193,7 @@ function MoneyTransferForm({ params }) {
   if ((isEditMode || isViewMode) && transferLoading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer pageForm title={getTitle()}>
+        <CustomContainer pageForm backHref="/accounts/money-transfer" title={getTitle()}>
           <Flex justifyContent="center" p={8}>
             Loading...
           </Flex>
@@ -205,7 +205,7 @@ function MoneyTransferForm({ params }) {
   if ((isEditMode || isViewMode) && !transfer && !transferLoading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer pageForm title={getTitle()}>
+        <CustomContainer pageForm backHref="/accounts/money-transfer" title={getTitle()}>
           <Flex flexDirection="column" gap="22px" alignItems="center" p={8}>
             <Text>Money transfer not found</Text>
             <Button
@@ -222,7 +222,7 @@ function MoneyTransferForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer pageForm title={getTitle()}>
+      <CustomContainer pageForm backHref="/accounts/money-transfer" title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}
@@ -313,12 +313,12 @@ function MoneyTransferForm({ params }) {
                   </Box>
                 </Grid>
 
-                <Flex gap="22px" justifyContent="flex-end">
+                <Flex gap="12px" justifyContent="flex-end">
                   <Button
                     variant="subtle"
                     onClick={() => router.push("/accounts/money-transfer")}
                   >
-                    Back
+                    {isViewMode ? "Back" : "Cancel"}
                   </Button>
                   {!isViewMode && (
                     <Button onClick={handleSubmit}>

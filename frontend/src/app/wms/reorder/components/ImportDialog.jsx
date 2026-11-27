@@ -94,33 +94,41 @@ export default function ImportDialog({
     <CustomDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Import reorders from Excel"
-      maxW="90vw"
+      // Figma PUR/01.04: compact popup until a file is mapped.
+      title="Import Purchase Reorders"
+      maxW={previewData?.length ? "90vw" : "560px"}
       maxH="90vh"
       footer={
-        previewData?.length > 0 ? (
-          <>
-            <Button variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button colorPalette="brand" onClick={onSave} loading={saving}>
-              Save
-            </Button>
-          </>
-        ) : null
+        <>
+          <Button variant="subtle" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            onClick={onSave}
+            loading={saving}
+            disabled={!previewData?.length}
+          >
+            Import
+          </Button>
+        </>
       }
     >
       {!previewData?.length ? (
         <Box>
-          <Text fontSize="sm" color="gray.600" mb={3}>
-            Upload an Excel file with columns that can be mapped to: supplier
-            name, article ID, quantity, MRP, cost price, discount, order
-            worth, tax amount, buyer name.
+          <Text fontSize="11px" lineHeight="16px" color="fg.muted" mb="12px">
+            Upload an Excel file with columns mapped to supplier name, article
+            ID, quantity, MRP, cost price, discount, order worth, tax amount and
+            buyer name.
           </Text>
           <FileUploaderWithColumnMapping
             targetColumns={REORDER_IMPORT_TARGET_COLUMNS}
             onDataMapped={onDataMapped}
             showToast={false}
+            fileUploaderProps={{
+              title: "Choose file or drag it here",
+              placeholder: "Excel (.xlsx, .xls) or CSV",
+              showClipboardButton: false,
+            }}
           />
         </Box>
       ) : (

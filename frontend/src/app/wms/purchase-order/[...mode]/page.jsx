@@ -194,7 +194,7 @@ export default function PurchaseOrderModePage({ params }) {
   const title =
     action === "edit"
       ? `Edit Purchase Order #${po?.po_id ?? id}`
-      : `Purchase Order #${po.po_id ?? id}`;
+      : "Purchase Order Details";
 
   return (
     <GlobalWrapper permissionKey="view_po">
@@ -202,27 +202,16 @@ export default function PurchaseOrderModePage({ params }) {
       <CustomContainer pageForm
         title={title}
         rightSection={
-          <Flex gap={2}>
-            {canDelete && (
-              <Button
-                variant="outline"
-                size="sm"
-                colorPalette="red"
-                onClick={handleDeletePo}
-              >
-                Delete
-              </Button>
-            )}
-            <Link href="/wms/purchase-order">
-              <Button variant="outline" size="sm">
-                Back to list
-              </Button>
-            </Link>
-          </Flex>
+          canDelete ? (
+            // Figma 02.01: a single peach "Delete" action in the banner.
+            <Button variant="subtle" size="sm" onClick={handleDeletePo}>
+              Delete
+            </Button>
+          ) : null
         }
       >
-        <Flex direction="column" gap={6}>
-          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={4}>
+        <Flex direction="column" gap="22px">
+          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap="16px">
             <GridItem>
               <CustomInput label="PO ID" value={po.po_id ?? ""} viewOnly />
             </GridItem>
@@ -251,23 +240,22 @@ export default function PurchaseOrderModePage({ params }) {
           </Grid>
 
           {hasStock && (
-            <CustomContainer pageForm
-              title="Stock sent to each branch"
-              size="sm"
-              color="secondary"
-            >
+            <Box>
+              <Text fontSize="13px" fontWeight="500" color="fg" mb="10px">
+                Stock sent to each branch
+              </Text>
               <AgGrid
                 tableKey="po-view-stock"
                 rowData={stockGridRowData}
                 columnDefs={stockGridColumnDefs}
                 showColumnSettings={false}
               />
-            </CustomContainer>
+            </Box>
           )}
 
           {items.length > 0 && !hasStock && (
             <Box>
-              <Text fontSize="sm" fontWeight="semibold" color="gray.700" mb={3}>
+              <Text fontSize="13px" fontWeight="500" color="fg" mb="10px">
                 Items
               </Text>
               <AgGrid

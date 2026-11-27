@@ -1,10 +1,10 @@
 import { GOOGLE_MAPS_API_KEY } from "@/constants";
 
+let loadMapsPromise = null;
+
 /**
- * Load Google Maps JavaScript API (async loader for importLibrary / PlaceAutocompleteElement).
- * @see https://developers.google.com/maps/documentation/javascript/load-maps-js-api
- * @see https://developers.google.com/maps/documentation/javascript/places-migration-autocomplete
- * @returns {Promise<typeof google>}
+ * Load Google Maps JavaScript API (singleton loader for importLibrary / places).
+ * @returns {Promise<typeof google | null>}
  */
 export function loadGoogleMaps() {
   if (typeof window === "undefined") return Promise.resolve(null);
@@ -13,9 +13,27 @@ export function loadGoogleMaps() {
   const key = GOOGLE_MAPS_API_KEY;
   if (!key) return Promise.resolve(null);
 
-  return new Promise((resolve, reject) => {
+  if (loadMapsPromise) return loadMapsPromise;
+
+  loadMapsPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-a1-gmaps="true"]');
+    if (existing) {
+      const waitExisting = () => {
+        if (window.google?.maps?.importLibrary) {
+          resolve(window.google);
+        } else {
+          setTimeout(waitExisting, 50);
+        }
+      };
+      waitExisting();
+      return;
+    }
+
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&loading=async`;
+    script.dataset.a1Gmaps = "true";
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
+      key
+    )}&libraries=places&loading=async`;
     script.async = true;
     script.defer = true;
     script.onload = () => {
@@ -28,7 +46,12 @@ export function loadGoogleMaps() {
       };
       check();
     };
-    script.onerror = () => reject(new Error("Failed to load Google Maps"));
+    script.onerror = () => {
+      loadMapsPromise = null;
+      reject(new Error("Failed to load Google Maps"));
+    };
     document.head.appendChild(script);
   });
+
+  return loadMapsPromise;
 }

@@ -16,8 +16,7 @@ import { formatCurrency } from "@/utils/string";
 const LIST_FILTERS = [
   { key: "fromBranch", type: "select", label: "From Branch", placeholder: "All branches", getValue: (r) => r.from_branch_name },
   { key: "toBranch", type: "select", label: "To Branch", placeholder: "All branches", getValue: (r) => r.to_branch_name },
-  { key: "from", type: "dateFrom", label: "From Date", getValue: (r) => r.created_at },
-  { key: "to", type: "dateTo", label: "To Date", getValue: (r) => r.created_at },
+  { key: "asset", type: "select", label: "Current Asset", placeholder: "All current assets", getValue: (r) => r.account_asset_label },
 ];
 
 function MoneyTransferList() {

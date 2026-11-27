@@ -4,11 +4,12 @@ import GlobalWrapper from "@/components/GlobalWrapper";
 import CustomContainer from "@/components/CustomContainer";
 import usePayslips from "@/api/customHooks/usePayslips";
 import moment from "moment";
-import { Box, Button, Flex, Grid, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Grid, IconButton, Text } from "@chakra-ui/react";
 import CustomSelect from "@/components/CustomSelect";
 import React, { useMemo, useState } from "react";
 import { Tooltip } from "@/components/ui/tooltip";
-import { PayslipDetailsDrawer } from "@/components/payroll";
+import { PayslipDetailsView } from "@/components/payroll";
+import { LuDownload } from "react-icons/lu";
 
 const MONTH_NAMES = [
   "January",
@@ -36,7 +37,6 @@ function MyPayslipsPage() {
 
   const currentYear = moment().year();
   const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
   const [selectedPayslip, setSelectedPayslip] = useState(null);
 
   const years = useMemo(() => {
@@ -75,135 +75,154 @@ function MyPayslipsPage() {
 
   return (
     <GlobalWrapper permissionKey="view_my_payslips">
-      <CustomContainer headerBand title="Payslip">
-        <Flex flexDirection="column" gap="22px">
-          <Box>
-            <Text fontSize="sm" fontWeight="medium" mb="8px">
-              Year
-            </Text>
-            <CustomSelect
-              w="120px"
-              h="44px"
-              allowEmpty={false}
-              value={String(selectedYear)}
-              onChange={(v) => setSelectedYear(Number(v))}
-              options={years.map((y) => ({ value: String(y), label: String(y) }))}
-            />
-          </Box>
-
-          <Grid
-            templateColumns={{
-              base: "repeat(2, 1fr)",
-              sm: "repeat(3, 1fr)",
-              md: "repeat(4, 1fr)",
-              lg: "repeat(6, 1fr)",
-            }}
-            gap="16px"
-            width="100%"
-          >
-            {MONTH_DISPLAY_ORDER.map((monthIndex) => {
-              const record = getRecordForMonth(selectedYear, monthIndex);
-              const monthName = MONTH_NAMES[monthIndex];
-              const hasPayslip = record?.is_payslip_available;
-
-              const content = (
-                <Box
-                  key={`${selectedYear}-${monthIndex}`}
-                  minH="100px"
-                  borderWidth="1px"
-                  borderLeftWidth={hasPayslip ? "4px" : "1px"}
-                  borderLeftColor={hasPayslip ? "brand.500" : undefined}
-                  borderColor={hasPayslip ? "gray.200" : "gray.100"}
-                  borderRadius="xl"
-                  p="20px"
-                  bg={hasPayslip ? "white" : "gray.50"}
-                  _dark={{
-                    bg: hasPayslip ? "gray.800" : "gray.900",
-                    borderColor: hasPayslip ? "gray.600" : "gray.700",
-                    borderLeftColor: hasPayslip ? "brand.400" : undefined,
-                  }}
-                  boxShadow={hasPayslip ? "sm" : "none"}
-                  transition="all 0.2s ease"
-                  _hover={{
-                    shadow: hasPayslip ? "md" : "sm",
-                    borderColor: hasPayslip ? "brand.400" : "gray.200",
-                    _dark: {
-                      borderColor: hasPayslip ? "brand.500" : "gray.600",
-                    },
-                  }}
-                >
-                  <Text
-                    fontSize="md"
-                    fontWeight="600"
-                    color={hasPayslip ? "gray.800" : "gray.400"}
-                    _dark={{
-                      color: hasPayslip ? "gray.100" : "gray.500",
-                    }}
-                    mb="14px"
-                  >
-                    {monthName}
-                  </Text>
-                  <Flex gap="2" flexDirection="column">
-                    <Button
-                      size="xs"
-                      colorPalette="gray"
-                      variant="outline"
-                      width="100%"
-                      disabled={!record}
-                      onClick={() => {
-                        setSelectedPayslip(record);
-                        setDetailsDrawerOpen(true);
-                      }}
-                      fontWeight="medium"
-                    >
-                      View details
-                    </Button>
-                    <Button
-                      size="xs"
-                      colorPalette="brand"
-                      width="100%"
-                      disabled={!hasPayslip}
-                      cursor={!hasPayslip ? "not-allowed" : "pointer"}
-                      onClick={() => handlePayslipClick(record)}
-                      fontWeight="medium"
-                    >
-                      Download Payslip
-                    </Button>
-                  </Flex>
-                </Box>
-              );
-
-              if (hasPayslip) {
-                return content;
-              }
-
-              return (
-                <Tooltip
-                  key={`${selectedYear}-${monthIndex}`}
-                  content="Payslip not available"
-                >
-                  <Box cursor="not-allowed">{content}</Box>
-                </Tooltip>
-              );
-            })}
-          </Grid>
-
-          {loading && (
-            <Text fontSize="sm" color="gray.500">
-              Loading...
-            </Text>
-          )}
-        </Flex>
-
-        <PayslipDetailsDrawer
-          isOpen={detailsDrawerOpen}
-          onClose={() => {
-            setDetailsDrawerOpen(false);
-            setSelectedPayslip(null);
-          }}
+      {selectedPayslip ? (
+        <PayslipDetailsView
           selectedRow={selectedPayslip}
+          onBack={() => setSelectedPayslip(null)}
         />
-      </CustomContainer>
+      ) : (
+        <CustomContainer headerBand title="My Payslips">
+          <Flex flexDirection="column" gap="22px">
+            <Box>
+              <Text fontSize="12px" fontWeight="500" color="#30384B" mb="7px">
+                Year
+              </Text>
+              <CustomSelect
+                w={{ base: "100%", sm: "240px" }}
+                h="44px"
+                allowEmpty={false}
+                value={String(selectedYear)}
+                onChange={(v) => setSelectedYear(Number(v))}
+                options={years.map((y) => ({
+                  value: String(y),
+                  label: String(y),
+                }))}
+              />
+            </Box>
+
+            <Grid
+              templateColumns={{
+                base: "repeat(1, 1fr)",
+                sm: "repeat(2, 1fr)",
+                md: "repeat(3, 1fr)",
+                lg: "repeat(6, 1fr)",
+              }}
+              gap="16px"
+              width="100%"
+            >
+              {MONTH_DISPLAY_ORDER.map((monthIndex) => {
+                const record = getRecordForMonth(selectedYear, monthIndex);
+                const monthName = MONTH_NAMES[monthIndex];
+                const hasPayslip = record?.is_payslip_available;
+
+                const card = (
+                  <Flex
+                    key={`${selectedYear}-${monthIndex}`}
+                    direction="column"
+                    justifyContent="space-between"
+                    minH="96px"
+                    borderWidth="1px"
+                    borderColor={hasPayslip || record ? "#F1E3D9" : "#F3F4F6"}
+                    borderRadius="10px"
+                    p="14px 16px"
+                    bg="white"
+                    transition="all 0.2s ease"
+                    _hover={
+                      record
+                        ? {
+                            borderColor: "#F69350",
+                            boxShadow: "0 2px 8px rgba(244, 119, 33, 0.08)",
+                          }
+                        : undefined
+                    }
+                  >
+                    <Text
+                      fontSize="14px"
+                      fontWeight="600"
+                      color={record ? "#202938" : "#9CA3AF"}
+                    >
+                      {monthName}
+                    </Text>
+
+                    <Flex
+                      alignItems="center"
+                      justifyContent="space-between"
+                      mt="14px"
+                    >
+                      <Button
+                        type="button"
+                        variant="plain"
+                        size="xs"
+                        h="auto"
+                        p="0"
+                        minW="0"
+                        fontSize="12.5px"
+                        fontWeight="600"
+                        color={record ? "#C95C18" : "#CBD5E1"}
+                        disabled={!record}
+                        cursor={record ? "pointer" : "not-allowed"}
+                        _hover={record ? { color: "#F47721" } : undefined}
+                        onClick={() => {
+                          if (record) setSelectedPayslip(record);
+                        }}
+                      >
+                        View
+                      </Button>
+
+                      <IconButton
+                        type="button"
+                        aria-label={`Download ${monthName} payslip`}
+                        size="xs"
+                        w="32px"
+                        h="32px"
+                        minW="32px"
+                        borderRadius="8px"
+                        variant="outline"
+                        borderColor={hasPayslip ? "#F69350" : "#E5E7EB"}
+                        color={hasPayslip ? "#C95C18" : "#CBD5E1"}
+                        bg={hasPayslip ? "#FFFBF8" : "#F9FAFB"}
+                        _hover={
+                          hasPayslip
+                            ? { bg: "#FFF5ED", borderColor: "#F47721" }
+                            : undefined
+                        }
+                        disabled={!hasPayslip}
+                        cursor={hasPayslip ? "pointer" : "not-allowed"}
+                        onClick={() => handlePayslipClick(record)}
+                      >
+                        <LuDownload size={15} />
+                      </IconButton>
+                    </Flex>
+                  </Flex>
+                );
+
+                if (hasPayslip) {
+                  return card;
+                }
+
+                return (
+                  <Tooltip
+                    key={`${selectedYear}-${monthIndex}`}
+                    content={
+                      record
+                        ? "Payslip PDF not generated yet"
+                        : "Payslip not available"
+                    }
+                  >
+                    <Box>{card}</Box>
+                  </Tooltip>
+                );
+              })}
+            </Grid>
+
+            {loading && (
+              <Text fontSize="sm" color="gray.500">
+                Loading...
+              </Text>
+            )}
+          </Flex>
+        </CustomContainer>
+      )}
     </GlobalWrapper>
   );
 }

@@ -6,7 +6,7 @@ import CustomInput from "@/components/CustomInput";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import Permissions from "@/components/Permissions";
 import { PERMISSIONS } from "@/constants/permissions";
-import { Button, Flex } from "@chakra-ui/react";
+import { Button, Flex, Grid, Text } from "@chakra-ui/react";
 import { Formik } from "formik";
 import Link from "next/link";
 import React, { use, useEffect, useState } from "react";
@@ -92,108 +92,108 @@ function DesignationsForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer pageForm title={getTitle()} fullWidth>
-        <Flex flexDirection="column" gap="22px" w="100%">
-          <Formik
-            initialValues={{
-              incentive_type: designation?.incentive_type || "",
+      <CustomContainer pageForm backHref="/designations" title={getTitle()} fullWidth>
+        <Formik
+          initialValues={{
+            incentive_type: designation?.incentive_type || "",
+            working_days:
+              designation?.working_days !== undefined &&
+              designation?.working_days !== null
+                ? designation.working_days
+                : "",
+          }}
+          enableReinitialize
+          validationSchema={DETAILS_VALIDATION_SCHEMA}
+          onSubmit={(values) => {
+            handleUpdateDesignation(designationId, {
+              incentive_type: values.incentive_type,
               working_days:
-                designation?.working_days !== undefined &&
-                designation?.working_days !== null
-                  ? designation.working_days
-                  : "",
-            }}
-            enableReinitialize
-            validationSchema={DETAILS_VALIDATION_SCHEMA}
-            onSubmit={(values) => {
-              handleUpdateDesignation(designationId, {
-                incentive_type: values.incentive_type,
-                working_days:
-                  values.working_days === "" || values.working_days == null
-                    ? null
-                    : Number(values.working_days),
-              });
-              router.push("/designations");
-            }}
-          >
-            {({ handleSubmit }) => (
-              <CustomContainer pageForm title="Details" size="sm" color="secondary">
-                <Flex flexDirection="column" gap="22px">
-                  <CustomInput
-                    label="Incentive Type"
-                    name="incentive_type"
-                    method="dropdown"
-                    options={Object.values(INCENTIVE_TYPES).map((item) => ({
-                      value: item.key,
-                      label: item.label,
-                    }))}
-                    placeholder="Select incentive type"
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Working Days (per week)"
-                    name="working_days"
-                    type="number"
-                    placeholder="e.g. 6"
-                    viewOnly={isViewMode}
-                  />
+                values.working_days === "" || values.working_days == null
+                  ? null
+                  : Number(values.working_days),
+              permissions,
+            });
+            router.push("/designations");
+          }}
+        >
+          {({ handleSubmit }) => (
+            <Flex flexDirection="column" gap="24px" w="100%">
+              <Grid
+                templateColumns={{ base: "1fr", md: "repeat(2, minmax(0, 1fr))" }}
+                gap="22px"
+              >
+                <CustomInput
+                  label="Incentive Type"
+                  name="incentive_type"
+                  method="dropdown"
+                  options={Object.values(INCENTIVE_TYPES).map((item) => ({
+                    value: item.key,
+                    label: item.label,
+                  }))}
+                  placeholder="Select incentive type"
+                  viewOnly={isViewMode}
+                />
+                <CustomInput
+                  label="Working Days (per week)"
+                  name="working_days"
+                  type="number"
+                  placeholder="e.g. 6"
+                  viewOnly={isViewMode}
+                />
+              </Grid>
 
-                  <Flex gap="22px" justifyContent="flex-end">
-                    <Link href="/designations">
-                      <Button variant="subtle">Back</Button>
-                    </Link>
-                    {(isCreateMode || isEditMode) && (
-                      <Button onClick={handleSubmit}>
-                        {isCreateMode ? "Create" : "Update"}
+              <Flex direction="column" gap="16px" w="100%">
+                <Flex
+                  alignItems="center"
+                  justifyContent="space-between"
+                  gap="12px"
+                  flexWrap="wrap"
+                >
+                  <Text fontSize="16px" fontWeight="600" color="#202938">
+                    Permissions
+                  </Text>
+                  {!isViewMode && (
+                    <Flex gap="10px">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="subtle"
+                        onClick={() => setPermissions([])}
+                      >
+                        Clear All
                       </Button>
-                    )}
-                  </Flex>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="subtle"
+                        onClick={() => setPermissions(ALL_PERMISSION_KEYS)}
+                      >
+                        Select All
+                      </Button>
+                    </Flex>
+                  )}
                 </Flex>
-              </CustomContainer>
-            )}
-          </Formik>
 
-          <CustomContainer pageForm title="Permissions" size="sm" color="secondary">
-            {!isViewMode && (
-              <Flex justifyContent="flex-end" mb="12px" gap="12px">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPermissions([])}
-                >
-                  Clear All
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPermissions(ALL_PERMISSION_KEYS)}
-                >
-                  Select All
-                </Button>
+                <Permissions
+                  permissions={permissions}
+                  onPermissionsChange={onPermissionsChange}
+                  viewOnly={isViewMode}
+                />
               </Flex>
-            )}
 
-            <Permissions
-              permissions={permissions}
-              onPermissionsChange={onPermissionsChange}
-            />
-
-            <Flex gap="22px" justifyContent="flex-end">
-              <Link href="/designations">
-                <Button variant="subtle">Back</Button>
-              </Link>
-              {(isCreateMode || isEditMode) && (
-                <Button
-                  onClick={() =>
-                    handleUpdateDesignation(designationId, { permissions })
-                  }
-                >
-                  {isCreateMode ? "Create" : "Update"}
-                </Button>
-              )}
+              <Flex gap="12px" justifyContent="flex-end">
+                <Link href="/designations">
+                  <Button variant="subtle">Back</Button>
+                </Link>
+                {(isCreateMode || isEditMode) && (
+                  <Button onClick={handleSubmit}>
+                    {isCreateMode ? "Create" : "Update"}
+                  </Button>
+                )}
+              </Flex>
             </Flex>
-          </CustomContainer>
-        </Flex>
+          )}
+        </Formik>
       </CustomContainer>
     </GlobalWrapper>
   );

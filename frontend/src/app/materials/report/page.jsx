@@ -11,87 +11,99 @@ function MaterialsReport() {
 
   return (
     <GlobalWrapper permissionKey="view_materials_report">
-      <CustomContainer title="Materials Reports">
-        <VStack gap="22px" align="stretch">
+      <CustomContainer headerBand title="Materials Reports">
+        <VStack gap="28px" align="stretch">
           {REPORT_CATEGORIES.map((category, categoryIndex) => (
-            <CustomContainer
-              key={categoryIndex}
-              title={category.title}
-              size="md"
-              color="secondary"
-            >
-              <VStack gap={4} align="stretch">
-                <Text fontSize="sm" color="gray.600">
+            <Flex key={categoryIndex} direction="column" gap="14px">
+              <Box>
+                {category.title !== "Materials Reports" && (
+                  <Heading
+                    size="md"
+                    fontSize="16px"
+                    lineHeight="22px"
+                    fontWeight="600"
+                    color="fg"
+                    mb="4px"
+                  >
+                    {category.title}
+                  </Heading>
+                )}
+                <Text fontSize="13px" color="fg.muted">
                   {category.description}
                 </Text>
-                <Grid
-                  templateColumns={{
-                    base: "1fr",
-                    md: "repeat(2, 1fr)",
-                    lg: "repeat(3, 1fr)",
-                  }}
-                  gap={4}
-                >
-                  {category.reports.map((report) => (
-                    <Box
-                      key={report.id}
-                      p={4}
-                      border="1px solid"
-                      borderColor="gray.200"
-                      borderRadius="md"
-                      bg="white"
-                      cursor="pointer"
-                      onClick={() => {
-                        router.push(`/materials/report/${report.id}`);
-                      }}
-                      _hover={{
-                        boxShadow: "lg",
-                        transform: "translateY(-2px)",
-                        transition: "all 0.2s",
-                        borderColor: "brand.400",
-                      }}
-                    >
-                      <VStack align="stretch" spacing={3}>
-                        <Heading size="sm" color="brand.600">
-                          {report.name}
-                        </Heading>
-                        <Text fontSize="xs" color="gray.600">
-                          {report.description}
+              </Box>
+
+              <Grid
+                templateColumns={{
+                  base: "1fr",
+                  md: "repeat(2, 1fr)",
+                }}
+                gap="18px"
+              >
+                {category.reports.map((report) => (
+                  <Box
+                    key={report.id}
+                    p="20px"
+                    borderWidth="1px"
+                    borderColor="border"
+                    borderRadius="12px"
+                    bg="white"
+                    cursor="pointer"
+                    transition="all 0.18s ease"
+                    onClick={() => {
+                      router.push(`/materials/report/${report.id}`);
+                    }}
+                    _hover={{
+                      bg: "#FFFBF8",
+                      borderColor: "#F47721",
+                      transform: "translateY(-1px)",
+                    }}
+                  >
+                    <VStack align="stretch" gap="10px">
+                      <Heading
+                        fontSize="15px"
+                        lineHeight="20px"
+                        fontWeight="600"
+                        color="#C95C18"
+                      >
+                        {report.name}
+                      </Heading>
+                      <Text fontSize="12.5px" color="fg.muted" lineHeight="18px">
+                        {report.description}
+                      </Text>
+                      <Box>
+                        <Text
+                          fontSize="12px"
+                          fontWeight="600"
+                          color="fg"
+                          mb="2px"
+                        >
+                          Data Points:
                         </Text>
+                        <Text fontSize="12px" color="fg.muted" lineHeight="17px">
+                          {report.dataPoints.join(", ")}
+                        </Text>
+                      </Box>
+                      {report.filters && report.filters.length > 0 && (
                         <Box>
                           <Text
-                            fontSize="xs"
-                            fontWeight="semibold"
-                            color="gray.700"
-                            mb={1}
+                            fontSize="12px"
+                            fontWeight="600"
+                            color="fg"
+                            mb="2px"
                           >
-                            Data Points:
+                            Available Filters:
                           </Text>
-                          <Text fontSize="xs" color="gray.500">
-                            {report.dataPoints.join(", ")}
+                          <Text fontSize="12px" color="fg.muted" lineHeight="17px">
+                            {report.filters.join(", ")}
                           </Text>
                         </Box>
-                        {report.filters && report.filters.length > 0 && (
-                          <Box>
-                            <Text
-                              fontSize="xs"
-                              fontWeight="semibold"
-                              color="gray.700"
-                              mb={1}
-                            >
-                              Available Filters:
-                            </Text>
-                            <Text fontSize="xs" color="gray.500">
-                              {report.filters.join(", ")}
-                            </Text>
-                          </Box>
-                        )}
-                      </VStack>
-                    </Box>
-                  ))}
-                </Grid>
-              </VStack>
-            </CustomContainer>
+                      )}
+                    </VStack>
+                  </Box>
+                ))}
+              </Grid>
+            </Flex>
           ))}
         </VStack>
       </CustomContainer>

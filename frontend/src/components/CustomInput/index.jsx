@@ -2,6 +2,7 @@
 
 import { LuCheck, LuChevronDown, LuChevronUp } from "react-icons/lu";
 import CustomSelect from "@/components/CustomSelect";
+import { useDialogPortal } from "@/components/CustomDialog";
 import { getNestedValue } from "@/utils/object";
 import {
   Box,
@@ -127,6 +128,8 @@ function CustomInput({
   label,
   onChange,
   viewOnly = false,
+  // Optional (value) => display text for view mode (e.g. currency).
+  viewFormatter,
   labelStyle,
   rightAddon,
   errorPosition = "top",
@@ -190,32 +193,43 @@ function CustomInput({
   // Inside a modal dialog the menu must render in the dialog itself: a modal
   // blocks pointer events and focus outside its content, so a menu portalled
   // to <body> opens but cannot be clicked or typed into ("stuck" dropdown).
+  const contextDialogPortalRef = useDialogPortal();
   const dialogContainerRef = useRef(null);
   const portalRef = menuPortalRef?.current
     ? menuPortalRef
-    : dialogContainerRef.current
-      ? dialogContainerRef
-      : null;
+    : contextDialogPortalRef?.current
+      ? contextDialogPortalRef
+      : dialogContainerRef.current
+        ? dialogContainerRef
+        : null;
 
   const updateMenuPosition = () => {
     if (inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
       dialogContainerRef.current = menuPortalRef?.current
         ? null
-        : inputRef.current.closest('[role="dialog"], [role="alertdialog"]');
-      if (menuPortalRef?.current || dialogContainerRef.current) {
+        : contextDialogPortalRef?.current
+          ? null
+          : inputRef.current.closest('[role="dialog"], [role="alertdialog"]');
+      const hostEl = menuPortalRef?.current
+        ? menuPortalRef.current
+        : contextDialogPortalRef?.current
+          ? contextDialogPortalRef.current
+          : dialogContainerRef.current;
+      if (hostEl) {
+        const hostRect = hostEl.getBoundingClientRect();
         setMenuPosition({
-          top: rect.bottom,
-          left: rect.left,
+          top: rect.bottom - hostRect.top,
+          left: rect.left - hostRect.left,
           width: rect.width,
-          fixed: true,
+          inHost: true,
         });
       } else {
         setMenuPosition({
           top: rect.bottom + window.scrollY,
           left: rect.left + window.scrollX,
           width: rect.width,
-          fixed: false,
+          inHost: false,
         });
       }
     }
@@ -412,6 +426,7 @@ function CustomInput({
           <DatePicker
             portalId="root-portal"
             showMonthYearPicker={props.type === "month"}
+            placeholderText={placeholder}
             {...props}
             disabled={props.disabled || viewOnly}
             name={name}
@@ -533,12 +548,12 @@ function CustomInput({
         };
 
         const dropdownPanelSx = {
-          position: portalRef ? "fixed" : "absolute",
+          position: "absolute",
           top: menuPosition.top,
           left: menuPosition.left,
           width: menuPosition.width,
           maxH: "260px",
-          mt: portalRef ? "4px" : "6px",
+          mt: "6px",
           bg: "white",
           borderWidth: "1px",
           borderRadius: "12px",
@@ -547,7 +562,7 @@ function CustomInput({
           boxShadow:
             "0 12px 32px rgba(31, 41, 55, 0.12), 0 2px 6px rgba(244, 119, 33, 0.06)",
           overflow: "hidden",
-          zIndex: portalRef ? 9999 : 1400,
+          zIndex: portalRef ? 1800 : 1400,
           pointerEvents: "auto",
         };
 
@@ -728,13 +743,13 @@ function CustomInput({
               .join(", ");
 
         const multiDropdownPanelSx = {
-          position: portalRef ? "fixed" : "absolute",
+          position: "absolute",
           top: menuPosition.top,
           left: menuPosition.left,
           width: "max(min(100%, 320px), 280px)",
           maxW: menuPosition.width,
           maxH: "340px",
-          mt: portalRef ? "4px" : "6px",
+          mt: "6px",
           bg: "white",
           borderWidth: "1px",
           borderRadius: "12px",
@@ -743,7 +758,7 @@ function CustomInput({
           boxShadow:
             "0 12px 32px rgba(31, 41, 55, 0.12), 0 2px 6px rgba(244, 119, 33, 0.06)",
           overflow: "hidden",
-          zIndex: portalRef ? 9999 : 1400,
+          zIndex: portalRef ? 1800 : 1400,
           pointerEvents: "auto",
         };
 
@@ -770,7 +785,6 @@ function CustomInput({
                   updateMenuPosition();
                   setIsSearchOpen(!isSearchOpen);
                 }}
-                onFocus={(e) => e.target.blur()}
               />
             </InputGroup>
             {isSearchOpen && !viewOnly && !props.disabled && (
@@ -917,35 +931,88 @@ function CustomInput({
         );
       case "voice-recorder":
         return <VoiceRecorder {...props} name={name} value={fieldValue} />;
-      case "radio":
+      case "radio": {
+        const stringValue =
+          fieldValue !== null && fieldValue !== undefined
+            ? String(fieldValue)
+            : "";
         return (
           <RadioGroup.Root
             {...props}
+            colorPalette="brand"
+            variant="solid"
             disabled={props.disabled || viewOnly}
-            value={fieldValue}
+            value={stringValue}
             onValueChange={(e) => {
               if (props.disabled || viewOnly) return;
+              const matched = options?.find(
+                (item) => String(item.value) === String(e.value)
+              );
+              const nextVal = matched ? matched.value : e.value;
               if (formikSetFieldValue) {
-                formikSetFieldValue(name, e.value);
+                formikSetFieldValue(name, nextVal);
               } else if (!hasExternalValue) {
-                setLocalValue(e.value);
+                setLocalValue(nextVal);
               }
-              if (onChange) onChange(e.value);
+              if (onChange) onChange(nextVal);
             }}
           >
-            <HStack gap="6">
-              {options?.map((item) => (
-                <RadioGroup.Item key={item.value} value={item.value}>
-                  <RadioGroup.ItemHiddenInput />
-                  <RadioGroup.ItemIndicator />
-                  <RadioGroup.ItemText color="gray.700">
-                    {item.label}
-                  </RadioGroup.ItemText>
-                </RadioGroup.Item>
-              ))}
+            <HStack gap="6" flexWrap="wrap">
+              {options?.map((item) => {
+                const isSelected = String(fieldValue) === String(item.value);
+                return (
+                  <RadioGroup.Item
+                    key={String(item.value)}
+                    value={String(item.value)}
+                    cursor={props.disabled || viewOnly ? "default" : "pointer"}
+                    display="inline-flex"
+                    alignItems="center"
+                    gap="8px"
+                  >
+                    <RadioGroup.ItemHiddenInput />
+                    <RadioGroup.ItemIndicator
+                      w="18px"
+                      h="18px"
+                      borderRadius="full"
+                      borderWidth="1.5px"
+                      borderColor={isSelected ? "#F47721" : "#CBD5E1"}
+                      bg={isSelected ? "#F47721" : "white"}
+                      color="white"
+                      boxShadow="none"
+                      display="inline-flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      css={{ "&::before, &::after": { display: "none" } }}
+                      _checked={{
+                        borderColor: "#F47721",
+                        bg: "#F47721",
+                        color: "white",
+                        boxShadow: "none",
+                      }}
+                    >
+                      {isSelected && (
+                        <Box
+                          w="6px"
+                          h="6px"
+                          borderRadius="full"
+                          bg="white"
+                        />
+                      )}
+                    </RadioGroup.ItemIndicator>
+                    <RadioGroup.ItemText
+                      fontSize="13px"
+                      fontWeight={isSelected ? "600" : "500"}
+                      color={isSelected ? "#C95C18" : "fg"}
+                    >
+                      {item.label}
+                    </RadioGroup.ItemText>
+                  </RadioGroup.Item>
+                );
+              })}
             </HStack>
           </RadioGroup.Root>
         );
+      }
       case "checkbox-group": {
         const arr = Array.isArray(fieldValue) ? fieldValue : [];
         const setValue = (next) => {
@@ -1031,7 +1098,7 @@ function CustomInput({
 
         return (
           <>
-            <Flex gap={2} alignItems="center" flexWrap="wrap">
+            <Flex gap={2} alignItems="center" flexWrap="nowrap">
               <Input
                 {...props}
                 name={name}
@@ -1041,7 +1108,7 @@ function CustomInput({
                 _placeholder={{ color: "gray.400" }}
                 readOnly
                 flex={1}
-                minW="200px"
+                minW={0}
                 disabled={props.disabled || viewOnly}
               />
               <Button
@@ -1049,6 +1116,12 @@ function CustomInput({
                 size="sm"
                 variant="outline"
                 colorPalette="brand"
+                borderColor="#F47721"
+                color="#C95C18"
+                bg="#FFF5ED"
+                _hover={{ bg: "#FDE9DA", borderColor: "#DB6516" }}
+                flexShrink={0}
+                whiteSpace="nowrap"
                 onClick={() => setLocationPickerOpen(true)}
                 disabled={props.disabled || viewOnly}
               >
@@ -1545,14 +1618,15 @@ function CustomInput({
   ) : null;
 
   return (
-    <Field.Root orientation={labelOrientation} gap="7px">
-      <Field.Label color={viewOnly ? "brand.600" : "#30384B"} w="100%">
+    // Figma view screens: 11/400 #C95C18 label over a 13/500 #202938 value.
+    <Field.Root orientation={labelOrientation} gap={viewOnly ? "4px" : "7px"}>
+      <Field.Label color={viewOnly ? "#C95C18" : "#30384B"} w="100%">
         <Flex justifyContent="space-between" w="100%" alignItems="center">
           <Text
             lineClamp={1}
-            fontSize="12px"
-            lineHeight="15px"
-            fontWeight="500"
+            fontSize={viewOnly ? "11px" : "12px"}
+            lineHeight={viewOnly ? "14px" : "15px"}
+            fontWeight={viewOnly ? "400" : "500"}
             {...labelStyle}
           >
             {label}
@@ -1563,7 +1637,13 @@ function CustomInput({
         </Flex>
       </Field.Label>
 
-      {viewOnly ? getViewMode() : getInput()}
+      {viewOnly ? (
+        <Box fontSize="13px" lineHeight="18px" fontWeight="500" color="fg" w="100%">
+          {viewFormatter ? viewFormatter(fieldValue) : getViewMode()}
+        </Box>
+      ) : (
+        getInput()
+      )}
 
       {errorPosition === "bottom" && errorMessage}
     </Field.Root>

@@ -14,6 +14,7 @@ import {
   HStack,
   IconButton,
   Table,
+  Grid,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { MdCallSplit, MdAdd, MdDeleteOutline } from "react-icons/md";
@@ -485,7 +486,7 @@ export default function StickeringForm({ params }) {
     if (isEditMode) {
       return "Edit Job Sheet";
     }
-    return `Job Sheet : #${stickeringId ?? ""}`;
+    return `Job Sheet #${stickeringId ?? ""}`;
   };
 
   const handleSubmit = async (values) => {
@@ -787,6 +788,11 @@ export default function StickeringForm({ params }) {
 
             return (
               <Flex flexDirection="column" gap="22px">
+                {/* Figma 06.04: Purchase Acknowledgment | Supervisor side by side on view. */}
+                <Grid
+                  templateColumns={{ base: "1fr", md: isViewMode ? "repeat(2, 1fr)" : "1fr" }}
+                  gap="22px"
+                >
                 <Box>
                   <CustomInput
                     label="Purchase Acknowledgment"
@@ -824,17 +830,21 @@ export default function StickeringForm({ params }) {
                 <Box>
                   <CustomInput
                     label="Supervisor"
-                    placeholder="Click here to select supervisor..."
+                    placeholder="Select supervisor ..."
                     name="supervisor_id"
                     method="searchable-dropdown"
                     options={supervisorOptions}
                     viewOnly={isViewMode}
                   />
                 </Box>
+                </Grid>
 
                 {/* Items */}
                 {values.items && values.items.length > 0 && (
-                  <CustomContainer pageForm title="Items" size="sm" color="secondary">
+                  <Box>
+                    <Text fontSize="13px" fontWeight="500" color="fg" mb="10px">
+                      Items
+                    </Text>
                     <FieldArray name="items">
                       {(arrayHelpers) => {
                         const getSplitMeta = (gid) => {
@@ -1713,10 +1723,13 @@ export default function StickeringForm({ params }) {
                         );
                       }}
                     </FieldArray>
-                  </CustomContainer>
+                  </Box>
                 )}
 
-                <Flex gap="22px" justifyContent="flex-end">
+                {/* Figma 06.01 shows no buttons until items are loaded; 06.02
+                    shows Back + Create 12px apart. */}
+                {!isViewMode && values.items && values.items.length > 0 && (
+                <Flex gap="12px" justifyContent="flex-end">
                   <Button
                     variant="subtle"
                     onClick={() => {
@@ -1746,6 +1759,7 @@ export default function StickeringForm({ params }) {
                       </Button>
                     )}
                 </Flex>
+                )}
               </Flex>
             );
           }}
