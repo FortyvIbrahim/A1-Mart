@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { Box, Grid, NativeSelect, Text } from "@chakra-ui/react";
-import { LuChevronDown } from "react-icons/lu";
+import { Box, Grid, Text } from "@chakra-ui/react";
+import CustomSelect from "@/components/CustomSelect";
 import moment from "moment";
 import { DashboardCard } from "@/components/dashboard/DashboardUI";
 import { formatCurrency } from "@/utils/string";
@@ -51,29 +51,22 @@ function PayrollComparisonCard({
             {fmt(selectedStats)}
           </Text>
           {months.length > 1 ? (
-            <NativeSelect.Root size="xs" justifySelf="end" w="auto">
-              <NativeSelect.Field
-                {...HEAD}
-                h="auto"
-                ps="0"
-                pe="18px"
-                border="none"
-                bg="transparent"
-                textAlign="right"
-                value={comparisonPayrollId || ""}
-                onChange={(e) => onComparisonChange(e.target.value || null)}
-                aria-label="Compare with month"
-              >
-                {months.map((m) => (
-                  <option key={m.payroll_id} value={m.payroll_id}>
-                    {moment(m.payroll_month).format("MMM YYYY")}
-                  </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator right="0" color="#C95C18">
-                <LuChevronDown size={12} />
-              </NativeSelect.Indicator>
-            </NativeSelect.Root>
+            <Box justifySelf="end">
+              <CustomSelect
+                w="auto"
+                minW="112px"
+                h="32px"
+                fontSize="12px"
+                allowEmpty={false}
+                value={comparisonPayrollId ? String(comparisonPayrollId) : ""}
+                onChange={(val) => onComparisonChange(val || null)}
+                ariaLabel="Compare with month"
+                options={months.map((m) => ({
+                  value: String(m.payroll_id),
+                  label: moment(m.payroll_month).format("MMM YYYY"),
+                }))}
+              />
+            </Box>
           ) : (
             <Text {...HEAD} textAlign="right">
               {fmt(comparisonStats)}

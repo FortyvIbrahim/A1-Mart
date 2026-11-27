@@ -1002,35 +1002,47 @@ export default function StickeringForm({ params }) {
                                       display={{ base: "none", md: "block" }}
                                     >
                                       <Table.Root
-                                        variant="striped"
-                                        sx={{
-                                          "tbody tr:nth-of-type(odd) td": {
-                                            background: "#f7f7f7",
+                                        css={{
+                                          "& thead th": {
+                                            bg: "#FFF5ED",
+                                            color: "#637188",
+                                            fontWeight: "600",
+                                            fontSize: "12px",
+                                            borderBottomColor: "#F1E3D9",
+                                          },
+                                          "& tbody tr:nth-of-type(odd) td": {
+                                            bg: "#FFFFFF",
+                                          },
+                                          "& tbody tr:nth-of-type(even) td": {
+                                            bg: "#FFF5ED",
+                                          },
+                                          "& tbody td": {
+                                            borderBottomColor: "#F1E3D9",
                                           },
                                         }}
                                       >
                                         <Table.Header>
-                                          <Table.Row>
-                                            <Table.ColumnHeader>
+                                          <Table.Row bg="#FFF5ED">
+                                            <Table.ColumnHeader bg="#FFF5ED">
                                               Code
                                             </Table.ColumnHeader>
-                                            <Table.ColumnHeader>
+                                            <Table.ColumnHeader bg="#FFF5ED">
                                               Item Name
                                             </Table.ColumnHeader>
-                                            <Table.ColumnHeader>
+                                            <Table.ColumnHeader bg="#FFF5ED">
                                               Quantity
                                             </Table.ColumnHeader>
-                                            <Table.ColumnHeader>
+                                            <Table.ColumnHeader bg="#FFF5ED">
                                               Material Type
                                             </Table.ColumnHeader>
-                                            <Table.ColumnHeader>
+                                            <Table.ColumnHeader bg="#FFF5ED">
                                               Sticker Type
                                             </Table.ColumnHeader>
-                                            <Table.ColumnHeader>
+                                            <Table.ColumnHeader bg="#FFF5ED">
                                               Employee
                                             </Table.ColumnHeader>
                                             {showItemActionsCol && (
-                                              <Table.ColumnHeader w="88px">
+                                              <Table.ColumnHeader bg="#FFF5ED" w="88px">
                                                 Actions
                                               </Table.ColumnHeader>
                                             )}

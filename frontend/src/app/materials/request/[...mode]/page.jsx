@@ -290,26 +290,40 @@ export default function MaterialsRequestForm({ params }) {
                       {(arrayHelpers) => (
                         <div>
                           <Table.Root
-                            variant="striped"
-                            mt="22px"
-                            sx={{
-                              "tbody tr:nth-of-type(odd) td": {
-                                background: "#f7f7f7", // your custom stripe color
+                            css={{
+                              "& thead th": {
+                                bg: "#FFF5ED",
+                                color: "#637188",
+                                fontWeight: "600",
+                                fontSize: "12px",
+                                borderBottomColor: "#F1E3D9",
+                              },
+                              "& tbody tr:nth-of-type(odd) td": {
+                                bg: "#FFFFFF",
+                              },
+                              "& tbody tr:nth-of-type(even) td": {
+                                bg: "#FFF5ED",
+                              },
+                              "& tbody td": {
+                                borderBottomColor: "#F1E3D9",
                               },
                             }}
+                            mt="22px"
                           >
                             <Table.Header>
-                              <Table.Row>
-                                <Table.ColumnHeader>
+                              <Table.Row bg="#FFF5ED">
+                                <Table.ColumnHeader bg="#FFF5ED">
                                   Material Name
                                 </Table.ColumnHeader>
-                                <Table.ColumnHeader>
+                                <Table.ColumnHeader bg="#FFF5ED">
                                   Available Stock
                                 </Table.ColumnHeader>
-                                <Table.ColumnHeader>
+                                <Table.ColumnHeader bg="#FFF5ED">
                                   Quantity
                                 </Table.ColumnHeader>
-                                <Table.ColumnHeader>Remark</Table.ColumnHeader>
+                                <Table.ColumnHeader bg="#FFF5ED">
+                                  Remark
+                                </Table.ColumnHeader>
                               </Table.Row>
                             </Table.Header>
                             <Table.Body>

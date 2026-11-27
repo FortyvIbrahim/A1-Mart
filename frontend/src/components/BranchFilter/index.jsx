@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { Flex, Text, NativeSelect } from "@chakra-ui/react";
-import { LuChevronDown } from "react-icons/lu";
+import { Flex, Text } from "@chakra-ui/react";
+import CustomSelect from "@/components/CustomSelect";
 import useBranches from "@/api/customHooks/useBranches";
 import { useUser } from "@/contexts/UserContext";
 import usePermission from "@/customHooks/usePermission";
@@ -52,37 +52,20 @@ function BranchFilter({
       >
         {label}
       </Text>
-      <NativeSelect.Root
-        width="100%"
+      <CustomSelect
+        h="40px"
+        fontSize="12px"
+        w="100%"
+        value={displayValue}
+        placeholder={allLabel}
         disabled={!canAccessAllBranches && !!employeeData?.branch_id}
-      >
-        <NativeSelect.Field
-          h="40px"
-          ps="12px"
-          pe="34px"
-          fontSize="12px"
-          borderRadius="8px"
-          borderColor="border"
-          bg="white"
-          value={displayValue}
-          color={!displayValue ? "fg.muted" : "fg"}
-          onChange={(e) => {
-            const v = e.target.value;
-            onChange?.(v || "");
-          }}
-          aria-label={label}
-        >
-          <option value="">{allLabel}</option>
-          {(branches || []).map((branch) => (
-            <option key={branch.branch_id} value={branch.branch_id}>
-              {branch.branch_name}
-            </option>
-          ))}
-        </NativeSelect.Field>
-        <NativeSelect.Indicator right="12px" color="#C95C18">
-          <LuChevronDown size={14} />
-        </NativeSelect.Indicator>
-      </NativeSelect.Root>
+        onChange={(v) => onChange?.(v || "")}
+        options={(branches || []).map((branch) => ({
+          value: String(branch.branch_id),
+          label: branch.branch_name,
+        }))}
+        ariaLabel={label}
+      />
     </Flex>
   );
 }

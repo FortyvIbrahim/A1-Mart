@@ -1,15 +1,17 @@
 import {
   Box,
+  Flex,
   Input,
   InputGroup,
   IconButton,
   Text,
   VStack,
   Portal,
-  NativeSelect,
 } from "@chakra-ui/react";
 import { FaTimes } from "react-icons/fa";
+import { LuCheck, LuChevronDown, LuChevronUp } from "react-icons/lu";
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import CustomSelect from "@/components/CustomSelect";
 
 function FilterDropdown({
   label,
@@ -151,7 +153,11 @@ function FilterDropdown({
                 >
                   <FaTimes />
                 </IconButton>
-              ) : undefined
+              ) : (
+                <Box color="#C95C18" pointerEvents="none" display="flex">
+                  {isSearchOpen ? <LuChevronUp size={15} /> : <LuChevronDown size={15} />}
+                </Box>
+              )
             }
           >
             <Input
@@ -166,7 +172,8 @@ function FilterDropdown({
               onBlur={handleInputBlur}
               disabled={disabled}
               autoComplete="off"
-              color={value === "" ? "gray.400" : "black"}
+              borderColor={isSearchOpen ? "#F47721" : "border"}
+              color={value === "" ? "fg.muted" : "fg"}
             />
           </InputGroup>
           {isSearchOpen && (
@@ -177,54 +184,80 @@ function FilterDropdown({
                 top={menuPosition.top}
                 left={menuPosition.left}
                 width={menuPosition.width}
-                maxH="200px"
-                mt="4px"
+                maxH="240px"
+                mt="6px"
                 bg="white"
                 borderWidth="1px"
-                borderRadius="md"
-                borderColor="gray.200"
-                boxShadow="sm"
+                borderRadius="12px"
+                borderColor="border"
+                p="6px"
+                boxShadow="0 12px 32px rgba(31, 41, 55, 0.12), 0 2px 6px rgba(244, 119, 33, 0.06)"
                 overflowY="auto"
-                zIndex={1400}
+                zIndex={1500}
               >
                 {allOptionLabel && (
-                  <Box
+                  <Flex
                     as="button"
                     type="button"
                     w="100%"
-                    textAlign="left"
-                    px="3"
-                    py="2"
-                    color="black"
-                    _hover={{ bg: "gray.100" }}
+                    alignItems="center"
+                    justifyContent="space-between"
+                    gap="8px"
+                    px="12px"
+                    py="9px"
+                    borderRadius="8px"
+                    bg={value === allOptionValue || value === "" || value == null ? "#FFF5ED" : "transparent"}
+                    color={value === allOptionValue || value === "" || value == null ? "#C95C18" : "fg"}
+                    fontSize="13px"
+                    fontWeight={value === allOptionValue || value === "" || value == null ? "500" : "400"}
+                    _hover={{ bg: "#FFF5ED" }}
                     onClick={() => handleOptionSelect(allOptionValue)}
                   >
-                    <Text fontSize="sm">{allOptionLabel}</Text>
-                  </Box>
+                    <Text truncate>{allOptionLabel}</Text>
+                    {(value === allOptionValue || value === "" || value == null) && (
+                      <Box color="#F47721" flexShrink={0} display="flex">
+                        <LuCheck size={15} />
+                      </Box>
+                    )}
+                  </Flex>
                 )}
                 {filteredOptions.length === 0 ? (
-                  <Box px="3" py="2">
-                    <Text fontSize="sm" color="gray.500">
+                  <Box px="12px" py="10px">
+                    <Text fontSize="13px" color="fg.muted">
                       No results
                     </Text>
                   </Box>
                 ) : (
-                  filteredOptions.map((item) => (
-                    <Box
-                      as="button"
-                      type="button"
-                      key={item.value}
-                      w="100%"
-                      textAlign="left"
-                      px="3"
-                      py="2"
-                      color="black"
-                      _hover={{ bg: "gray.100" }}
-                      onClick={() => handleOptionSelect(item.value)}
-                    >
-                      <Text fontSize="sm">{item.label}</Text>
-                    </Box>
-                  ))
+                  filteredOptions.map((item) => {
+                    const selected = value != null && value !== "" && String(value) === String(item.value);
+                    return (
+                      <Flex
+                        as="button"
+                        type="button"
+                        key={item.value}
+                        w="100%"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        gap="8px"
+                        px="12px"
+                        py="9px"
+                        borderRadius="8px"
+                        bg={selected ? "#FFF5ED" : "transparent"}
+                        color={selected ? "#C95C18" : "fg"}
+                        fontSize="13px"
+                        fontWeight={selected ? "500" : "400"}
+                        _hover={{ bg: "#FFF5ED" }}
+                        onClick={() => handleOptionSelect(item.value)}
+                      >
+                        <Text truncate>{item.label}</Text>
+                        {selected && (
+                          <Box color="#F47721" flexShrink={0} display="flex">
+                            <LuCheck size={15} />
+                          </Box>
+                        )}
+                      </Flex>
+                    );
+                  })
                 )}
               </Box>
             </Portal>
@@ -236,27 +269,22 @@ function FilterDropdown({
 
   // Default non-searchable dropdown
   return (
-    <VStack align="start" spacing={1}>
+    <VStack align="start" spacing={1} w="100%">
       <Text fontSize="xs" fontWeight="medium" color="brand600">
         {label}
       </Text>
-      <NativeSelect.Root width="100%">
-        <NativeSelect.Field
-          placeholder={placeholder}
-          value={value ?? ""}
-          color={value === "" || value == null ? "gray.400" : "black"}
-          disabled={disabled}
-          onChange={onChange}
-        >
-          <option value={allOptionValue}>{allOptionLabel}</option>
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </NativeSelect.Field>
-        <NativeSelect.Indicator />
-      </NativeSelect.Root>
+      <CustomSelect
+        h="44px"
+        fontSize="13px"
+        value={value ?? allOptionValue}
+        emptyValue={allOptionValue}
+        emptyLabel={allOptionLabel}
+        placeholder={placeholder || allOptionLabel}
+        options={options}
+        disabled={disabled}
+        onChange={(val) => onChange?.({ target: { value: val } })}
+        ariaLabel={label}
+      />
     </VStack>
   );
 }

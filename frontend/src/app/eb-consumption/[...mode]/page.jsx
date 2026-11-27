@@ -2,7 +2,7 @@
 import CustomContainer from "@/components/CustomContainer";
 import CustomInput from "@/components/CustomInput";
 import GlobalWrapper from "@/components/GlobalWrapper";
-import { Badge, Button, Flex, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Grid, Text } from "@chakra-ui/react";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import Link from "next/link";
@@ -184,7 +184,7 @@ export default function EBConsumptionForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer pageForm breadcrumb="Checklist Management  /  EB Consumption" title={getTitle()}>
+      <CustomContainer pageForm headerBand title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={CONSUMPTION_VALIDATION_SCHEMA}
@@ -192,78 +192,153 @@ export default function EBConsumptionForm({ params }) {
           enableReinitialize
         >
           {({ handleSubmit, setFieldValue, values }) => {
+            const totalUnits =
+              (Number(values.closing_units) || 0) -
+              (Number(values.opening_units) || 0);
+
             return (
-              <Flex flexDirection="column" gap="22px">
-                <CustomInput
-                  label="Date"
-                  isRequired
-                  placeholder="DD/MM/YYYY"
-                  name="date"
-                  type="date"
-                  method="date-picker"
-                  viewOnly={isViewMode}
-                  onChange={(date) =>
-                    setLastEBConsumption({
-                      values,
-                      setFieldValue,
-                      date,
-                    })
-                  }
-                />
-                <CustomInput
-                  label="Select Branch"
-                  isRequired
-                  placeholder="Click here to select employee..."
-                  name="branch_id"
-                  method="dropdown"
-                  options={filteredBranches}
-                  viewOnly={isViewMode}
-                  disabled={isStoreSelected}
-                  onChange={(e) =>
-                    setLastEBConsumption({
-                      values,
-                      setFieldValue,
-                      branch_id: e.target.value,
-                    })
-                  }
-                />
+              <Flex flexDirection="column" gap="20px">
+                <Grid
+                  templateColumns={{ base: "1fr", lg: "1.65fr 1fr" }}
+                  gap="20px"
+                  alignItems="start"
+                >
+                  {/* Entry details card */}
+                  <Box
+                    bg="white"
+                    borderWidth="1px"
+                    borderColor="border"
+                    borderRadius="12px"
+                    p={{ base: "16px", md: "20px" }}
+                  >
+                    <Text
+                      fontSize="15px"
+                      lineHeight="20px"
+                      fontWeight="600"
+                      color="fg"
+                      mb="16px"
+                    >
+                      Entry details
+                    </Text>
 
-                <Flex gap="22px">
-                  <CustomInput
-                    label="Opening Units"
-                    isRequired
-                    placeholder="0"
-                    name="opening_units"
-                    method="text"
-                    type="number"
-                    viewOnly={isViewMode}
-                    disabled={prevDataExists}
-                  />
-                  <CustomInput
-                    label="Closing Units"
-                    isRequired
-                    placeholder="0"
-                    name="closing_units"
-                    method="text"
-                    type="number"
-                    viewOnly={isViewMode}
-                  />
-                </Flex>
+                    <Flex direction="column" gap="18px">
+                      <Grid
+                        templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+                        gap="16px"
+                      >
+                        <CustomInput
+                          label="Date"
+                          isRequired
+                          placeholder="DD/MM/YYYY"
+                          name="date"
+                          type="date"
+                          method="date-picker"
+                          viewOnly={isViewMode}
+                          onChange={(date) =>
+                            setLastEBConsumption({
+                              values,
+                              setFieldValue,
+                              date,
+                            })
+                          }
+                        />
+                        <CustomInput
+                          label="Select Branch"
+                          isRequired
+                          placeholder="Select branch"
+                          name="branch_id"
+                          method="dropdown"
+                          options={filteredBranches}
+                          viewOnly={isViewMode}
+                          disabled={isStoreSelected}
+                          onChange={(e) =>
+                            setLastEBConsumption({
+                              values,
+                              setFieldValue,
+                              branch_id: e.target.value,
+                            })
+                          }
+                        />
+                      </Grid>
 
-                <Badge
-                  colorPalette="secondary"
-                  size="lg"
-                  w="fit-content"
-                >{`Total Consumption: ${
-                  values.closing_units - values.opening_units
-                }`}</Badge>
+                      <Text
+                        fontSize="14px"
+                        lineHeight="20px"
+                        fontWeight="600"
+                        color="fg"
+                      >
+                        Meter readings
+                      </Text>
 
-                <Flex gap="22px" justifyContent="flex-end">
+                      <Grid
+                        templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+                        gap="16px"
+                      >
+                        <CustomInput
+                          label="Opening Units"
+                          isRequired
+                          placeholder="0"
+                          name="opening_units"
+                          method="text"
+                          type="number"
+                          viewOnly={isViewMode}
+                          disabled={prevDataExists}
+                        />
+                        <CustomInput
+                          label="Closing Units"
+                          isRequired
+                          placeholder="0"
+                          name="closing_units"
+                          method="text"
+                          type="number"
+                          viewOnly={isViewMode}
+                        />
+                      </Grid>
+                    </Flex>
+                  </Box>
+
+                  {/* Total Consumption summary card */}
+                  <Box
+                    bg="#FFF5ED"
+                    borderWidth="1px"
+                    borderColor="border"
+                    borderRadius="12px"
+                    p={{ base: "18px", md: "22px" }}
+                  >
+                    <Text
+                      fontSize="13px"
+                      fontWeight="500"
+                      color="#C95C18"
+                      mb="10px"
+                    >
+                      Total Consumption
+                    </Text>
+                    <Text
+                      fontSize="36px"
+                      lineHeight="42px"
+                      fontWeight="700"
+                      color="#C95C18"
+                      mb="10px"
+                    >
+                      {Number.isFinite(totalUnits) ? totalUnits : 0}
+                    </Text>
+                    <Text fontSize="13px" color="fg.muted">
+                      units
+                    </Text>
+                  </Box>
+                </Grid>
+
+                <Flex gap="12px" justifyContent="flex-end">
                   <Link href="/eb-consumption">
                     <Button variant="subtle">Back</Button>
                   </Link>
                   {(isCreateMode || isEditMode) && (
-                    <Button onClick={handleSubmit}>
+                    <Button
+                      bg="#F47721"
+                      color="white"
+                      _hover={{ bg: "#E06612" }}
+                      onClick={handleSubmit}
+                    >
                       {isCreateMode ? "Create" : "Update"}
                     </Button>
                   )}

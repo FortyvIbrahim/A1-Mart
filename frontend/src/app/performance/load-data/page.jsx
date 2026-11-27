@@ -15,7 +15,7 @@ import {
   deleteAccountsPreloadDataByDate,
 } from "@/api/helpers/accounts_preload_data";
 import useDeleteModal from "@/customHooks/useDeleteModal";
-import { FormatNumber, Flex, Text, Button, Box } from "@chakra-ui/react";
+import { FormatNumber, Flex, Grid, Text, Button, Box } from "@chakra-ui/react";
 import { capitalizeWords } from "@/utils/string";
 import DatePicker from "react-datepicker";
 import { CustomDateTimeInput } from "@/components/CustomInput";
@@ -332,27 +332,56 @@ function LoadData() {
   return (
     <GlobalWrapper>
       <DeleteModalComponent />
-      <CustomContainer title="Load Data">
-        <Flex flexDirection="column" gap="22px">
-          {/* Calendar View */}
-          <CustomContainer
-            title={`Calendar View (${moment(selectedDate).format("MMM YYYY")})`}
-            color="secondary"
-            size="sm"
+      <CustomContainer headerBand title="Load Performance Entry">
+        <Grid
+          templateColumns={{ base: "1fr", lg: "380px 1fr" }}
+          gap="20px"
+          alignItems="start"
+        >
+          {/* Calendar View Card */}
+          <Box
+            bg="white"
+            borderWidth="1px"
+            borderColor="border"
+            borderRadius="12px"
+            p={{ base: "16px", md: "20px" }}
           >
+            <Text
+              fontSize="15px"
+              lineHeight="20px"
+              fontWeight="600"
+              color="fg"
+              mb="16px"
+            >
+              {`Calendar View (${moment(selectedDate).format("MMM YYYY")})`}
+            </Text>
             <AccountsPreloadCalendar
               dataByDate={dataByDate}
               currentMonth={selectedDate}
               onDateClick={handleDateClick}
+              onMonthChange={(nextMonth) => handleDateClick(nextMonth)}
               selectedDate={selectedDate}
             />
-          </CustomContainer>
+          </Box>
 
-          <CustomContainer
-            title="Items"
-            color="secondary"
-            size="sm"
-            rightSection={
+          {/* Items Card */}
+          <Box
+            bg="white"
+            borderWidth="1px"
+            borderColor="border"
+            borderRadius="12px"
+            p={{ base: "16px", md: "20px" }}
+          >
+            <Flex
+              align="center"
+              justify="space-between"
+              gap="12px"
+              mb="16px"
+              flexWrap="wrap"
+            >
+              <Text fontSize="15px" lineHeight="20px" fontWeight="600" color="fg">
+                Items
+              </Text>
               <Flex gap={2}>
                 {hasExistingData && !mappedData && (
                   <Button
@@ -367,7 +396,9 @@ function LoadData() {
                 )}
                 {mappedData && mappedData.length > 0 && (
                   <Button
-                    colorPalette="secondary"
+                    bg="#F47721"
+                    color="white"
+                    _hover={{ bg: "#E06612" }}
                     onClick={handleSave}
                     disabled={!selectedDate}
                     size="xs"
@@ -376,28 +407,31 @@ function LoadData() {
                   </Button>
                 )}
               </Flex>
-            }
-          >
-            <Flex flexDirection="column" gap="22px">
-              <Box>
-                <Text fontSize="sm" fontWeight="medium" mb="8px">
+            </Flex>
+
+            <Flex flexDirection="column" gap="18px">
+              <Box w="100%">
+                <Text fontSize="12px" fontWeight="500" color="fg.muted" mb="6px">
                   Date
                 </Text>
-                <DatePicker
-                  portalId="root-portal"
-                  selected={selectedDate}
-                  onChange={(date) => {
-                    setSelectedDate(date);
-                    // Clear uploaded file data when changing date manually
-                    setUploadedFile(null);
-                    setFileData(null);
-                    setMappedData(null);
-                    setMissingCounters([]);
-                  }}
-                  customInput={
-                    <CustomDateTimeInput placeholder="DD/MM/YYYY" type="date" />
-                  }
-                />
+                <Box w="100%" css={{ "& .react-datepicker-wrapper": { width: "100%" } }}>
+                  <DatePicker
+                    portalId="root-portal"
+                    wrapperClassName="w-full"
+                    selected={selectedDate}
+                    onChange={(date) => {
+                      setSelectedDate(date);
+                      // Clear uploaded file data when changing date manually
+                      setUploadedFile(null);
+                      setFileData(null);
+                      setMappedData(null);
+                      setMissingCounters([]);
+                    }}
+                    customInput={
+                      <CustomDateTimeInput placeholder="DD/MM/YYYY" type="date" />
+                    }
+                  />
+                </Box>
               </Box>
 
               {(mappedData && mappedData.length > 0) ||
@@ -450,8 +484,8 @@ function LoadData() {
                 />
               )}
             </Flex>
-          </CustomContainer>
-        </Flex>
+          </Box>
+        </Grid>
       </CustomContainer>
     </GlobalWrapper>
   );

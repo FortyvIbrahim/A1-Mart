@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Box, Flex, Grid, Text, Spinner, NativeSelect } from "@chakra-ui/react";
+import { Box, Flex, Grid, Text, Spinner } from "@chakra-ui/react";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import CustomContainer from "@/components/CustomContainer";
+import CustomSelect from "@/components/CustomSelect";
 import AgGrid from "@/components/AgGrid";
 import useAccountAssets from "@/api/customHooks/useAccountAssets";
 import useBranches from "@/api/customHooks/useBranches";
@@ -404,90 +405,64 @@ function Cashbook() {
             <Text fontSize="xs" mb={1} color="gray.500">
               Branch
             </Text>
-            <NativeSelect.Root
+            <CustomSelect
               width={{ base: "100%", md: "220px" }}
+              h="40px"
               disabled={!canAccessAllBranches}
-            >
-              <NativeSelect.Field
-                value={selectedBranch || ""}
-                color={
-                  selectedBranch === "" || !selectedBranch
-                    ? "gray.400"
-                    : "black"
-                }
-                onChange={(e) => {
-                  setSelectedBranch(e.target.value || null);
-                }}
-              >
-                <option value="">All Branches</option>
-                {branches.map((item) => (
-                  <option key={item.branch_id} value={item.branch_id}>
-                    {item.branch_name}
-                  </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
+              value={selectedBranch ? String(selectedBranch) : ""}
+              emptyLabel="All Branches"
+              onChange={(val) => {
+                setSelectedBranch(val || null);
+              }}
+              options={branches.map((item) => ({
+                value: String(item.branch_id),
+                label: item.branch_name,
+              }))}
+            />
           </Box>
 
           <Box minW={{ base: "100%", md: "220px" }}>
             <Text fontSize="xs" mb={1} color="gray.500">
               Current Asset
             </Text>
-            <NativeSelect.Root width={{ base: "100%", md: "220px" }}>
-              <NativeSelect.Field
-                value={selectedAccountAsset || ""}
-                color={
-                  selectedAccountAsset === "" || !selectedAccountAsset
-                    ? "gray.400"
-                    : "black"
-                }
-                onChange={(e) => {
-                  setSelectedAccountAsset(e.target.value || null);
-                }}
-              >
-                <option value="">All Assets</option>
-                {(assets || []).map((asset) => (
-                  <option
-                    key={asset.account_asset_id}
-                    value={asset.account_asset_id}
-                  >
-                    {asset.label}
-                  </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
+            <CustomSelect
+              width={{ base: "100%", md: "220px" }}
+              h="40px"
+              value={selectedAccountAsset ? String(selectedAccountAsset) : ""}
+              emptyLabel="All Assets"
+              onChange={(val) => {
+                setSelectedAccountAsset(val || null);
+              }}
+              options={(assets || []).map((asset) => ({
+                value: String(asset.account_asset_id),
+                label: asset.label,
+              }))}
+            />
           </Box>
 
           <Box minW={{ base: "100%", md: "220px" }}>
             <Text fontSize="xs" mb={1} color="gray.500">
               Master
             </Text>
-            <NativeSelect.Root width={{ base: "100%", md: "220px" }}>
-              <NativeSelect.Field
-                value={selectedLedger || ""}
-                color={
-                  selectedLedger === "" || !selectedLedger
-                    ? "gray.400"
-                    : "black"
-                }
-                onChange={(e) => {
-                  setSelectedLedger(e.target.value || null);
-                }}
-              >
-                <option value="">All Masters</option>
-                <option value={LEDGER_ID_MONEY_TRANSFER}>
-                  {LEDGER_LABEL_MONEY_TRANSFER}
-                </option>
-                {(ledgers || []).map((ledger) => (
-                  <option key={ledger.ledger_id} value={ledger.ledger_id}>
-                    {ledger.label}
-                  </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
+            <CustomSelect
+              width={{ base: "100%", md: "220px" }}
+              h="40px"
+              value={selectedLedger ? String(selectedLedger) : ""}
+              emptyLabel="All Masters"
+              onChange={(val) => {
+                setSelectedLedger(val || null);
+              }}
+              options={[
+                {
+                  value: String(LEDGER_ID_MONEY_TRANSFER),
+                  label: LEDGER_LABEL_MONEY_TRANSFER,
+                },
+                ...(ledgers || []).map((ledger) => ({
+                  value: String(ledger.ledger_id),
+                  label: ledger.label,
+                })),
+              ]}
+            />
           </Box>
 
           <Flex

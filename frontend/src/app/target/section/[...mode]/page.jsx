@@ -2,7 +2,7 @@
 import CustomContainer from "@/components/CustomContainer";
 import CustomInput from "@/components/CustomInput";
 import GlobalWrapper from "@/components/GlobalWrapper";
-import { Badge, Button, Flex, Grid, Table, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Grid, Table, Text } from "@chakra-ui/react";
 import { FieldArray, Formik } from "formik";
 import * as Yup from "yup";
 import Link from "next/link";
@@ -183,19 +183,52 @@ export default function TargetSectionForm({ params }) {
       });
     }
 
+    const mismatch = total != target?.target_amount;
+
     return (
-      <Flex w="100%" justifyContent="flex-end" pr={3} gap="10px" mt="12px">
-        <Badge size="lg" colorPalette="secondary">{`Total : ${total}`}</Badge>
-        {total != target.target_amount && (
-          <Badge colorPalette="red">Total Target does not match</Badge>
+      <Flex
+        w="100%"
+        justify="space-between"
+        align="center"
+        flexWrap="wrap"
+        gap="10px"
+        mt="14px"
+        px="16px"
+        py="12px"
+        borderRadius="8px"
+        bg={mismatch ? "#FEECEE" : "#EAF6EE"}
+      >
+        <Text
+          fontSize="14px"
+          fontWeight="600"
+          color={mismatch ? "#DC2626" : "#15803D"}
+        >
+          {`Total: ${total}`}
+        </Text>
+        {mismatch && (
+          <Flex direction="column" align={{ base: "flex-start", sm: "flex-end" }}>
+            <Text fontSize="12px" fontWeight="600" color="#DC2626">
+              Total Target does not match
+            </Text>
+            <Text fontSize="11.5px" color="#DC2626">
+              Total Target must equal Target Amount
+            </Text>
+          </Flex>
         )}
       </Flex>
     );
   };
 
+  const viewBranchName =
+    filteredBranches.find((b) => b.value == initialValues.branch_id)?.label ||
+    "—";
+  const viewMonthLabel = initialValues.target_month
+    ? moment(initialValues.target_month).format("MMM YYYY")
+    : "—";
+
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer pageForm breadcrumb="Sales Target  /  Section" title={getTitle()}>
+      <CustomContainer pageForm headerBand title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}
@@ -204,85 +237,127 @@ export default function TargetSectionForm({ params }) {
         >
           {({ handleSubmit, values, errors }) => {
             return (
-              <Flex flexDirection="column" gap="22px">
-                <Grid
-                  templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
-                  gap="22px"
-                  mb="22px"
+              <Flex flexDirection="column" gap="20px">
+                <Box
+                  bg="white"
+                  borderWidth="1px"
+                  borderColor="border"
+                  borderRadius="12px"
+                  p={{ base: "16px", md: "20px" }}
                 >
-                  <CustomInput
-                    label="Select Branch"
-                    isRequired
-                    placeholder="Click here to select branch..."
-                    name="branch_id"
-                    method="dropdown"
-                    options={filteredBranches}
-                    viewOnly
-                  />
+                  <Grid
+                    templateColumns={{ base: "1fr", md: "1fr 1fr 1fr 1.2fr" }}
+                    gap="18px"
+                    alignItems="center"
+                  >
+                    <Box>
+                      <Text fontSize="12px" color="fg.muted" mb="4px">
+                        Branch
+                      </Text>
+                      <Text fontSize="14px" fontWeight="600" color="fg">
+                        {viewBranchName}
+                      </Text>
+                    </Box>
+                    <Box>
+                      <Text fontSize="12px" color="fg.muted" mb="4px">
+                        Department
+                      </Text>
+                      <Text fontSize="14px" fontWeight="600" color="fg">
+                        {initialValues.department_name || "—"}
+                      </Text>
+                    </Box>
+                    <Box>
+                      <Text fontSize="12px" color="fg.muted" mb="4px">
+                        Target Month
+                      </Text>
+                      <Text fontSize="14px" fontWeight="600" color="fg">
+                        {viewMonthLabel}
+                      </Text>
+                    </Box>
+                    <Box
+                      bg="#FFF5ED"
+                      borderWidth="1px"
+                      borderColor="border"
+                      borderRadius="10px"
+                      px="18px"
+                      py="14px"
+                    >
+                      <Text fontSize="12px" color="fg.muted" mb="4px">
+                        Target Amount
+                      </Text>
+                      <Text fontSize="20px" lineHeight="26px" fontWeight="600" color="#C95C18">
+                        {initialValues.target_amount ?? "—"}
+                      </Text>
+                    </Box>
+                  </Grid>
+                </Box>
 
-                  <CustomInput
-                    label="Department"
-                    name="department_name"
-                    viewOnly
-                  />
-
-                  <CustomInput
-                    label="Target Month"
-                    name="target_month"
-                    type="month"
-                    method="date-picker"
-                    viewOnly
-                  />
-
-                  <CustomInput
-                    label="Target Amount"
-                    name="target_amount"
-                    type="number"
-                    viewOnly
-                  />
-                </Grid>
-
-                <CustomContainer pageForm breadcrumb="Sales Target  /  Section" title="Sections" size="sm" color="secondary">
+                <CustomContainer
+                  headerBand
+                  title="Sections"
+                  size="sm"
+                  color="secondary"
+                >
                   {values.targets && values.targets.length > 0 ? (
                     <FieldArray name="targets">
-                      {(arrayHelpers) => (
-                        <div>
+                      {() => (
+                        <Box>
                           <Table.Root
-                            variant="striped"
-                            sx={{
-                              "tbody tr:nth-of-type(odd) td": {
-                                background: "#f7f7f7", // your custom stripe color
+                            css={{
+                              "& thead th": {
+                                bg: "#FFF5ED",
+                                color: "#637188",
+                                fontWeight: "600",
+                                fontSize: "12px",
+                                borderBottomColor: "#F1E3D9",
+                              },
+                              "& tbody tr:nth-of-type(odd) td": {
+                                bg: "#FFFFFF",
+                              },
+                              "& tbody tr:nth-of-type(even) td": {
+                                bg: "#FFF5ED",
+                              },
+                              "& tbody td": {
+                                borderBottomColor: "#F1E3D9",
                               },
                             }}
                           >
                             <Table.Header>
-                              <Table.Row>
-                                <Table.ColumnHeader>
+                              <Table.Row bg="#FFF5ED">
+                                <Table.ColumnHeader bg="#FFF5ED">
                                   Section Name
                                 </Table.ColumnHeader>
-                                <Table.ColumnHeader>
+                                <Table.ColumnHeader
+                                  bg="#FFF5ED"
+                                  textAlign={isViewMode ? "right" : "left"}
+                                >
                                   Target Amount
                                 </Table.ColumnHeader>
                               </Table.Row>
                             </Table.Header>
                             <Table.Body>
                               {values.targets.map((item, idx) => (
-                                <Table.Row key={`${item.material_id}-${idx}`}>
+                                <Table.Row key={`${item.section_id ?? idx}-${idx}`}>
                                   <Table.Cell>
-                                    <CustomInput
-                                      name={`targets.${idx}.section_name`}
-                                      viewOnly={true}
-                                    />
+                                    <Text fontSize="13px" color="fg">
+                                      {item.section_name || "-"}
+                                    </Text>
                                   </Table.Cell>
-                                  <Table.Cell>
-                                    <CustomInput
-                                      name={`targets.${idx}.target`}
-                                      type="number"
-                                      min={0}
-                                      value={item.quantity}
-                                      placeholder="Target"
-                                      viewOnly={isViewMode}
-                                    />
+                                  <Table.Cell textAlign={isViewMode ? "right" : "left"}>
+                                    {isViewMode ? (
+                                      <Text fontSize="13px" fontWeight="500" color="fg">
+                                        {item.target !== "" && item.target != null
+                                          ? item.target
+                                          : "—"}
+                                      </Text>
+                                    ) : (
+                                      <CustomInput
+                                        name={`targets.${idx}.target`}
+                                        type="number"
+                                        min={0}
+                                        placeholder="Target"
+                                      />
+                                    )}
                                   </Table.Cell>
                                 </Table.Row>
                               ))}
@@ -295,24 +370,28 @@ export default function TargetSectionForm({ params }) {
                             errors.targets &&
                             typeof errors.targets === "string" && (
                               <Flex justifyContent="flex-end" pr={3} mt="8px">
-                                <Text color="red" fontSize="sm">
+                                <Text color="red.500" fontSize="sm">
                                   {errors.targets}
                                 </Text>
                               </Flex>
                             )}
-                        </div>
+                        </Box>
                       )}
                     </FieldArray>
-                  ) : // <EmptyData />
-                  null}
+                  ) : null}
                 </CustomContainer>
 
-                <Flex gap="22px" justifyContent="flex-end">
+                <Flex gap="12px" justifyContent="flex-end">
                   <Link href="/target/section">
                     <Button variant="subtle">Back</Button>
                   </Link>
                   {(isCreateMode || isEditMode) && (
-                    <Button onClick={handleSubmit}>
+                    <Button
+                      bg="#F47721"
+                      color="white"
+                      _hover={{ bg: "#E06612" }}
+                      onClick={handleSubmit}
+                    >
                       {isCreateMode ? "Create" : "Update"}
                     </Button>
                   )}

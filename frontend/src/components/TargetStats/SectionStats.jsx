@@ -93,8 +93,8 @@ function SectionStats({ sectionTargets = [], entryTargets = [] }) {
   ];
 
   return (
-    <CustomContainer title="Section-wise Statistics">
-      <AgGrid rowData={stats} columnDefs={colDefs} tableKey="section-stats" />
+    <CustomContainer headerBand size="sm" title="Section-wise Statistics">
+      <AgGrid bare rowData={stats} columnDefs={colDefs} tableKey="section-stats" />
     </CustomContainer>
   );
 }

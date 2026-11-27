@@ -57,8 +57,8 @@ function EmployeeStats({ entryTargets = [] }) {
   ];
 
   return (
-    <CustomContainer title="Employee-wise Statistics">
-      <AgGrid rowData={stats} columnDefs={colDefs} tableKey="employee-stats" />
+    <CustomContainer headerBand size="sm" title="Employee-wise Statistics">
+      <AgGrid bare rowData={stats} columnDefs={colDefs} tableKey="employee-stats" />
     </CustomContainer>
   );
 }

@@ -3,22 +3,23 @@
 }
 
 .dropzone {
-  border: 2px dashed #f2e2d6;
-  border-radius: 8px;
-  padding: 20px;
+  border: 1.5px dashed #efa46d;
+  border-radius: 10px;
+  padding: 24px 16px;
+  background-color: #fffbf8;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .dropzone:hover {
-  border-color: var(--chakra-colors-brand-500);
-  background-color: var(--chakra-colors-brand-50);
+  border-color: #f47721;
+  background-color: #fff5ed;
 }
 
 .dragActive {
-  border-color: var(--chakra-colors-brand-500);
-  background-color: var(--chakra-colors-brand-50);
+  border-color: #f47721;
+  background-color: #fff5ed;
 }
 
 .fileInfo {
@@ -54,8 +55,8 @@
 }
 
 .placeholder i {
-  font-size: 24px;
-  color: var(--chakra-colors-brand-500);
+  font-size: 22px;
+  color: #f47721;
 }
 
 .fileNameStyle {

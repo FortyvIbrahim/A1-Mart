@@ -7,7 +7,6 @@ import toast from "react-hot-toast";
 import { uploadAsset } from "@/api/helpers/assets";
 import { useUser } from "@/contexts/UserContext";
 import useTaskComments from "@/api/customHooks/useTaskComments";
-import CustomContainer from "@/components/CustomContainer";
 import {
   Button,
   Flex,
@@ -58,13 +57,13 @@ const Avatar = ({ name, size = "sm", children }) => {
       width={dimensions.width}
       height={dimensions.height}
       borderRadius="full"
-      bg="brand100"
-      color="brand700"
+      bg="#FFF5ED"
+      color="#C95C18"
       display="flex"
       alignItems="center"
       justifyContent="center"
       flexShrink={0}
-      fontWeight="medium"
+      fontWeight="600"
       fontSize={dimensions.fontSize}
     >
       {displayText}
@@ -158,246 +157,254 @@ export default function TaskComments({ taskId }) {
   }
 
   return (
-    <VStack gap="22px" align="stretch" w="100%" mt="22px">
-      {/* Comments List - Above Input */}
-      <CustomContainer title={`Comments (${comments.length})`} size="sm">
-        {loadingComments ? (
-          <Text fontSize="sm" color="gray.500" textAlign="center" py="16px">
-            Loading comments...
-          </Text>
-        ) : comments.length > 0 ? (
-          <VStack gap="0" align="stretch">
-            {comments.map((comment, index) => (
-              <Box key={comment.task_comment_id || index}>
-                {index > 0 && (
-                  <Box borderTop="1px solid" borderColor="gray.100" my="8px" />
-                )}
-                <Box py="12px" px="0">
-                  <HStack align="flex-start" spacing="10px">
-                    {/* User Avatar */}
-                    <Avatar size="sm" name={comment.created_by_name || "User"}>
-                      {getInitials(comment.created_by_name || "User")}
-                    </Avatar>
+    <Box
+      bg="white"
+      borderWidth="1px"
+      borderColor="border"
+      borderRadius="12px"
+      p={{ base: "16px", md: "24px" }}
+      w="100%"
+    >
+      <Text fontSize="16px" lineHeight="22px" fontWeight="600" color="fg" mb="12px">
+        {`Comments (${comments.length})`}
+      </Text>
 
-                    {/* Comment Content */}
-                    <Flex flex={1} direction="column" gap="6px">
-                      <HStack justify="space-between" align="center">
-                        <Text
-                          fontSize="xs"
-                          fontWeight="medium"
-                          color="gray.500"
-                        >
-                          {capitalizeWords(comment.created_by_name) ||
-                            "Unknown User"}
-                        </Text>
-                        <Text fontSize="xs" color="gray.500">
-                          {formatTimeAgo(comment.created_at)}
-                        </Text>
-                      </HStack>
+      {loadingComments ? (
+        <Text fontSize="13px" color="fg.muted" py="12px">
+          Loading comments...
+        </Text>
+      ) : comments.length > 0 ? (
+        <VStack gap="0" align="stretch" mb="16px">
+          {comments.map((comment, index) => (
+            <Box key={comment.task_comment_id || index}>
+              {index > 0 && (
+                <Box borderTop="1px solid" borderColor="border.subtle" my="8px" />
+              )}
+              <Box py="12px" px="0">
+                <HStack align="flex-start" spacing="12px">
+                  {/* User Avatar */}
+                  <Avatar size="sm" name={comment.created_by_name || "User"}>
+                    {getInitials(comment.created_by_name || "User")}
+                  </Avatar>
 
-                      <Text fontSize="sm" color="gray.900" lineHeight="1.5">
-                        {comment.message || "-"}
+                  {/* Comment Content */}
+                  <Flex flex={1} direction="column" gap="6px">
+                    <HStack justify="space-between" align="center">
+                      <Text fontSize="12px" fontWeight="600" color="fg">
+                        {capitalizeWords(comment.created_by_name) ||
+                          "Unknown User"}
                       </Text>
-
-                      {/* File Attachments */}
-                      {comment.files && comment.files.length > 0 && (
-                        <HStack spacing="8px" mt="4px" flexWrap="wrap">
-                          {comment.files.map((file, fileIndex) => {
-                            const fileUrl = file.file_url || file;
-                            const fileName =
-                              fileUrl.split("/").pop().split("?")[0] ||
-                              "Attachment";
-                            return (
-                              <HStack
-                                key={fileIndex}
-                                p="4px 8px"
-                                bg="gray.50"
-                                borderRadius="sm"
-                                borderWidth="1px"
-                                borderColor="gray.200"
-                                spacing="6px"
-                                as="a"
-                                href={fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                _hover={{ bg: "gray.100" }}
-                                maxW="200px"
-                              >
-                                <FaPaperclip
-                                  size="10px"
-                                  color="var(--chakra-colors-gray-500)"
-                                  flexShrink={0}
-                                />
-                                <Text
-                                  fontSize="xs"
-                                  color="brand.600"
-                                  _hover={{ textDecoration: "underline" }}
-                                  noOfLines={1}
-                                  overflow="hidden"
-                                  textOverflow="ellipsis"
-                                  whiteSpace="nowrap"
-                                  flex={1}
-                                  minW={0}
-                                >
-                                  {fileName}
-                                </Text>
-                              </HStack>
-                            );
-                          })}
-                        </HStack>
-                      )}
-                    </Flex>
-                  </HStack>
-                </Box>
-              </Box>
-            ))}
-          </VStack>
-        ) : (
-          <Text fontSize="sm" color="gray.500" textAlign="center" py="16px">
-            No comments yet. Be the first to comment!
-          </Text>
-        )}
-
-        <hr style={{ marginBlock: "22px" }} />
-
-        <Formik
-          initialValues={COMMENT_INITIAL_VALUES}
-          validationSchema={COMMENT_VALIDATION_SCHEMA}
-          onSubmit={handleCommentSubmit}
-        >
-          {({ handleSubmit, values, setFieldValue, errors, touched }) => {
-            const handleFileChange = (e) => {
-              const files = Array.from(e.target.files || []);
-              const currentFiles = Array.isArray(values.files)
-                ? values.files
-                : [];
-              const newFiles = files.map((file) => ({
-                file,
-                isNew: true,
-                uri: null,
-              }));
-              setFieldValue("files", [...currentFiles, ...newFiles]);
-            };
-
-            const removeFile = (index) => {
-              const currentFiles = Array.isArray(values.files)
-                ? values.files
-                : [];
-              const updatedFiles = currentFiles.filter((_, i) => i !== index);
-              setFieldValue("files", updatedFiles);
-            };
-
-            return (
-              <VStack spacing="12px" align="stretch">
-                <HStack align="flex-start" spacing="10px">
-                  {/* Comment Input Area */}
-                  <Flex flex={1} direction="column" gap="8px">
-                    <Flex gap="8px" align="center">
-                      <Textarea
-                        placeholder="Add a comment..."
-                        value={values.message}
-                        onChange={(e) =>
-                          setFieldValue("message", e.target.value)
-                        }
-                        size="xs"
-                        rows={1}
-                        p="12px 12px"
-                        resize="none"
-                        borderColor={
-                          errors.message && touched.message
-                            ? "red.300"
-                            : "gray.200"
-                        }
-                        _focus={{
-                          borderColor: "brand.500",
-                          boxShadow: "0 0 0 1px var(--chakra-colors-brand-500)",
-                        }}
-                      />
-
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        onChange={handleFileChange}
-                        style={{ display: "none" }}
-                      />
-                      <IconButton
-                        size="sm"
-                        variant="subtle"
-                        onClick={() => fileInputRef.current?.click()}
-                        aria-label="Attach file"
-                      >
-                        <FaPaperclip />
-                      </IconButton>
-                    </Flex>
-
-                    {errors.message && touched.message && (
-                      <Text fontSize="xs" color="red.500" mt="-4px">
-                        {errors.message}
+                      <Text fontSize="12px" color="fg.muted">
+                        {formatTimeAgo(comment.created_at)}
                       </Text>
-                    )}
+                    </HStack>
+
+                    <Text fontSize="13.5px" color="fg" lineHeight="1.5">
+                      {comment.message || "-"}
+                    </Text>
 
                     {/* File Attachments */}
-                    {values.files && values.files.length > 0 && (
-                      <HStack spacing="6px" flexWrap="wrap">
-                        {values.files.map((fileItem, index) => (
-                          <HStack
-                            key={index}
-                            p="4px 8px"
-                            bg="gray.50"
-                            borderRadius="sm"
-                            borderWidth="1px"
-                            borderColor="gray.200"
-                            spacing="6px"
-                            maxW="180px"
-                          >
-                            <Text
-                              fontSize="xs"
-                              color="gray.700"
-                              noOfLines={1}
-                              overflow="hidden"
-                              textOverflow="ellipsis"
-                              whiteSpace="nowrap"
-                              flex={1}
-                              minW={0}
+                    {comment.files && comment.files.length > 0 && (
+                      <HStack spacing="8px" mt="4px" flexWrap="wrap">
+                        {comment.files.map((file, fileIndex) => {
+                          const fileUrl = file.file_url || file;
+                          const fileName =
+                            fileUrl.split("/").pop().split("?")[0] ||
+                            "Attachment";
+                          return (
+                            <HStack
+                              key={fileIndex}
+                              p="5px 10px"
+                              bg="#FFF5ED"
+                              borderRadius="8px"
+                              borderWidth="1px"
+                              borderColor="border"
+                              spacing="6px"
+                              as="a"
+                              href={fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              _hover={{ bg: "#FDE9DA" }}
+                              maxW="220px"
                             >
-                              {fileItem.file?.name || "File"}
-                            </Text>
-                            <IconButton
-                              size="xs"
-                              variant="ghost"
-                              onClick={() => removeFile(index)}
-                              aria-label="Remove file"
-                              minW="16px"
-                              h="16px"
-                              flexShrink={0}
-                            >
-                              <FaTimes size="10px" />
-                            </IconButton>
-                          </HStack>
-                        ))}
+                              <FaPaperclip
+                                size="10px"
+                                color="#C95C18"
+                                flexShrink={0}
+                              />
+                              <Text
+                                fontSize="12px"
+                                color="#C95C18"
+                                fontWeight="500"
+                                noOfLines={1}
+                                overflow="hidden"
+                                textOverflow="ellipsis"
+                                whiteSpace="nowrap"
+                                flex={1}
+                                minW={0}
+                              >
+                                {fileName}
+                              </Text>
+                            </HStack>
+                          );
+                        })}
                       </HStack>
                     )}
-
-                    {/* Action Buttons */}
-                    <HStack justify="flex-end" mt="22px">
-                      <Button
-                        size="sm"
-                        onClick={handleSubmit}
-                        disabled={
-                          !values.message || values.message.trim() === ""
-                        }
-                      >
-                        Comment
-                      </Button>
-                    </HStack>
                   </Flex>
                 </HStack>
-              </VStack>
-            );
-          }}
-        </Formik>
-      </CustomContainer>
-    </VStack>
+              </Box>
+            </Box>
+          ))}
+        </VStack>
+      ) : (
+        <Text fontSize="13px" color="fg.muted" textAlign="left" mb="16px">
+          No comments yet. Be the first to comment!
+        </Text>
+      )}
+
+      <Formik
+        initialValues={COMMENT_INITIAL_VALUES}
+        validationSchema={COMMENT_VALIDATION_SCHEMA}
+        onSubmit={handleCommentSubmit}
+      >
+        {({ handleSubmit, values, setFieldValue, errors, touched }) => {
+          const handleFileChange = (e) => {
+            const files = Array.from(e.target.files || []);
+            const currentFiles = Array.isArray(values.files)
+              ? values.files
+              : [];
+            const newFiles = files.map((file) => ({
+              file,
+              isNew: true,
+              uri: null,
+            }));
+            setFieldValue("files", [...currentFiles, ...newFiles]);
+          };
+
+          const removeFile = (index) => {
+            const currentFiles = Array.isArray(values.files)
+              ? values.files
+              : [];
+            const updatedFiles = currentFiles.filter((_, i) => i !== index);
+            setFieldValue("files", updatedFiles);
+          };
+
+          return (
+            <VStack gap="12px" align="stretch">
+              <Box>
+                <Text fontSize="12px" fontWeight="500" color="fg.muted" mb="6px">
+                  Comment
+                </Text>
+                <Flex gap="10px" align="center">
+                  <Textarea
+                    placeholder="Add a comment..."
+                    value={values.message}
+                    onChange={(e) => setFieldValue("message", e.target.value)}
+                    rows={1}
+                    minH="44px"
+                    h="44px"
+                    py="11px"
+                    px="14px"
+                    fontSize="13px"
+                    bg="white"
+                    borderRadius="8px"
+                    resize="none"
+                    borderColor={
+                      errors.message && touched.message ? "red.400" : "border"
+                    }
+                    _focus={{
+                      borderColor: "#F47721",
+                      boxShadow: "none",
+                    }}
+                  />
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleFileChange}
+                    style={{ display: "none" }}
+                  />
+                  <Button
+                    type="button"
+                    variant="subtle"
+                    h="44px"
+                    px="18px"
+                    flexShrink={0}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Attach
+                  </Button>
+                </Flex>
+
+                {errors.message && touched.message && (
+                  <Text fontSize="12px" color="red.500" mt="6px">
+                    {errors.message}
+                  </Text>
+                )}
+              </Box>
+
+              {/* File Attachments */}
+              {values.files && values.files.length > 0 && (
+                <HStack spacing="6px" flexWrap="wrap">
+                  {values.files.map((fileItem, index) => (
+                    <HStack
+                      key={index}
+                      p="4px 8px"
+                      bg="#FFF5ED"
+                      borderRadius="8px"
+                      borderWidth="1px"
+                      borderColor="border"
+                      spacing="6px"
+                      maxW="200px"
+                    >
+                      <Text
+                        fontSize="12px"
+                        color="fg"
+                        noOfLines={1}
+                        overflow="hidden"
+                        textOverflow="ellipsis"
+                        whiteSpace="nowrap"
+                        flex={1}
+                        minW={0}
+                      >
+                        {fileItem.file?.name || "File"}
+                      </Text>
+                      <IconButton
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => removeFile(index)}
+                        aria-label="Remove file"
+                        minW="16px"
+                        h="16px"
+                        flexShrink={0}
+                      >
+                        <FaTimes size="10px" />
+                      </IconButton>
+                    </HStack>
+                  ))}
+                </HStack>
+              )}
+
+              {/* Action Buttons */}
+              <Flex justify="flex-start" pt="2px">
+                <Button
+                  type="button"
+                  bg="#F47721"
+                  color="white"
+                  _hover={{ bg: "#E06612" }}
+                  h="40px"
+                  px="20px"
+                  borderRadius="8px"
+                  onClick={handleSubmit}
+                >
+                  Comment
+                </Button>
+              </Flex>
+            </VStack>
+          );
+        }}
+      </Formik>
+    </Box>
   );
 }

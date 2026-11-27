@@ -25,12 +25,20 @@ function Materials() {
   const router = useRouter();
   const { materials, handleUpdateStatus } = useMaterials();
 
+  const centerCellStyle = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
+  };
+
   const colDefs = [
     {
       field: "material_id",
       headerName: "ID",
-      maxWidth: 120,
+      maxWidth: 110,
       resizable: false,
+      cellStyle: centerCellStyle,
     },
     {
       field: "image_url",
@@ -38,20 +46,23 @@ function Materials() {
       maxWidth: 120,
       resizable: false,
       filter: false,
+      cellStyle: centerCellStyle,
       cellRenderer: (props) => {
         if (!props.value) {
           return (
-            <Flex justifyContent="center" alignItems="center" height={"100%"}>
+            <Flex justifyContent="center" alignItems="center" w="100%" h="100%">
               <Flex
                 justifyContent="center"
                 alignItems="center"
-                height="80%"
-                width="100%"
-                backgroundColor="gray.100"
-                borderRadius="md"
+                height="56px"
+                width="56px"
+                backgroundColor="#FFF5ED"
+                borderWidth="1px"
+                borderColor="border"
+                borderRadius="8px"
                 padding="4px"
               >
-                <Text color="gray.500" fontSize="2xs">
+                <Text color="#C95C18" fontSize="10px" fontWeight="500" textAlign="center">
                   No Image
                 </Text>
               </Flex>
@@ -60,13 +71,26 @@ function Materials() {
         }
 
         return (
-          <Flex justifyContent="center" alignItems="center" height={"100%"}>
-            <Image
-              src={props.value}
-              alt="Material Image"
-              width={100}
-              height={100}
-            />
+          <Flex justifyContent="center" alignItems="center" w="100%" h="100%">
+            <Flex
+              w="60px"
+              h="60px"
+              borderRadius="8px"
+              overflow="hidden"
+              bg="#FFFBF8"
+              borderWidth="1px"
+              borderColor="border.subtle"
+              justifyContent="center"
+              alignItems="center"
+            >
+              <Image
+                src={props.value}
+                alt="Material Image"
+                width={60}
+                height={60}
+                style={{ objectFit: "contain", width: "100%", height: "100%" }}
+              />
+            </Flex>
           </Flex>
         );
       },
@@ -75,24 +99,28 @@ function Materials() {
       field: "name",
       headerName: "Name",
       resizable: true,
+      cellStyle: centerCellStyle,
       cellRenderer: (props) => capitalizeWords(props.value ?? "-"),
     },
     {
       field: "live_stock",
       headerName: "Live Stock",
       resizable: true,
+      cellStyle: centerCellStyle,
       cellRenderer: (props) => props.value ?? "-",
     },
     {
       field: "category.category_name",
       headerName: "Category",
       resizable: true,
+      cellStyle: centerCellStyle,
       cellRenderer: (props) => capitalizeWords(props.value ?? "-"),
     },
     {
       field: "supplier_name",
       headerName: "Supplier",
       resizable: true,
+      cellStyle: centerCellStyle,
       cellRenderer: (props) => capitalizeWords(props.value ?? "-"),
     },
     {
@@ -101,12 +129,15 @@ function Materials() {
       resizable: true,
       maxWidth: 150,
       filter: "agNumberColumnFilter",
+      cellStyle: centerCellStyle,
       cellRenderer: (props) => {
         const isActive = props.value === 1;
         return (
-          <Badge colorPalette={isActive ? "green" : "red"}>
-            {isActive ? "Active" : "Inactive"}
-          </Badge>
+          <Flex justifyContent="center" alignItems="center" w="100%" h="100%">
+            <Badge colorPalette={isActive ? "green" : "red"}>
+              {isActive ? "Active" : "Inactive"}
+            </Badge>
+          </Flex>
         );
       },
     },
@@ -116,9 +147,10 @@ function Materials() {
       resizable: false,
       maxWidth: 100,
       filter: false,
+      cellStyle: centerCellStyle,
       cellRenderer: (props) => {
         return (
-          <Flex justifyContent="center" alignItems="center" height={"100%"}>
+          <Flex justifyContent="center" alignItems="center" w="100%" height={"100%"}>
             <CustomMenu
               items={[
                 {
@@ -137,12 +169,6 @@ function Materials() {
                   onClick: () =>
                     handleUpdateStatus(props.value, !props.data.is_active),
                 },
-                // {
-                //   label: "Delete",
-                //   value: "delete",
-                //   onClick: () => alert("test"),
-                //   type: "danger",
-                // },
               ]}
             />
           </Flex>
@@ -158,11 +184,10 @@ function Materials() {
       <CustomContainer headerBand
         title="Materials"
         rightSection={
-          <Flex gap="18px">
+          <Flex gap="10px">
             <Link href="/materials/category/create">
               <Button>Add Category</Button>
             </Link>
-
             <Link href="/materials/create">
               <Button>Add</Button>
             </Link>

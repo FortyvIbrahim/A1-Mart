@@ -360,62 +360,179 @@ export default function PurchaseOrderForm({ params }) {
             };
 
             return (
-              <Box>
-                <Box>
-                  <CustomInput
-                    label="Vendor Name"
-                    name="vendor_id"
-                    method="searchable-dropdown"
-                    options={filtersPeopleList}
-                    placeholder="Select Vendor"
-                    viewOnly={isViewMode}
-                  />
-                </Box>
-
-                <hr style={{ margin: "22px 0" }} />
-
-                <Box mt="32px">
-                  <Grid
-                    templateColumns={{
-                      base: "repeat(1, 1fr)",
-                      md: "repeat(3, 1fr)",
-                    }}
-                    gap={4}
-                    mt={4}
+              <Flex direction="column" gap="20px">
+                {/* Top 2-column Order details & Order totals */}
+                <Grid
+                  templateColumns={{ base: "1fr", lg: "1.55fr 1fr" }}
+                  gap="20px"
+                  alignItems="start"
+                >
+                  <Box
+                    bg="white"
+                    borderWidth="1px"
+                    borderColor="border"
+                    borderRadius="12px"
+                    p={{ base: "16px", md: "20px" }}
                   >
-                    <CustomInput
-                      label="Purchase Order Reference #"
-                      name="purchase_order_ref"
-                      placeholder="PO-2025-001"
-                      viewOnly={isViewMode}
-                    />
-                    <CustomInput
-                      label="Date"
-                      name="date"
-                      placeholder="DD/MM/YYYY"
-                      viewOnly={isViewMode}
-                      method="date-picker"
-                      onChange={(date) => {
-                        setFieldValue(
-                          "delivery_date",
-                          new Date(date).setDate(new Date(date).getDate() + 10)
-                        );
-                      }}
-                    />
-                    <CustomInput
-                      label="Delivery Date"
-                      name="delivery_date"
-                      placeholder="DD/MM/YYYY"
-                      viewOnly={isViewMode}
-                      method="date-picker"
-                    />
-                  </Grid>
+                    <Text
+                      fontSize="15px"
+                      lineHeight="20px"
+                      fontWeight="600"
+                      color="fg"
+                      mb="16px"
+                    >
+                      Order details
+                    </Text>
+                    <Flex direction="column" gap="16px">
+                      <CustomInput
+                        label="Vendor Name"
+                        name="vendor_id"
+                        method="searchable-dropdown"
+                        options={filtersPeopleList}
+                        placeholder="Select Vendor"
+                        viewOnly={isViewMode}
+                      />
+                      <CustomInput
+                        label="Purchase Order Reference #"
+                        name="purchase_order_ref"
+                        placeholder="PO-2025-001"
+                        viewOnly={isViewMode}
+                      />
+                      <Grid
+                        templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+                        gap="16px"
+                      >
+                        <CustomInput
+                          label="Date"
+                          name="date"
+                          placeholder="DD/MM/YYYY"
+                          viewOnly={isViewMode}
+                          method="date-picker"
+                          onChange={(date) => {
+                            setFieldValue(
+                              "delivery_date",
+                              new Date(date).setDate(
+                                new Date(date).getDate() + 10
+                              )
+                            );
+                          }}
+                        />
+                        <CustomInput
+                          label="Delivery Date"
+                          name="delivery_date"
+                          placeholder="DD/MM/YYYY"
+                          viewOnly={isViewMode}
+                          method="date-picker"
+                        />
+                      </Grid>
+                    </Flex>
+                  </Box>
 
-                  <CustomContainer pageForm headerBand
-                    containerStyle={{ marginTop: "22px" }}
-                    title="Items"
-                    size="sm"
-                    color="secondary"
+                  <Box
+                    bg="white"
+                    borderWidth="1px"
+                    borderColor="border"
+                    borderRadius="12px"
+                    p={{ base: "16px", md: "20px" }}
+                  >
+                    <Text
+                      fontSize="15px"
+                      lineHeight="20px"
+                      fontWeight="600"
+                      color="fg"
+                      mb="16px"
+                    >
+                      Order totals
+                    </Text>
+                    <Flex direction="column" gap="14px">
+                      <Flex justify="space-between" align="center">
+                        <Text fontSize="13.5px" fontWeight="600" color="fg">
+                          Sub Total
+                        </Text>
+                        <Text fontSize="14px" fontWeight="600" color="fg">
+                          {getSubTotal().toFixed(2)}
+                        </Text>
+                      </Flex>
+
+                      <Grid
+                        templateColumns="1fr 120px auto"
+                        alignItems="center"
+                        gap="12px"
+                      >
+                        <Text fontSize="13px" color="fg.muted">
+                          Discount
+                        </Text>
+                        <CustomInput
+                          name="discount"
+                          type="number"
+                          min={0}
+                          max={100}
+                          placeholder="0.00"
+                          size="sm"
+                          viewOnly={isViewMode}
+                          rightAddon="%"
+                          style={{ bg: "white" }}
+                        />
+                        <Text fontSize="13.5px" color="fg" textAlign="right" minW="54px">
+                          {getDiscountAmount().toFixed(2)}
+                        </Text>
+                      </Grid>
+
+                      <Flex justify="space-between" align="center">
+                        <Text fontSize="13px" color="fg.muted">
+                          Tax
+                        </Text>
+                        <Text fontSize="13.5px" fontWeight="500" color="fg">
+                          {getTaxAmount().toFixed(2)}
+                        </Text>
+                      </Flex>
+
+                      <Grid
+                        templateColumns="1fr 120px auto"
+                        alignItems="center"
+                        gap="12px"
+                      >
+                        <Text fontSize="13px" color="fg.muted">
+                          Adjustment
+                        </Text>
+                        <CustomInput
+                          name="adjustment"
+                          type="number"
+                          placeholder="0.00"
+                          size="sm"
+                          viewOnly={isViewMode}
+                          style={{ bg: "white" }}
+                        />
+                        <Text fontSize="13.5px" color="fg" textAlign="right" minW="54px">
+                          {getAdjustment().toFixed(2)}
+                        </Text>
+                      </Grid>
+
+                      <Box borderTop="1px solid" borderColor="border.subtle" pt="12px">
+                        <Flex justify="space-between" align="center">
+                          <Text fontSize="14px" fontWeight="700" color="fg">
+                            Total
+                          </Text>
+                          <Text fontSize="15px" fontWeight="700" color="fg">
+                            {getTotal().toFixed(2)}
+                          </Text>
+                        </Flex>
+                      </Box>
+                    </Flex>
+                  </Box>
+                </Grid>
+
+                {/* Items Section without Settings */}
+                <Flex direction="column" gap="12px">
+                  <Text fontSize="15px" lineHeight="20px" fontWeight="600" color="fg">
+                    Items
+                  </Text>
+                  <Box
+                    bg="white"
+                    borderWidth="1px"
+                    borderColor="border"
+                    borderRadius="12px"
+                    overflow="hidden"
                   >
                     <FieldArray
                       name="items"
@@ -424,44 +541,47 @@ export default function PurchaseOrderForm({ params }) {
                           {/* Desktop Table */}
                           <Box display={{ base: "none", md: "block" }}>
                             <Table.Root
-                              variant="striped"
-                              sx={{
-                                "& thead tr": {
-                                  background: "#f7f7f7",
-                                },
+                              css={{
                                 "& thead th": {
-                                  background: "#f7f7f7",
+                                  bg: "#FFF5ED",
+                                  color: "#637188",
+                                  fontWeight: "600",
+                                  fontSize: "12px",
+                                  borderBottomColor: "#F1E3D9",
                                 },
                                 "& tbody tr:nth-of-type(odd) td": {
-                                  background: "#f7f7f7",
+                                  bg: "#ffffff",
                                 },
                                 "& tbody tr:nth-of-type(even) td": {
-                                  background: "#ffffff",
+                                  bg: "#FFF5ED",
+                                },
+                                "& tbody td": {
+                                  borderBottomColor: "#F1E3D9",
                                 },
                               }}
                             >
                               <Table.Header>
-                                <Table.Row bg="#f7f7f7">
-                                  <Table.ColumnHeader bg="#f7f7f7">
+                                <Table.Row bg="#FFF5ED">
+                                  <Table.ColumnHeader bg="#FFF5ED" textAlign="center" w="96px">
                                     Image
                                   </Table.ColumnHeader>
-                                  <Table.ColumnHeader bg="#f7f7f7">
+                                  <Table.ColumnHeader bg="#FFF5ED">
                                     Item
                                   </Table.ColumnHeader>
-                                  <Table.ColumnHeader bg="#f7f7f7">
+                                  <Table.ColumnHeader bg="#FFF5ED" textAlign="center">
                                     Quantity
                                   </Table.ColumnHeader>
-                                  <Table.ColumnHeader bg="#f7f7f7">
+                                  <Table.ColumnHeader bg="#FFF5ED" textAlign="center">
                                     Rate
                                   </Table.ColumnHeader>
-                                  <Table.ColumnHeader bg="#f7f7f7">
+                                  <Table.ColumnHeader bg="#FFF5ED" textAlign="center">
                                     Amount
                                   </Table.ColumnHeader>
-                                  <Table.ColumnHeader bg="#f7f7f7">
+                                  <Table.ColumnHeader bg="#FFF5ED" textAlign="center">
                                     Tax
                                   </Table.ColumnHeader>
                                   {!isViewMode && (
-                                    <Table.ColumnHeader bg="#f7f7f7">
+                                    <Table.ColumnHeader bg="#FFF5ED" textAlign="center">
                                       Action
                                     </Table.ColumnHeader>
                                   )}
@@ -470,25 +590,52 @@ export default function PurchaseOrderForm({ params }) {
                               <Table.Body>
                                 {values.items.map((item, idx) => (
                                   <Table.Row key={idx}>
-                                    <Table.Cell>
+                                    <Table.Cell textAlign="center">
                                       <Flex
-                                        width={100}
-                                        height={100}
+                                        w="100%"
                                         justifyContent="center"
                                         alignItems="center"
                                       >
                                         {item.image_url ? (
-                                          <Image
-                                            src={item.image_url}
-                                            alt="Material Image"
-                                            width={100}
-                                            height={100}
-                                          />
+                                          <Flex
+                                            w="56px"
+                                            h="56px"
+                                            borderRadius="8px"
+                                            overflow="hidden"
+                                            bg="#FFFBF8"
+                                            borderWidth="1px"
+                                            borderColor="border.subtle"
+                                            justifyContent="center"
+                                            alignItems="center"
+                                          >
+                                            <Image
+                                              src={item.image_url}
+                                              alt="Material Image"
+                                              width={56}
+                                              height={56}
+                                              style={{
+                                                objectFit: "contain",
+                                                width: "100%",
+                                                height: "100%",
+                                              }}
+                                            />
+                                          </Flex>
                                         ) : (
-                                          <EmptyImage
-                                            width={100}
-                                            height={100}
-                                          />
+                                          <Flex
+                                            w="56px"
+                                            h="56px"
+                                            borderRadius="8px"
+                                            bg="#FFF5ED"
+                                            borderWidth="1px"
+                                            borderColor="border"
+                                            align="center"
+                                            justify="center"
+                                            px="4px"
+                                          >
+                                            <Text fontSize="10px" color="#C95C18" textAlign="center">
+                                              No Image
+                                            </Text>
+                                          </Flex>
                                         )}
                                       </Flex>
                                     </Table.Cell>
@@ -511,7 +658,7 @@ export default function PurchaseOrderForm({ params }) {
                                         }}
                                       />
                                     </Table.Cell>
-                                    <Table.Cell style={{ minWidth: 100 }}>
+                                    <Table.Cell style={{ minWidth: 100 }} textAlign="center">
                                       <CustomInput
                                         name={`items.${idx}.quantity`}
                                         type="number"
@@ -520,7 +667,7 @@ export default function PurchaseOrderForm({ params }) {
                                         errorPosition="bottom"
                                       />
                                     </Table.Cell>
-                                    <Table.Cell style={{ minWidth: 100 }}>
+                                    <Table.Cell style={{ minWidth: 100 }} textAlign="center">
                                       <CustomInput
                                         name={`items.${idx}.rate`}
                                         type="number"
@@ -529,50 +676,25 @@ export default function PurchaseOrderForm({ params }) {
                                         errorPosition="bottom"
                                       />
                                     </Table.Cell>
-                                    <Table.Cell
-                                      style={{
-                                        minWidth: 120,
-                                        textAlign: "right",
-                                      }}
-                                    >
-                                      <Text
-                                        fontSize="sm"
-                                        px={2}
-                                        color="gray.700"
-                                        textAlign="left"
-                                      >
+                                    <Table.Cell style={{ minWidth: 110, textAlign: "center" }}>
+                                      <Text fontSize="sm" px={2} color="fg" textAlign="center">
                                         {item.quantity && item.rate
                                           ? (
                                               parseFloat(item.quantity) *
                                               parseFloat(item.rate)
                                             ).toFixed(2)
-                                          : ""}
+                                          : "—"}
                                       </Text>
                                     </Table.Cell>
-                                    <Table.Cell
-                                      style={{
-                                        minWidth: 120,
-                                        textAlign: "right",
-                                      }}
-                                    >
-                                      <Text
-                                        fontSize="sm"
-                                        px={2}
-                                        color="gray.700"
-                                        textAlign="left"
-                                      >
+                                    <Table.Cell style={{ minWidth: 100, textAlign: "center" }}>
+                                      <Text fontSize="sm" px={2} color="fg" textAlign="center">
                                         {getItemTax(item).toFixed(2)}
                                       </Text>
                                     </Table.Cell>
-                                    <Table.Cell
-                                      style={{
-                                        minWidth: 60,
-                                        textAlign: "center",
-                                      }}
-                                    >
-                                      {!isViewMode && (
+                                    {!isViewMode && (
+                                      <Table.Cell style={{ minWidth: 60, textAlign: "center" }}>
                                         <IconButton
-                                          colorScheme="red"
+                                          colorPalette="red"
                                           size="sm"
                                           variant="ghost"
                                           onClick={() =>
@@ -581,10 +703,10 @@ export default function PurchaseOrderForm({ params }) {
                                           aria-label="Delete item"
                                           disabled={values.items.length <= 1}
                                         >
-                                          <FaTrash />
+                                          <FaTrash color="#C95C18" />
                                         </IconButton>
-                                      )}
-                                    </Table.Cell>
+                                      </Table.Cell>
+                                    )}
                                   </Table.Row>
                                 ))}
                               </Table.Body>
@@ -592,14 +714,14 @@ export default function PurchaseOrderForm({ params }) {
                           </Box>
 
                           {/* Mobile Cards */}
-                          <Box display={{ base: "block", md: "none" }}>
+                          <Box display={{ base: "block", md: "none" }} p="14px">
                             <VStack spacing={4} align="stretch">
                               {values.items.map((item, idx) => (
                                 <Box
                                   key={idx}
                                   border="1px solid"
-                                  borderColor="gray.200"
-                                  borderRadius="md"
+                                  borderColor="border"
+                                  borderRadius="10px"
                                   p={4}
                                   bg="white"
                                 >
@@ -611,29 +733,26 @@ export default function PurchaseOrderForm({ params }) {
                                     >
                                       {item.image_url ? (
                                         <Flex
-                                          width={100}
-                                          height={100}
+                                          width="80px"
+                                          height="80px"
                                           justifyContent="center"
                                           alignItems="center"
                                         >
                                           <Image
                                             src={item.image_url}
                                             alt="Material Image"
-                                            width={100}
-                                            height={100}
+                                            width={80}
+                                            height={80}
+                                            style={{ objectFit: "contain" }}
                                           />
                                         </Flex>
                                       ) : (
-                                        <EmptyImage width={100} height={100} />
+                                        <EmptyImage width={80} height={80} />
                                       )}
                                     </Flex>
 
                                     <Box>
-                                      <Text
-                                        fontSize="sm"
-                                        fontWeight="medium"
-                                        mb={2}
-                                      >
+                                      <Text fontSize="sm" fontWeight="medium" mb={2}>
                                         Item
                                       </Text>
                                       <CustomInput
@@ -677,11 +796,7 @@ export default function PurchaseOrderForm({ params }) {
                                         />
                                       </Box>
                                       <Box flex={1}>
-                                        <Text
-                                          fontSize="sm"
-                                          fontWeight="medium"
-                                          mb={2}
-                                        >
+                                        <Text fontSize="sm" fontWeight="medium" mb={2}>
                                           Amount
                                         </Text>
                                         <Box
@@ -702,11 +817,7 @@ export default function PurchaseOrderForm({ params }) {
                                     </HStack>
 
                                     <Box>
-                                      <Text
-                                        fontSize="sm"
-                                        fontWeight="medium"
-                                        mb={2}
-                                      >
+                                      <Text fontSize="sm" fontWeight="medium" mb={2}>
                                         Tax
                                       </Text>
                                       <Box
@@ -723,7 +834,7 @@ export default function PurchaseOrderForm({ params }) {
                                     {!isViewMode && (
                                       <Flex justifyContent="flex-end">
                                         <IconButton
-                                          colorScheme="red"
+                                          colorPalette="red"
                                           size="sm"
                                           variant="ghost"
                                           onClick={() =>
@@ -732,7 +843,7 @@ export default function PurchaseOrderForm({ params }) {
                                           aria-label="Delete item"
                                           disabled={values.items.length <= 1}
                                         >
-                                          <FaTrash />
+                                          <FaTrash color="#C95C18" />
                                         </IconButton>
                                       </Flex>
                                     )}
@@ -743,15 +854,17 @@ export default function PurchaseOrderForm({ params }) {
                           </Box>
 
                           {!isViewMode && (
-                            <Flex justifyContent="flex-end">
+                            <Flex justifyContent="flex-end" p="14px">
                               <Button
+                                bg="#F47721"
+                                color="white"
+                                _hover={{ bg: "#E06612" }}
                                 onClick={() =>
                                   arrayHelpers.insert(
                                     values.items.length,
                                     EMPTY_ITEM
                                   )
                                 }
-                                mt="22px"
                               >
                                 Add Row
                               </Button>
@@ -760,257 +873,17 @@ export default function PurchaseOrderForm({ params }) {
                         </Box>
                       )}
                     />
-                  </CustomContainer>
-
-                  {/* Summary Section */}
-                  <Flex justifyContent={{ base: "unset", md: "flex-end" }}>
-                    <CustomContainer pageForm headerBand
-                      containerStyle={{
-                        marginTop: "22px",
-                        width: { base: "100%", md: "auto" },
-                      }}
-                    >
-                      {/* Desktop Summary Layout */}
-                      <Box display={{ base: "none", md: "block" }}>
-                        <Grid
-                          templateColumns="1fr auto"
-                          alignItems="center"
-                          mb={4}
-                        >
-                          <Text fontWeight="bold">Sub Total</Text>
-                          <Text fontWeight="600" fontSize="18">
-                            {getSubTotal().toFixed(2)}
-                          </Text>
-                        </Grid>
-
-                        <Grid
-                          templateColumns="1fr 160px auto"
-                          alignItems="center"
-                          mb={4}
-                          gap={4}
-                        >
-                          <Text>Discount</Text>
-                          <CustomInput
-                            name="discount"
-                            type="number"
-                            min={0}
-                            max={100}
-                            placeholder="0"
-                            size="md"
-                            viewOnly={isViewMode}
-                            rightAddon="%"
-                            style={{ bg: "white" }}
-                          />
-                          <Text textAlign="right" minW="60px">
-                            {getDiscountAmount().toFixed(2)}
-                          </Text>
-                        </Grid>
-
-                        <Grid
-                          templateColumns="1fr auto"
-                          alignItems="center"
-                          mb={4}
-                        >
-                          <Text>Tax</Text>
-                          <Text fontWeight="600" fontSize="18">
-                            {getTaxAmount().toFixed(2)}
-                          </Text>
-                        </Grid>
-
-                        <Grid
-                          templateColumns="1fr 160px auto"
-                          alignItems="center"
-                          mb={4}
-                          gap={4}
-                        >
-                          <Text>Adjustment</Text>
-                          <CustomInput
-                            name="adjustment"
-                            type="number"
-                            placeholder=""
-                            size="md"
-                            viewOnly={isViewMode}
-                            style={{ bg: "white" }}
-                          />
-                          <Text textAlign="right" minW="60px">
-                            {getAdjustment().toFixed(2)}
-                          </Text>
-                        </Grid>
-
-                        <hr style={{ margin: "32px 0 16px 0" }} />
-                        <Grid templateColumns="1fr auto" alignItems="center">
-                          <Text fontWeight="bold" fontSize="20">
-                            Total
-                          </Text>
-                          <Text fontWeight="700" fontSize="22">
-                            {getTotal().toFixed(2)}
-                          </Text>
-                        </Grid>
-                      </Box>
-
-                      {/* Mobile Summary Layout */}
-                      <Box display={{ base: "block", md: "none" }}>
-                        <VStack spacing={6} align="stretch">
-                          {/* Sub Total */}
-                          <Box bg="white" p={4}>
-                            <Flex
-                              justifyContent="space-between"
-                              alignItems="center"
-                            >
-                              <Text fontWeight="600" fontSize="16">
-                                Sub Total
-                              </Text>
-                              <Text
-                                fontWeight="700"
-                                fontSize="18"
-                                color="brand500"
-                              >
-                                ₹{getSubTotal().toFixed(2)}
-                              </Text>
-                            </Flex>
-                          </Box>
-
-                          {/* Discount */}
-                          <Box
-                            bg="white"
-                            p={4}
-                            pb={8}
-                            borderBottom="1px solid"
-                            borderColor="gray.200"
-                          >
-                            <VStack spacing={3} align="stretch">
-                              <Flex
-                                justifyContent="space-between"
-                                alignItems="center"
-                              >
-                                <Text fontWeight="500" fontSize="15">
-                                  Discount
-                                </Text>
-                                <Text
-                                  fontWeight="600"
-                                  fontSize="16"
-                                  color="brand500"
-                                >
-                                  -₹{getDiscountAmount().toFixed(2)}
-                                </Text>
-                              </Flex>
-                              <CustomInput
-                                name="discount"
-                                type="number"
-                                min={0}
-                                max={100}
-                                placeholder="0"
-                                size="md"
-                                borderRadius="8px"
-                                viewOnly={isViewMode}
-                                rightAddon="%"
-                                style={{ bg: "gray.50" }}
-                              />
-                            </VStack>
-                          </Box>
-
-                          {/* Tax */}
-                          <Box
-                            bg="white"
-                            p={4}
-                            borderBottom="1px solid"
-                            borderColor="gray.200"
-                          >
-                            <Flex
-                              justifyContent="space-between"
-                              alignItems="center"
-                            >
-                              <Text fontWeight="500" fontSize="15">
-                                Tax
-                              </Text>
-                              <Text
-                                fontWeight="600"
-                                fontSize="16"
-                                color="brand500"
-                              >
-                                +₹{getTaxAmount().toFixed(2)}
-                              </Text>
-                            </Flex>
-                          </Box>
-
-                          {/* Adjustment */}
-                          <Box bg="white" p={4}>
-                            <VStack spacing={3} align="stretch">
-                              <Flex
-                                justifyContent="space-between"
-                                alignItems="center"
-                              >
-                                <Text fontWeight="500" fontSize="15">
-                                  Adjustment
-                                </Text>
-                                <Text
-                                  fontWeight="600"
-                                  fontSize="16"
-                                  color="brand500"
-                                >
-                                  {getAdjustment() >= 0 ? "+" : ""}₹
-                                  {getAdjustment().toFixed(2)}
-                                </Text>
-                              </Flex>
-                              <CustomInput
-                                name="adjustment"
-                                type="number"
-                                placeholder="0"
-                                size="md"
-                                borderRadius="8px"
-                                viewOnly={isViewMode}
-                                style={{ bg: "gray.50" }}
-                              />
-                            </VStack>
-                          </Box>
-
-                          {/* Total */}
-                          <Box
-                            bg="brand50"
-                            p={5}
-                            borderRadius="8px"
-                            border="2px solid"
-                            borderColor="brand200"
-                          >
-                            <Flex
-                              justifyContent="space-between"
-                              alignItems="center"
-                            >
-                              <Text
-                                fontWeight="700"
-                                fontSize="18"
-                                color="brand700"
-                              >
-                                Total
-                              </Text>
-                              <Text
-                                fontWeight="800"
-                                fontSize="22"
-                                color="brand700"
-                              >
-                                ₹{getTotal().toFixed(2)}
-                              </Text>
-                            </Flex>
-                          </Box>
-                        </VStack>
-                      </Box>
-                    </CustomContainer>
-                  </Flex>
-                </Box>
-
-                {/* Error Display */}
-                {/* <FormErrors errors={errors} isViewMode={isViewMode} /> */}
+                  </Box>
+                </Flex>
 
                 <Flex
                   justifyContent="flex-end"
-                  mt="32px"
-                  gap="16px"
+                  gap="12px"
                   direction={{ base: "column", md: "row" }}
                 >
                   <Link href="/purchase-order" passHref>
                     <Button
-                      colorScheme="red"
-                      variant="outline"
+                      variant="subtle"
                       w={{ base: "100%", md: "auto" }}
                     >
                       {isViewMode ? "Back" : "Cancel"}
@@ -1018,7 +891,9 @@ export default function PurchaseOrderForm({ params }) {
                   </Link>
                   {!isViewMode && (
                     <Button
-                      colorScheme="purple"
+                      bg="#F47721"
+                      color="white"
+                      _hover={{ bg: "#E06612" }}
                       onClick={formikHandleSubmit}
                       w={{ base: "100%", md: "auto" }}
                     >
@@ -1026,7 +901,7 @@ export default function PurchaseOrderForm({ params }) {
                     </Button>
                   )}
                 </Flex>
-              </Box>
+              </Flex>
             );
           }}
         </Formik>

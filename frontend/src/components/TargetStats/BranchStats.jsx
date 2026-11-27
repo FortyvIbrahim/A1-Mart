@@ -81,8 +81,8 @@ function BranchStats({ branchTargets = [], entryTargets = [] }) {
   ];
 
   return (
-    <CustomContainer title="Branch-wise Statistics">
-      <AgGrid rowData={stats} columnDefs={colDefs} tableKey="branch-stats" />
+    <CustomContainer headerBand size="sm" title="Branch-wise Statistics">
+      <AgGrid bare rowData={stats} columnDefs={colDefs} tableKey="branch-stats" />
     </CustomContainer>
   );
 }

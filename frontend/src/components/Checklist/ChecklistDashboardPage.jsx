@@ -42,7 +42,8 @@ import {
   submissionStatsEntriesForFormDate,
   submissionStatsKeyForYmd,
 } from "@/utils/checklistSubmissionStatsCalendar";
-import { Box, Button, Flex, NativeSelect, Text } from "@chakra-ui/react";
+import CustomSelect from "@/components/CustomSelect";
+import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { LuChevronDown } from "react-icons/lu";
 import moment from "moment";
 import { useRouter } from "next/navigation";
@@ -504,33 +505,19 @@ export default function ChecklistDashboardPage() {
 
   const formSelectControl =
     formsForBarSelect.length > 0 ? (
-      <NativeSelect.Root width="100%">
-        <NativeSelect.Field
-          h="40px"
-          ps="12px"
-          pe="34px"
-          fontSize="12px"
-          borderRadius="8px"
-          borderColor="border"
-          bg="white"
-          color={selectedBarFormId != null ? "fg" : "fg.muted"}
-          value={selectedBarFormId != null ? String(selectedBarFormId) : ""}
-          onChange={(e) => {
-            const v = e.target.value;
-            setSelectedBarFormId(v ? Number(v) : null);
-          }}
-          aria-label="Checklist form"
-        >
-          {formsForBarSelect.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.title ?? `Form ${f.id}`}
-            </option>
-          ))}
-        </NativeSelect.Field>
-        <NativeSelect.Indicator right="12px" color="#C95C18">
-          <LuChevronDown size={14} />
-        </NativeSelect.Indicator>
-      </NativeSelect.Root>
+      <CustomSelect
+        h="40px"
+        fontSize="12px"
+        w="100%"
+        allowEmpty={false}
+        value={selectedBarFormId != null ? String(selectedBarFormId) : ""}
+        onChange={(v) => setSelectedBarFormId(v ? Number(v) : null)}
+        options={formsForBarSelect.map((f) => ({
+          value: String(f.id),
+          label: f.title ?? `Form ${f.id}`,
+        }))}
+        ariaLabel="Checklist form"
+      />
     ) : null;
 
   return (

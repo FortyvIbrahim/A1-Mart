@@ -8,6 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import CustomFileUploader from "@/components/CustomInput/CustomFileUploader";
+import CustomSelect from "@/components/CustomSelect";
 import {
   Dialog,
   DialogBackdrop,
@@ -21,7 +22,6 @@ import {
   HStack,
   Box,
   Flex,
-  NativeSelect,
   Field,
 } from "@chakra-ui/react";
 import { FaTimes, FaCheck } from "react-icons/fa";
@@ -345,24 +345,18 @@ function FileUploaderWithColumnMapping({
                           </Text>
                         )}
                       </Field.Label>
-                      <NativeSelect.Root>
-                        <NativeSelect.Field
-                          value={columnMapping[targetCol.key] || ""}
-                          onChange={(e) =>
-                            handleMappingChange(targetCol.key, e.target.value)
-                          }
-                          color={
-                            columnMapping[targetCol.key] ? "black" : "gray.400"
-                          }
-                        >
-                          {fileColumnOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </NativeSelect.Field>
-                        <NativeSelect.Indicator />
-                      </NativeSelect.Root>
+                      <CustomSelect
+                        h="40px"
+                        allowEmpty={false}
+                        value={columnMapping[targetCol.key] || ""}
+                        onChange={(val) =>
+                          handleMappingChange(targetCol.key, val)
+                        }
+                        options={fileColumnOptions.map((option) => ({
+                          value: option.value,
+                          label: option.label,
+                        }))}
+                      />
                     </Field.Root>
                   ))}
 

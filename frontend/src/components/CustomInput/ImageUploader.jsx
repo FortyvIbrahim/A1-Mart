@@ -130,10 +130,10 @@ function ImageUploader({
       {...getRootProps()}
       w="100%"
       p={4}
-      border="2px dashed"
-      borderColor={isDragActive ? "brand.400" : "gray.300"}
-      borderRadius="md"
-      bg={isDragActive ? "brand.50" : "gray.50"}
+      border="1.5px dashed"
+      borderColor={isDragActive ? "#F47721" : "#EFA46D"}
+      borderRadius="10px"
+      bg={isDragActive ? "#FFF5ED" : "#FFFBF8"}
       cursor={disabled ? "not-allowed" : "pointer"}
       opacity={disabled ? 0.65 : 1}
       transition="all 0.2s"
@@ -141,8 +141,8 @@ function ImageUploader({
         disabled
           ? undefined
           : {
-              borderColor: "brand.400",
-              bg: "brand.50",
+              borderColor: "#F47721",
+              bg: "#FFF5ED",
             }
       }
       minH={images.length > 0 ? "auto" : "120px"}

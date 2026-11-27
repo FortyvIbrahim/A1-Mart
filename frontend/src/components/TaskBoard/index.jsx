@@ -13,11 +13,11 @@ import {
   IconButton,
   Input,
   Menu,
-  NativeSelect,
   Portal,
   Spinner,
   Text,
 } from "@chakra-ui/react";
+import CustomSelect from "@/components/CustomSelect";
 import {
   LuCircleCheck,
   LuChevronLeft,
@@ -134,20 +134,17 @@ function FilterField({ label, children }) {
   );
 }
 
-function SelectBox({ value, onChange, children }) {
+function SelectBox({ value, onChange, options, placeholder, allowEmpty = true }) {
   return (
-    <NativeSelect.Root>
-      <NativeSelect.Field
-        h="40px"
-        fontSize="13px"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        color={value ? "gray.800" : "gray.500"}
-      >
-        {children}
-      </NativeSelect.Field>
-      <NativeSelect.Indicator />
-    </NativeSelect.Root>
+    <CustomSelect
+      h="40px"
+      fontSize="13px"
+      value={value}
+      onChange={onChange}
+      options={options}
+      placeholder={placeholder}
+      allowEmpty={allowEmpty}
+    />
   );
 }
 
@@ -572,7 +569,14 @@ export default function TaskBoard({ mode = "all" }) {
 
       {/* Filters */}
       <Box bg="white" borderRadius="10px" p="16px">
-        <Grid templateColumns={{ base: "1fr", sm: "repeat(2, minmax(0,1fr))", lg: "repeat(4, minmax(0,1fr))" }} gap="16px">
+        <Grid
+          templateColumns={{
+            base: "1fr",
+            sm: "repeat(2, minmax(0,1fr))",
+            lg: mode === "mine" ? "repeat(3, minmax(0,1fr))" : "repeat(4, minmax(0,1fr))",
+          }}
+          gap="16px"
+        >
           <FilterField label="Search">
             <Input
               h="40px"
@@ -583,43 +587,50 @@ export default function TaskBoard({ mode = "all" }) {
             />
           </FilterField>
           <FilterField label="Status">
-            <SelectBox value={status} onChange={setStatus}>
-              <option value="">All statuses</option>
-              {Object.entries(STATUS_STYLE).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v.label}
-                </option>
-              ))}
-            </SelectBox>
+            <SelectBox
+              value={status}
+              onChange={setStatus}
+              placeholder="All statuses"
+              options={Object.entries(STATUS_STYLE).map(([k, v]) => ({
+                value: k,
+                label: v.label,
+              }))}
+            />
           </FilterField>
           <FilterField label="Priority">
-            <SelectBox value={priority} onChange={setPriority}>
-              <option value="">All priorities</option>
-              {PRIORITIES.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {capitalizeWords(p.key)}
-                </option>
-              ))}
-            </SelectBox>
+            <SelectBox
+              value={priority}
+              onChange={setPriority}
+              placeholder="All priorities"
+              options={PRIORITIES.map((p) => ({
+                value: p.key,
+                label: capitalizeWords(p.key),
+              }))}
+            />
           </FilterField>
-          <FilterField label="Assigned To">
-            <SelectBox value={assignee} onChange={setAssignee}>
-              <option value="">All employees</option>
-              {assignees.map((a) => (
-                <option key={a} value={a}>
-                  {capitalizeWords(a)}
-                </option>
-              ))}
-            </SelectBox>
-          </FilterField>
+          {mode !== "mine" && (
+            <FilterField label="Assigned To">
+              <SelectBox
+                value={assignee}
+                onChange={setAssignee}
+                placeholder="All employees"
+                options={assignees.map((a) => ({
+                  value: a,
+                  label: capitalizeWords(a),
+                }))}
+              />
+            </FilterField>
+          )}
           <FilterField label="Sort by">
-            <SelectBox value={sort} onChange={setSort}>
-              {Object.entries(SORTS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v.label}
-                </option>
-              ))}
-            </SelectBox>
+            <SelectBox
+              value={sort}
+              onChange={setSort}
+              allowEmpty={false}
+              options={Object.entries(SORTS).map(([k, v]) => ({
+                value: k,
+                label: v.label,
+              }))}
+            />
           </FilterField>
         </Grid>
       </Box>

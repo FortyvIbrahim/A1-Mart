@@ -6,6 +6,7 @@ import useTargetEntries from "@/api/customHooks/useTargetEntries";
 import useTargetSections from "@/api/customHooks/useTargetSections";
 import useBranches from "@/api/customHooks/useBranches";
 import CustomContainer from "@/components/CustomContainer";
+import CustomSelect from "@/components/CustomSelect";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import {
   BranchStats,
@@ -21,9 +22,9 @@ import {
   Flex,
   FormatNumber,
   Grid,
-  NativeSelect,
   Spinner,
   Tabs,
+  Text,
 } from "@chakra-ui/react";
 import React, { useMemo, useState } from "react";
 import DatePicker from "react-datepicker";
@@ -148,143 +149,183 @@ function StatsPage() {
 
   return (
     <GlobalWrapper permissionKey="view_target_stats">
-      <Flex
-        gap={4}
-        w="100%"
-        flexDirection="row"
-        justifyContent="flex-end"
-        mb="22px"
-      >
-        {canAccessAllBranches && (
-          <NativeSelect.Root width={{ base: "100%", md: "200px" }}>
-            <NativeSelect.Field
-              value={selectedBranch || ""}
-              color={
-                selectedBranch === "" || !selectedBranch ? "gray.400" : "black"
-              }
-              onChange={(e) => {
-                setSelectedBranch(e.target.value || null);
-              }}
-            >
-              <option value="">All Branches</option>
-              {branches.map((item) => (
-                <option key={item.branch_id} value={item.branch_id}>
-                  {item.branch_name}
-                </option>
-              ))}
-            </NativeSelect.Field>
-            <NativeSelect.Indicator />
-          </NativeSelect.Root>
-        )}
+      <CustomContainer headerBand title="Target Statistics">
+        {/* Top Filter Card inside Target Statistics */}
+        <Box
+          bg="white"
+          borderWidth="1px"
+          borderColor="border"
+          borderRadius="12px"
+          p={{ base: "14px", md: "16px 20px" }}
+        >
+          <Grid
+            templateColumns={{
+              base: "1fr",
+              md: canAccessAllBranches ? "repeat(2, minmax(0, 260px))" : "minmax(0, 260px)",
+            }}
+            gap="16px"
+            alignItems="end"
+          >
+            {canAccessAllBranches && (
+              <Box>
+                <Text fontSize="12px" fontWeight="500" color="fg.muted" mb="6px">
+                  Branch
+                </Text>
+                <CustomSelect
+                  w="100%"
+                  h="44px"
+                  value={selectedBranch || ""}
+                  emptyLabel="All Branches"
+                  onChange={(v) => setSelectedBranch(v || null)}
+                  options={branches.map((item) => ({
+                    value: String(item.branch_id),
+                    label: item.branch_name,
+                  }))}
+                />
+              </Box>
+            )}
 
-        <Box width={{ base: "100%", md: "200px" }}>
-          <DatePicker
-            selected={selectedMonth}
-            onChange={(date) => setSelectedMonth(date)}
-            showMonthYearPicker
-            dateFormat="MMM yyyy"
-            placeholderText="Select Month"
-            isClearable
-            customInput={
-              <CustomDateTimeInput placeholder="Select Month" type="month" />
-            }
-            portalId="root-portal"
-          />
-        </Box>
-      </Flex>
-
-      <CustomContainer title="Target Statistics">
-        {/* Overall Statistics Cards */}
-        <Box mb={6}>
-          <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4}>
-            <StatsCard
-              title="Total Target"
-              value={
-                overallStats.totalTarget ? (
-                  <FormatNumber
-                    value={overallStats.totalTarget}
-                    style="currency"
-                    currency="INR"
-                  />
-                ) : (
-                  "-"
-                )
-              }
-              color="brand600"
-            />
-            <StatsCard
-              title="Total Sales Made"
-              value={
-                overallStats.totalSales ? (
-                  <FormatNumber
-                    value={overallStats.totalSales}
-                    style="currency"
-                    currency="INR"
-                  />
-                ) : (
-                  "-"
-                )
-              }
-              color="green.600"
-            />
-            <StatsCard
-              title="Target Left"
-              value={
-                overallStats.targetLeft ? (
-                  <FormatNumber
-                    value={overallStats.targetLeft}
-                    style="currency"
-                    currency="INR"
-                  />
-                ) : (
-                  "-"
-                )
-              }
-              color={overallStats.targetLeft > 0 ? "red.600" : "green.600"}
-            />
-            <StatsCard
-              title="Achievement %"
-              value={
-                overallStats.achievementPerc
-                  ? Math.round(overallStats.achievementPerc) + "%"
-                  : "-"
-              }
-              color={getPercentageColor(overallStats.achievementPerc)}
-            />
+            <Box css={{ "& .react-datepicker-wrapper": { width: "100%" } }}>
+              <Text fontSize="12px" fontWeight="500" color="fg.muted" mb="6px">
+                Month
+              </Text>
+              <DatePicker
+                selected={selectedMonth}
+                onChange={(date) => setSelectedMonth(date)}
+                showMonthYearPicker
+                dateFormat="MMM yyyy"
+                placeholderText="Select Month"
+                isClearable
+                customInput={
+                  <CustomDateTimeInput placeholder="Select Month" type="month" />
+                }
+                portalId="root-portal"
+              />
+            </Box>
           </Grid>
         </Box>
 
-        {/* Tabs for View Selection */}
-        <Tabs.Root defaultValue="branch" variant="line">
-          <Tabs.List>
-            <Tabs.Trigger value="branch">Branch</Tabs.Trigger>
-            <Tabs.Trigger value="department">Department</Tabs.Trigger>
-            <Tabs.Trigger value="section">Section</Tabs.Trigger>
-            <Tabs.Trigger value="employee">Employee</Tabs.Trigger>
+        {/* Overall Statistics Cards */}
+        <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap="16px">
+          <StatsCard
+            title="Total Target"
+            value={
+              overallStats.totalTarget ? (
+                <FormatNumber
+                  value={overallStats.totalTarget}
+                  style="currency"
+                  currency="INR"
+                />
+              ) : (
+                "—"
+              )
+            }
+          />
+          <StatsCard
+            title="Total Sales Made"
+            value={
+              overallStats.totalSales ? (
+                <FormatNumber
+                  value={overallStats.totalSales}
+                  style="currency"
+                  currency="INR"
+                />
+              ) : (
+                "—"
+              )
+            }
+          />
+          <StatsCard
+            title="Target Left"
+            value={
+              overallStats.targetLeft ? (
+                <FormatNumber
+                  value={overallStats.targetLeft}
+                  style="currency"
+                  currency="INR"
+                />
+              ) : (
+                "—"
+              )
+            }
+          />
+          <StatsCard
+            title="Achievement %"
+            value={
+              overallStats.achievementPerc
+                ? Math.round(overallStats.achievementPerc) + "%"
+                : "—"
+            }
+            color={
+              overallStats.achievementPerc
+                ? getPercentageColor(overallStats.achievementPerc)
+                : "fg"
+            }
+          />
+        </Grid>
+
+        {/* Tabs for View Selection matching Figma pill buttons */}
+        <Tabs.Root defaultValue="branch" variant="plain">
+          <Tabs.List
+            bg="white"
+            borderWidth="1px"
+            borderColor="border"
+            borderRadius="10px"
+            p="4px"
+            gap="4px"
+            mb="16px"
+            display="grid"
+            gridTemplateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }}
+          >
+            {[
+              { value: "branch", label: "Branch" },
+              { value: "department", label: "Department" },
+              { value: "section", label: "Section" },
+              { value: "employee", label: "Employee" },
+            ].map((tab) => (
+              <Tabs.Trigger
+                key={tab.value}
+                value={tab.value}
+                justifyContent="center"
+                h="38px"
+                borderRadius="8px"
+                fontSize="13px"
+                fontWeight="500"
+                color="fg.muted"
+                _selected={{
+                  bg: "#FFF5ED",
+                  color: "#C95C18",
+                  fontWeight: "600",
+                }}
+                _hover={{ bg: "#FFFBF8", color: "fg" }}
+              >
+                {tab.label}
+              </Tabs.Trigger>
+            ))}
           </Tabs.List>
 
-          <Tabs.Content value="branch">
+          <Tabs.Content value="branch" pt="0">
             <BranchStats
               branchTargets={filteredBranchTargets}
               entryTargets={filteredEntryTargets}
             />
           </Tabs.Content>
 
-          <Tabs.Content value="department">
+          <Tabs.Content value="department" pt="0">
             <DepartmentStats
               departmentTargets={filteredDepartmentTargets}
               entryTargets={filteredEntryTargets}
             />
           </Tabs.Content>
 
-          <Tabs.Content value="section">
+          <Tabs.Content value="section" pt="0">
             <SectionStats
               sectionTargets={filteredSectionTargets}
               entryTargets={filteredEntryTargets}
             />
           </Tabs.Content>
 
-          <Tabs.Content value="employee">
+          <Tabs.Content value="employee" pt="0">
             <EmployeeStats entryTargets={filteredEntryTargets} />
           </Tabs.Content>
         </Tabs.Root>

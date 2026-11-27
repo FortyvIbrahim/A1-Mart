@@ -13,6 +13,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { LuX } from "react-icons/lu";
+import { ContainerContext, EMPTY_CONTAINER_CONTEXT } from "../CustomContainer";
 
 /**
  * A centered modal dialog. Renders a full-screen overlay with the dialog content
@@ -104,7 +105,9 @@ function CustomDialog({
             )}
           </DialogHeader>
           <DialogBody overflowY="auto" px="28px" pt="24px" pb="22px" {...bodyProps}>
-            {children}
+            <ContainerContext.Provider value={EMPTY_CONTAINER_CONTEXT}>
+              {children}
+            </ContainerContext.Provider>
           </DialogBody>
           {footer != null && (
             <DialogFooter

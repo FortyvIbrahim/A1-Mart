@@ -2,13 +2,13 @@
 
 import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import CustomDialog from "@/components/CustomDialog";
+import CustomSelect from "@/components/CustomSelect";
 import {
   Box,
   Button,
   Flex,
   HStack,
   IconButton,
-  NativeSelect,
   Text,
 } from "@chakra-ui/react";
 import { FaBarcode } from "react-icons/fa";
@@ -479,19 +479,16 @@ function BarcodeScannerControl({
               <Text fontSize="xs" color="gray.500" mb={1}>
                 Camera
               </Text>
-              <NativeSelect.Root width="100%">
-                <NativeSelect.Field
-                  value={selectedCameraId}
-                  onChange={(e) => setSelectedCameraId(e.target.value)}
-                >
-                  {cameraList.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </NativeSelect.Field>
-                <NativeSelect.Indicator />
-              </NativeSelect.Root>
+              <CustomSelect
+                h="38px"
+                allowEmpty={false}
+                value={selectedCameraId}
+                onChange={(val) => setSelectedCameraId(val)}
+                options={cameraList.map((c) => ({
+                  value: c.id,
+                  label: c.label,
+                }))}
+              />
             </Box>
           ) : null}
 

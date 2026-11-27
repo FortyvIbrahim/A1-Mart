@@ -9,8 +9,8 @@ import {
   Grid,
   Flex,
   Button,
-  NativeSelect,
 } from "@chakra-ui/react";
+import CustomSelect from "@/components/CustomSelect";
 import {
   Cell,
   Pie,
@@ -300,43 +300,31 @@ export default function Home() {
           {canAccessAllBranches ? (
             <Box>
               {filterLabel("Branch")}
-              <NativeSelect.Root>
-                <NativeSelect.Field
-                  h="42px"
-                  value={selectedBranch || ""}
-                  color={selectedBranch ? "gray.800" : "gray.500"}
-                  onChange={(e) => setSelectedBranch(e.target.value || null)}
-                >
-                  <option value="">All Branches</option>
-                  {branches.map((item) => (
-                    <option key={item.branch_id} value={item.branch_id}>
-                      {item.branch_name}
-                    </option>
-                  ))}
-                </NativeSelect.Field>
-                <NativeSelect.Indicator />
-              </NativeSelect.Root>
+              <CustomSelect
+                h="42px"
+                value={selectedBranch || ""}
+                placeholder="All Branches"
+                onChange={(val) => setSelectedBranch(val || null)}
+                options={branches.map((item) => ({
+                  value: item.branch_id,
+                  label: item.branch_name,
+                }))}
+              />
             </Box>
           ) : null}
 
           <Box>
             {filterLabel("Designation")}
-            <NativeSelect.Root>
-              <NativeSelect.Field
-                h="42px"
-                value={selectedDesignation || ""}
-                color={selectedDesignation ? "gray.800" : "gray.500"}
-                onChange={(e) => setSelectedDesignation(e.target.value || null)}
-              >
-                <option value="">All Designations</option>
-                {uniqueDesignations.map((item) => (
-                  <option key={item.designation_id} value={item.designation_id}>
-                    {item.designation_name}
-                  </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
+            <CustomSelect
+              h="42px"
+              value={selectedDesignation || ""}
+              placeholder="All Designations"
+              onChange={(val) => setSelectedDesignation(val || null)}
+              options={uniqueDesignations.map((item) => ({
+                value: item.designation_id,
+                label: item.designation_name,
+              }))}
+            />
           </Box>
 
           <Box>

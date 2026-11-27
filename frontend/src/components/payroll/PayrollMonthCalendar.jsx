@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import { Box, Flex, Text, VStack, HStack } from "@chakra-ui/react";
-import { NativeSelect } from "@chakra-ui/react";
+import CustomSelect from "@/components/CustomSelect";
 import moment from "moment";
 import { Tooltip } from "../ui/tooltip";
 
@@ -69,22 +69,16 @@ const PayrollMonthCalendar = ({
           <Text fontSize="12px" fontWeight="500" color="fg.muted" mb="8px">
             Year
           </Text>
-          <NativeSelect.Root width="120px">
-            <NativeSelect.Field
-              h="44px"
-              ps="12px"
-              fontSize="12px"
-              value={String(selectedYear)}
-              onChange={(e) => onYearChange(Number(e.target.value))}
-            >
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </NativeSelect.Field>
-            <NativeSelect.Indicator color="#C95C18" />
-          </NativeSelect.Root>
+          <CustomSelect
+            w="120px"
+            h="44px"
+            fontSize="12px"
+            allowEmpty={false}
+            value={String(selectedYear)}
+            onChange={(v) => onYearChange(Number(v))}
+            options={years.map((y) => ({ value: String(y), label: String(y) }))}
+            ariaLabel="Year"
+          />
         </Box>
         <Box flex="1" minW="200px">
           <Text fontSize="12px" fontWeight="500" color="fg.muted" mb="8px">

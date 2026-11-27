@@ -87,8 +87,9 @@ function DepartmentStats({ departmentTargets = [], entryTargets = [] }) {
   ];
 
   return (
-    <CustomContainer title="Department-wise Statistics">
+    <CustomContainer headerBand size="sm" title="Department-wise Statistics">
       <AgGrid
+        bare
         rowData={stats}
         columnDefs={colDefs}
         tableKey="department-stats"

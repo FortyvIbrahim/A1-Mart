@@ -4,6 +4,7 @@ import { getChecklistFormsWithSubmissionStats } from "@/api/helpers/checklist_fo
 import AgGrid from "@/components/AgGrid";
 import CalendarDots from "@/components/CalendarDots";
 import CustomContainer from "@/components/CustomContainer";
+import CustomSelect from "@/components/CustomSelect";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import { CHECKLIST_RESPONSE_ROUTES } from "@/constants/routes";
 import { buildChecklistResponsesColumnDefs } from "@/utils/checklistResponseTableColDefs";
@@ -14,7 +15,7 @@ import {
   submissionStatsEntriesForFormDate,
   submissionStatsKeyForYmd,
 } from "@/utils/checklistSubmissionStatsCalendar";
-import { Box, Flex, NativeSelect, Text, VStack } from "@chakra-ui/react";
+import { Box, Flex, Text, VStack } from "@chakra-ui/react";
 import moment from "moment";
 import { useRouter } from "next/navigation";
 import React, {
@@ -199,47 +200,41 @@ export default function ChecklistResponseListing() {
                 <Text fontSize="xs" color="gray.600" mb={1}>
                   Year
                 </Text>
-                <NativeSelect.Root size="sm" width="100px">
-                  <NativeSelect.Field
-                    value={String(calYear)}
-                    onChange={(e) => {
-                      const y = Number(e.target.value);
-                      setCalYear(y);
-                      snapSelectionToVisibleMonth(y, calMonth0);
-                    }}
-                    borderRadius="md"
-                  >
-                    {years.map((y) => (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
+                <CustomSelect
+                  width="110px"
+                  h="34px"
+                  allowEmpty={false}
+                  value={String(calYear)}
+                  onChange={(val) => {
+                    const y = Number(val);
+                    setCalYear(y);
+                    snapSelectionToVisibleMonth(y, calMonth0);
+                  }}
+                  options={years.map((y) => ({
+                    value: String(y),
+                    label: String(y),
+                  }))}
+                />
               </Box>
               <Box>
                 <Text fontSize="xs" color="gray.600" mb={1}>
                   Month
                 </Text>
-                <NativeSelect.Root size="sm" width="140px">
-                  <NativeSelect.Field
-                    value={String(calMonth0)}
-                    onChange={(e) => {
-                      const m0 = Number(e.target.value);
-                      setCalMonth0(m0);
-                      snapSelectionToVisibleMonth(calYear, m0);
-                    }}
-                    borderRadius="md"
-                  >
-                    {MONTHS.map((name, i) => (
-                      <option key={name} value={i}>
-                        {name}
-                      </option>
-                    ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
+                <CustomSelect
+                  width="150px"
+                  h="34px"
+                  allowEmpty={false}
+                  value={String(calMonth0)}
+                  onChange={(val) => {
+                    const m0 = Number(val);
+                    setCalMonth0(m0);
+                    snapSelectionToVisibleMonth(calYear, m0);
+                  }}
+                  options={MONTHS.map((name, i) => ({
+                    value: String(i),
+                    label: name,
+                  }))}
+                />
               </Box>
             </Flex>
             <CalendarDots

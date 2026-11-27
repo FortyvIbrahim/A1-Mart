@@ -242,7 +242,9 @@ export default function PurchaseEntryForm({ params }) {
     if (isEditMode) {
       return "Edit Purchase Entry";
     }
-    return "Purchase Entry";
+    return purchaseEntry?.invoice_no
+      ? `Purchase Entry / ${purchaseEntry.invoice_no}`
+      : "Purchase Entry";
   };
 
   const handleSubmit = async (values, { setSubmitting }) => {
@@ -510,306 +512,516 @@ export default function PurchaseEntryForm({ params }) {
               );
             };
 
-            // Render material image
+            // Render material image (centered)
             const renderMaterialImage = (imageUrl) => {
               return (
                 <Flex
-                  width={100}
-                  height={100}
+                  width="100%"
                   justifyContent="center"
                   alignItems="center"
                 >
                   {imageUrl ? (
-                    <Image
-                      src={imageUrl}
-                      alt="Material Image"
-                      width={100}
-                      height={100}
-                    />
+                    <Flex
+                      w="56px"
+                      h="56px"
+                      borderRadius="8px"
+                      overflow="hidden"
+                      bg="#FFFBF8"
+                      borderWidth="1px"
+                      borderColor="border.subtle"
+                      justifyContent="center"
+                      alignItems="center"
+                    >
+                      <Image
+                        src={imageUrl}
+                        alt="Material Image"
+                        width={56}
+                        height={56}
+                        style={{
+                          objectFit: "contain",
+                          width: "100%",
+                          height: "100%",
+                        }}
+                      />
+                    </Flex>
                   ) : (
-                    <EmptyImage width={100} height={100} />
+                    <Flex
+                      w="56px"
+                      h="56px"
+                      borderRadius="8px"
+                      bg="#FFF5ED"
+                      borderWidth="1px"
+                      borderColor="border"
+                      align="center"
+                      justify="center"
+                      px="4px"
+                    >
+                      <Text fontSize="10px" color="#C95C18" textAlign="center">
+                        No Image
+                      </Text>
+                    </Flex>
                   )}
                 </Flex>
               );
             };
 
             return (
-              <Box>
-                <Box>
-                  <Grid
-                    templateColumns={{
-                      base: "repeat(1, 1fr)",
-                      md: "repeat(2, 1fr)",
-                    }}
-                    gap={4}
-                    mt={4}
+              <Flex direction="column" gap="20px">
+                {/* Top 2-column Entry details & Entry totals */}
+                <Grid
+                  templateColumns={{ base: "1fr", lg: "1.55fr 1fr" }}
+                  gap="20px"
+                  alignItems="start"
+                >
+                  <Box
+                    bg="white"
+                    borderWidth="1px"
+                    borderColor="border"
+                    borderRadius="12px"
+                    p={{ base: "16px", md: "20px" }}
                   >
-                    <CustomInput
-                      label="PO Number"
-                      name="purchase_order_id"
-                      method="searchable-dropdown"
-                      options={filteredPOOptions}
-                      placeholder="Select PO Number"
-                      viewOnly={isViewMode}
-                      customRender={renderPOOption}
-                      isRequired
-                      onChange={(value) => {
-                        setFieldValue("purchase_order_id", value);
-                        const selectedPO = filteredPOOptions.find(
-                          (po) => po.value === String(value)
-                        );
-                        if (selectedPO) {
-                          // Set vendor from PO (PO takes precedence)
-                          setFieldValue("vendor_id", selectedPO.vendor_id);
-                          // Populate items
-                          setFieldValue(
-                            "items",
-                            formatPOItems(selectedPO.items)
+                    <Text
+                      fontSize="15px"
+                      lineHeight="20px"
+                      fontWeight="600"
+                      color="fg"
+                      mb="16px"
+                    >
+                      Entry details
+                    </Text>
+                    <Flex direction="column" gap="16px">
+                      <CustomInput
+                        label="PO Number"
+                        name="purchase_order_id"
+                        method="searchable-dropdown"
+                        options={filteredPOOptions}
+                        placeholder="Select PO Number"
+                        viewOnly={isViewMode}
+                        customRender={renderPOOption}
+                        isRequired
+                        onChange={(value) => {
+                          setFieldValue("purchase_order_id", value);
+                          const selectedPO = filteredPOOptions.find(
+                            (po) => po.value === String(value)
                           );
-                          setFieldValue("discount", selectedPO.discount);
-                          setFieldValue("adjustment", selectedPO.adjustment);
-                        } else {
-                          setFieldValue("vendor_id", null);
-                          setFieldValue("items", []);
-                          setFieldValue("discount", 0);
-                          setFieldValue("adjustment", 0);
-                        }
-                      }}
-                    />
-                    <CustomInput
-                      label="Vendor Name"
-                      name="vendor_id"
-                      method="searchable-dropdown"
-                      options={vendorOptions}
-                      placeholder="Select Vendor (optional)"
-                      viewOnly={isViewMode}
-                      disabled={isVendorLocked}
-                      onChange={(value) => {
-                        setFieldValue("vendor_id", value);
-                        // Clear PO and items when vendor changes (if not locked)
-                        if (!isVendorLocked) {
-                          setFieldValue("purchase_order_id", "");
-                          setFieldValue("items", []);
-                        }
-                      }}
-                    />
-                    <CustomInput
-                      label="Invoice Number"
-                      name="invoice_no"
-                      placeholder="Enter invoice number"
-                      viewOnly={isViewMode}
-                      isRequired
-                    />
-                    <CustomInput
-                      label="Invoice Date"
-                      name="invoice_date"
-                      placeholder="DD/MM/YYYY"
-                      viewOnly={isViewMode}
-                      method="date-picker"
-                      isRequired
-                    />
-                    <CustomInput
-                      label="Invoice File"
-                      name="invoice_file"
-                      method="file"
-                      accept="image/*,.pdf"
-                      viewOnly={isViewMode}
-                    />
-                    <CustomInput
-                      label="Accounts File"
-                      name="accounts_file"
-                      method="file"
-                      accept="image/*,.pdf"
-                      viewOnly={isViewMode}
-                    />
-                  </Grid>
-                </Box>
+                          if (selectedPO) {
+                            setFieldValue("vendor_id", selectedPO.vendor_id);
+                            setFieldValue(
+                              "items",
+                              formatPOItems(selectedPO.items)
+                            );
+                            setFieldValue("discount", selectedPO.discount);
+                            setFieldValue("adjustment", selectedPO.adjustment);
+                          } else {
+                            setFieldValue("vendor_id", null);
+                            setFieldValue("items", []);
+                            setFieldValue("discount", 0);
+                            setFieldValue("adjustment", 0);
+                          }
+                        }}
+                      />
+                      <CustomInput
+                        label="Vendor Name"
+                        name="vendor_id"
+                        method="searchable-dropdown"
+                        options={vendorOptions}
+                        placeholder="Select Vendor (optional)"
+                        viewOnly={isViewMode}
+                        disabled={isVendorLocked}
+                        onChange={(value) => {
+                          setFieldValue("vendor_id", value);
+                          if (!isVendorLocked) {
+                            setFieldValue("purchase_order_id", "");
+                            setFieldValue("items", []);
+                          }
+                        }}
+                      />
+                      <Grid
+                        templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+                        gap="16px"
+                      >
+                        <CustomInput
+                          label="Invoice Number"
+                          name="invoice_no"
+                          placeholder="Enter invoice number"
+                          viewOnly={isViewMode}
+                          isRequired
+                        />
+                        <CustomInput
+                          label="Invoice Date"
+                          name="invoice_date"
+                          placeholder="Select date"
+                          viewOnly={isViewMode}
+                          method="date-picker"
+                          isRequired
+                        />
+                      </Grid>
+                    </Flex>
+                  </Box>
 
-                {/* Items Section */}
-                {values.items && values.items.length > 0 && (
-                  <CustomContainer pageForm headerBand
-                    containerStyle={{ marginTop: "22px" }}
-                    title="Items"
-                    size="sm"
-                    color="secondary"
+                  <Box
+                    bg="white"
+                    borderWidth="1px"
+                    borderColor="border"
+                    borderRadius="12px"
+                    p={{ base: "16px", md: "20px" }}
                   >
-                    <FieldArray
-                      name="items"
-                      render={(arrayHelpers) => (
-                        <Box>
-                          {/* Desktop Table */}
-                          <Box display={{ base: "none", md: "block" }}>
-                            <Table.Root
-                              variant="striped"
-                              sx={{
-                                "& thead tr": {
-                                  background: "#f7f7f7",
-                                },
-                                "& thead th": {
-                                  background: "#f7f7f7",
-                                },
-                                "& tbody tr:nth-of-type(odd) td": {
-                                  background: "#f7f7f7",
-                                },
-                                "& tbody tr:nth-of-type(even) td": {
-                                  background: "#ffffff",
-                                },
-                              }}
-                            >
-                              <Table.Header>
-                                <Table.Row bg="#f7f7f7">
-                                  <Table.ColumnHeader bg="#f7f7f7">
-                                    Image
-                                  </Table.ColumnHeader>
-                                  <Table.ColumnHeader bg="#f7f7f7">
-                                    Item
-                                  </Table.ColumnHeader>
-                                  <Table.ColumnHeader bg="#f7f7f7">
-                                    Quantity
-                                  </Table.ColumnHeader>
-                                  <Table.ColumnHeader bg="#f7f7f7">
-                                    Rate
-                                  </Table.ColumnHeader>
-                                  <Table.ColumnHeader bg="#f7f7f7">
-                                    Amount
-                                  </Table.ColumnHeader>
-                                  <Table.ColumnHeader bg="#f7f7f7">
-                                    Tax
-                                  </Table.ColumnHeader>
-                                </Table.Row>
-                              </Table.Header>
-                              <Table.Body>
-                                {values.items.map((item, idx) => (
-                                  <Table.Row key={idx}>
-                                    <Table.Cell>
-                                      {renderMaterialImage(item.image_url)}
-                                    </Table.Cell>
-                                    <Table.Cell
-                                      style={{ minWidth: 220, maxWidth: 300 }}
-                                    >
-                                      <Text fontSize="sm" color="gray.700">
-                                        {getMaterialName(item, idx)}
-                                      </Text>
-                                    </Table.Cell>
-                                    <Table.Cell style={{ minWidth: 100 }}>
-                                      <CustomInput
-                                        name={`items.${idx}.quantity`}
-                                        type="number"
-                                        min={0}
-                                        viewOnly={isViewMode}
-                                        errorPosition="bottom"
-                                      />
-                                    </Table.Cell>
-                                    <Table.Cell style={{ minWidth: 100 }}>
-                                      <CustomInput
-                                        name={`items.${idx}.rate`}
-                                        type="number"
-                                        min={0}
-                                        viewOnly={isViewMode}
-                                        errorPosition="bottom"
-                                      />
-                                    </Table.Cell>
-                                    <Table.Cell
-                                      style={{
-                                        minWidth: 120,
-                                        textAlign: "right",
-                                      }}
-                                    >
-                                      <Text
-                                        fontSize="sm"
-                                        px={2}
-                                        color="gray.700"
-                                        textAlign="left"
-                                      >
-                                        {calculateItemAmount(item).toFixed(2)}
-                                      </Text>
-                                    </Table.Cell>
-                                    <Table.Cell
-                                      style={{
-                                        minWidth: 120,
-                                        textAlign: "right",
-                                      }}
-                                    >
-                                      <Text
-                                        fontSize="sm"
-                                        px={2}
-                                        color="gray.700"
-                                        textAlign="left"
-                                      >
-                                        {getItemTax(item).toFixed(2)}
-                                      </Text>
-                                    </Table.Cell>
+                    <Text
+                      fontSize="15px"
+                      lineHeight="20px"
+                      fontWeight="600"
+                      color="fg"
+                      mb="16px"
+                    >
+                      Entry totals
+                    </Text>
+                    <Flex direction="column" gap="14px">
+                      <Flex justify="space-between" align="center">
+                        <Text fontSize="13.5px" fontWeight="600" color="fg">
+                          Sub Total
+                        </Text>
+                        <Text fontSize="14px" fontWeight="600" color="fg">
+                          ₹{getSubTotal().toFixed(2)}
+                        </Text>
+                      </Flex>
+
+                      <Grid
+                        templateColumns="1fr 120px auto"
+                        alignItems="center"
+                        gap="12px"
+                      >
+                        <Text fontSize="13px" color="fg.muted">
+                          Discount (%)
+                        </Text>
+                        <CustomInput
+                          name="discount"
+                          type="number"
+                          min={0}
+                          max={100}
+                          placeholder="0.00"
+                          size="sm"
+                          viewOnly={isViewMode}
+                          rightAddon="%"
+                          style={{ bg: "white" }}
+                        />
+                        <Text fontSize="13.5px" color="fg" textAlign="right" minW="64px">
+                          ₹{getDiscountAmount().toFixed(2)}
+                        </Text>
+                      </Grid>
+
+                      <Flex justify="space-between" align="center">
+                        <Text fontSize="13px" color="fg.muted">
+                          Tax
+                        </Text>
+                        <Text fontSize="13.5px" fontWeight="500" color="fg">
+                          ₹{getTaxAmount().toFixed(2)}
+                        </Text>
+                      </Flex>
+
+                      <Grid
+                        templateColumns="1fr 120px auto"
+                        alignItems="center"
+                        gap="12px"
+                      >
+                        <Text fontSize="13px" color="fg.muted">
+                          Adjustment
+                        </Text>
+                        <CustomInput
+                          name="adjustment"
+                          type="number"
+                          placeholder="0.00"
+                          size="sm"
+                          viewOnly={isViewMode}
+                          style={{ bg: "white" }}
+                        />
+                        <Text fontSize="13.5px" color="fg" textAlign="right" minW="64px">
+                          ₹{getAdjustment().toFixed(2)}
+                        </Text>
+                      </Grid>
+
+                      <Box borderTop="1px solid" borderColor="border.subtle" pt="12px">
+                        <Flex justify="space-between" align="center">
+                          <Text fontSize="14px" fontWeight="700" color="fg">
+                            Total
+                          </Text>
+                          <Text fontSize="15px" fontWeight="700" color="fg">
+                            ₹{getTotal().toFixed(2)}
+                          </Text>
+                        </Flex>
+                      </Box>
+                    </Flex>
+                  </Box>
+                </Grid>
+
+                {/* Invoice File & Accounts File */}
+                <Grid
+                  templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+                  gap="20px"
+                >
+                  {isViewMode ? (
+                    <>
+                      <Box>
+                        <Text fontSize="12px" fontWeight="500" color="fg.muted" mb="6px">
+                          Invoice File
+                        </Text>
+                        <Box
+                          bg="white"
+                          borderWidth="1px"
+                          borderColor="border"
+                          borderRadius="10px"
+                          p="16px 18px"
+                        >
+                          {values.invoice_file && typeof values.invoice_file === "string" ? (
+                            <Link href={values.invoice_file} target="_blank" rel="noopener noreferrer">
+                              <Text fontSize="13px" fontWeight="600" color="#C95C18" mb="4px">
+                                {`Invoice · ${values.invoice_no || "Attachment"}`}
+                              </Text>
+                              <Text fontSize="12px" color="fg.muted">
+                                View attachment
+                              </Text>
+                            </Link>
+                          ) : (
+                            <Text fontSize="13px" color="fg.muted">
+                              No invoice file attached
+                            </Text>
+                          )}
+                        </Box>
+                      </Box>
+                      <Box>
+                        <Text fontSize="12px" fontWeight="500" color="fg.muted" mb="6px">
+                          Accounts File
+                        </Text>
+                        <Box
+                          bg="white"
+                          borderWidth="1px"
+                          borderColor="border"
+                          borderRadius="10px"
+                          p="16px 18px"
+                        >
+                          {values.accounts_file && typeof values.accounts_file === "string" ? (
+                            <Link href={values.accounts_file} target="_blank" rel="noopener noreferrer">
+                              <Text fontSize="13px" fontWeight="600" color="#C95C18" mb="4px">
+                                {`Accounts file · ${values.invoice_no || "Attachment"}`}
+                              </Text>
+                              <Text fontSize="12px" color="fg.muted">
+                                View attachment
+                              </Text>
+                            </Link>
+                          ) : (
+                            <Text fontSize="13px" color="fg.muted">
+                              No accounts file attached
+                            </Text>
+                          )}
+                        </Box>
+                      </Box>
+                    </>
+                  ) : (
+                    <>
+                      <CustomInput
+                        label="Invoice File"
+                        name="invoice_file"
+                        method="file"
+                        accept="image/*,.pdf"
+                      />
+                      <CustomInput
+                        label="Accounts File"
+                        name="accounts_file"
+                        method="file"
+                        accept="image/*,.pdf"
+                      />
+                    </>
+                  )}
+                </Grid>
+
+                {/* Items Section without Settings */}
+                {values.items && values.items.length > 0 && (
+                  <Flex direction="column" gap="12px">
+                    <Text fontSize="15px" lineHeight="20px" fontWeight="600" color="fg">
+                      Items
+                    </Text>
+                    <Box
+                      bg="white"
+                      borderWidth="1px"
+                      borderColor="border"
+                      borderRadius="12px"
+                      overflow="hidden"
+                    >
+                      <FieldArray
+                        name="items"
+                        render={() => (
+                          <Box>
+                            {/* Desktop Table */}
+                            <Box display={{ base: "none", md: "block" }}>
+                              <Table.Root
+                                css={{
+                                  "& thead th": {
+                                    bg: "#FFF5ED",
+                                    color: "#637188",
+                                    fontWeight: "600",
+                                    fontSize: "12px",
+                                    borderBottomColor: "#F1E3D9",
+                                  },
+                                  "& tbody tr:nth-of-type(odd) td": {
+                                    bg: "#ffffff",
+                                  },
+                                  "& tbody tr:nth-of-type(even) td": {
+                                    bg: "#FFF5ED",
+                                  },
+                                  "& tbody td": {
+                                    borderBottomColor: "#F1E3D9",
+                                  },
+                                }}
+                              >
+                                <Table.Header>
+                                  <Table.Row bg="#FFF5ED">
+                                    <Table.ColumnHeader bg="#FFF5ED" textAlign="center" w="96px">
+                                      Image
+                                    </Table.ColumnHeader>
+                                    <Table.ColumnHeader bg="#FFF5ED">
+                                      Item
+                                    </Table.ColumnHeader>
+                                    <Table.ColumnHeader bg="#FFF5ED" textAlign="center">
+                                      Quantity
+                                    </Table.ColumnHeader>
+                                    <Table.ColumnHeader bg="#FFF5ED" textAlign="center">
+                                      Rate
+                                    </Table.ColumnHeader>
+                                    <Table.ColumnHeader bg="#FFF5ED" textAlign="center">
+                                      Amount
+                                    </Table.ColumnHeader>
+                                    <Table.ColumnHeader bg="#FFF5ED" textAlign="center">
+                                      Tax
+                                    </Table.ColumnHeader>
                                   </Table.Row>
-                                ))}
-                              </Table.Body>
-                            </Table.Root>
-                          </Box>
+                                </Table.Header>
+                                <Table.Body>
+                                  {values.items.map((item, idx) => (
+                                    <Table.Row key={idx}>
+                                      <Table.Cell textAlign="center">
+                                        {renderMaterialImage(item.image_url)}
+                                      </Table.Cell>
+                                      <Table.Cell style={{ minWidth: 220, maxWidth: 300 }}>
+                                        <Text fontSize="sm" color="fg">
+                                          {getMaterialName(item, idx)}
+                                        </Text>
+                                      </Table.Cell>
+                                      <Table.Cell style={{ minWidth: 100 }} textAlign="center">
+                                        {isViewMode ? (
+                                          <Text fontSize="sm" color="fg" textAlign="center">
+                                            {item.quantity || "—"}
+                                          </Text>
+                                        ) : (
+                                          <CustomInput
+                                            name={`items.${idx}.quantity`}
+                                            type="number"
+                                            min={0}
+                                            errorPosition="bottom"
+                                          />
+                                        )}
+                                      </Table.Cell>
+                                      <Table.Cell style={{ minWidth: 100 }} textAlign="center">
+                                        {isViewMode ? (
+                                          <Text fontSize="sm" color="fg" textAlign="center">
+                                            {item.rate ? Number(item.rate).toFixed(2) : "—"}
+                                          </Text>
+                                        ) : (
+                                          <CustomInput
+                                            name={`items.${idx}.rate`}
+                                            type="number"
+                                            min={0}
+                                            errorPosition="bottom"
+                                          />
+                                        )}
+                                      </Table.Cell>
+                                      <Table.Cell style={{ minWidth: 120, textAlign: "center" }}>
+                                        <Text fontSize="sm" px={2} color="fg" textAlign="center">
+                                          {calculateItemAmount(item).toFixed(2)}
+                                        </Text>
+                                      </Table.Cell>
+                                      <Table.Cell style={{ minWidth: 120, textAlign: "center" }}>
+                                        <Text fontSize="sm" px={2} color="fg" textAlign="center">
+                                          {getItemTax(item).toFixed(2)}
+                                        </Text>
+                                      </Table.Cell>
+                                    </Table.Row>
+                                  ))}
+                                </Table.Body>
+                              </Table.Root>
+                            </Box>
 
-                          {/* Mobile Cards */}
-                          <Box display={{ base: "block", md: "none" }}>
-                            <VStack gap="22px" align="stretch">
-                              {values.items.map((item, idx) => (
-                                <Box
-                                  key={idx}
-                                  border="1px solid"
-                                  borderColor="gray.200"
-                                  borderRadius="md"
-                                  p={4}
-                                  bg="white"
-                                >
-                                  <VStack spacing={3} align="stretch">
-                                    <Flex
-                                      width="100%"
-                                      justifyContent="center"
-                                      alignItems="center"
-                                    >
-                                      {renderMaterialImage(item.image_url)}
-                                    </Flex>
-
-                                    <Box>
-                                      <Text
-                                        fontSize="sm"
-                                        fontWeight="medium"
-                                        mb={2}
+                            {/* Mobile Cards */}
+                            <Box display={{ base: "block", md: "none" }} p="14px">
+                              <VStack gap="16px" align="stretch">
+                                {values.items.map((item, idx) => (
+                                  <Box
+                                    key={idx}
+                                    border="1px solid"
+                                    borderColor="border"
+                                    borderRadius="10px"
+                                    p={4}
+                                    bg="white"
+                                  >
+                                    <VStack spacing={3} align="stretch">
+                                      <Flex
+                                        width="100%"
+                                        justifyContent="center"
+                                        alignItems="center"
                                       >
-                                        Item
-                                      </Text>
-                                      <Text fontSize="sm" color="gray.700">
-                                        {getMaterialName(item, idx)}
-                                      </Text>
-                                    </Box>
+                                        {renderMaterialImage(item.image_url)}
+                                      </Flex>
 
-                                    <HStack spacing={3}>
-                                      <Box flex={1}>
-                                        <CustomInput
-                                          label="Quantity"
-                                          name={`items.${idx}.quantity`}
-                                          type="number"
-                                          min={0}
-                                          viewOnly={isViewMode}
-                                          size="sm"
-                                        />
+                                      <Box>
+                                        <Text fontSize="sm" fontWeight="medium" mb={2}>
+                                          Item
+                                        </Text>
+                                        <Text fontSize="sm" color="fg">
+                                          {getMaterialName(item, idx)}
+                                        </Text>
                                       </Box>
-                                    </HStack>
 
-                                    <HStack spacing={3}>
-                                      <Box flex={1}>
-                                        <CustomInput
-                                          label="Rate"
-                                          name={`items.${idx}.rate`}
-                                          type="number"
-                                          min={0}
-                                          viewOnly={isViewMode}
-                                          size="sm"
-                                        />
-                                      </Box>
-                                      <Box flex={1}>
-                                        <Text
-                                          fontSize="sm"
-                                          fontWeight="medium"
-                                          mb={2}
-                                        >
-                                          Amount
+                                      <HStack spacing={3}>
+                                        <Box flex={1}>
+                                          <CustomInput
+                                            label="Quantity"
+                                            name={`items.${idx}.quantity`}
+                                            type="number"
+                                            min={0}
+                                            viewOnly={isViewMode}
+                                            size="sm"
+                                          />
+                                        </Box>
+                                      </HStack>
+
+                                      <HStack spacing={3}>
+                                        <Box flex={1}>
+                                          <CustomInput
+                                            label="Rate"
+                                            name={`items.${idx}.rate`}
+                                            type="number"
+                                            min={0}
+                                            viewOnly={isViewMode}
+                                            size="sm"
+                                          />
+                                        </Box>
+                                        <Box flex={1}>
+                                          <Text fontSize="sm" fontWeight="medium" mb={2}>
+                                            Amount
+                                          </Text>
+                                          <Box
+                                            p={2}
+                                            borderRadius="md"
+                                            bg="gray.50"
+                                            fontSize="sm"
+                                            color="gray.700"
+                                          >
+                                            {calculateItemAmount(item).toFixed(2) || "-"}
+                                          </Box>
+                                        </Box>
+                                      </HStack>
+
+                                      <Box>
+                                        <Text fontSize="sm" fontWeight="medium" mb={2}>
+                                          Tax
                                         </Text>
                                         <Box
                                           p={2}
@@ -818,282 +1030,29 @@ export default function PurchaseEntryForm({ params }) {
                                           fontSize="sm"
                                           color="gray.700"
                                         >
-                                          {calculateItemAmount(item).toFixed(
-                                            2
-                                          ) || "-"}
+                                          {getItemTax(item).toFixed(2)}
                                         </Box>
                                       </Box>
-                                    </HStack>
-
-                                    <Box>
-                                      <Text
-                                        fontSize="sm"
-                                        fontWeight="medium"
-                                        mb={2}
-                                      >
-                                        Tax
-                                      </Text>
-                                      <Box
-                                        p={2}
-                                        borderRadius="md"
-                                        bg="gray.50"
-                                        fontSize="sm"
-                                        color="gray.700"
-                                      >
-                                        {getItemTax(item).toFixed(2)}
-                                      </Box>
-                                    </Box>
-                                  </VStack>
-                                </Box>
-                              ))}
-                            </VStack>
+                                    </VStack>
+                                  </Box>
+                                ))}
+                              </VStack>
+                            </Box>
                           </Box>
-                        </Box>
-                      )}
-                    />
-                  </CustomContainer>
+                        )}
+                      />
+                    </Box>
+                  </Flex>
                 )}
 
-                {/* Summary Section */}
-                <Flex justifyContent={{ base: "unset", md: "flex-end" }}>
-                  <CustomContainer pageForm headerBand
-                    containerStyle={{
-                      marginTop: "22px",
-                      width: { base: "100%", md: "auto" },
-                    }}
+                <Flex justifyContent="flex-end">
+                  <Checkbox.Root
+                    colorPalette="brand"
+                    variant="subtle"
+                    checked={accountEntryDone}
+                    onChange={(e) => setAccountEntryDone(e.target.checked)}
+                    disabled={isViewMode}
                   >
-                    {/* Desktop Summary Layout */}
-                    <Box display={{ base: "none", md: "block" }}>
-                      <Grid
-                        templateColumns="1fr auto"
-                        alignItems="center"
-                        mb={4}
-                      >
-                        <Text fontWeight="bold">Sub Total</Text>
-                        <Text fontWeight="600" fontSize="18">
-                          ₹{getSubTotal().toFixed(2)}
-                        </Text>
-                      </Grid>
-
-                      <Grid
-                        templateColumns="1fr 160px auto"
-                        alignItems="center"
-                        mb={4}
-                        gap={4}
-                      >
-                        <Text>Discount</Text>
-                        <CustomInput
-                          name="discount"
-                          type="number"
-                          min={0}
-                          max={100}
-                          placeholder="0"
-                          size="md"
-                          viewOnly={isViewMode}
-                          rightAddon="%"
-                          style={{ bg: "white" }}
-                        />
-                        <Text textAlign="right" minW="60px">
-                          -₹{getDiscountAmount().toFixed(2)}
-                        </Text>
-                      </Grid>
-
-                      <Grid
-                        templateColumns="1fr auto"
-                        alignItems="center"
-                        mb={4}
-                      >
-                        <Text>Tax</Text>
-                        <Text fontWeight="600" fontSize="18">
-                          ₹{getTaxAmount().toFixed(2)}
-                        </Text>
-                      </Grid>
-
-                      <Grid
-                        templateColumns="1fr 160px auto"
-                        alignItems="center"
-                        mb={4}
-                        gap={4}
-                      >
-                        <Text>Adjustment</Text>
-                        <CustomInput
-                          name="adjustment"
-                          type="number"
-                          placeholder="0"
-                          size="md"
-                          viewOnly={isViewMode}
-                          style={{ bg: "white" }}
-                        />
-                        <Text textAlign="right" minW="60px">
-                          {getAdjustment() >= 0 ? "+" : ""}₹
-                          {getAdjustment().toFixed(2)}
-                        </Text>
-                      </Grid>
-
-                      <hr style={{ margin: "32px 0 16px 0" }} />
-                      <Grid templateColumns="1fr auto" alignItems="center">
-                        <Text fontWeight="bold" fontSize="20">
-                          Total
-                        </Text>
-                        <Text fontWeight="700" fontSize="22">
-                          ₹{getTotal().toFixed(2)}
-                        </Text>
-                      </Grid>
-                    </Box>
-
-                    {/* Mobile Summary Layout */}
-                    <Box display={{ base: "block", md: "none" }}>
-                      <VStack spacing={6} align="stretch">
-                        {/* Sub Total */}
-                        <Box bg="white" p={4}>
-                          <Flex
-                            justifyContent="space-between"
-                            alignItems="center"
-                          >
-                            <Text fontWeight="600" fontSize="16">
-                              Sub Total
-                            </Text>
-                            <Text
-                              fontWeight="700"
-                              fontSize="18"
-                              color="brand500"
-                            >
-                              ₹{getSubTotal().toFixed(2)}
-                            </Text>
-                          </Flex>
-                        </Box>
-
-                        {/* Discount */}
-                        <Box
-                          bg="white"
-                          p={4}
-                          pb={8}
-                          borderBottom="1px solid"
-                          borderColor="gray.200"
-                        >
-                          <VStack spacing={3} align="stretch">
-                            <Flex
-                              justifyContent="space-between"
-                              alignItems="center"
-                            >
-                              <Text fontWeight="500" fontSize="15">
-                                Discount
-                              </Text>
-                              <Text
-                                fontWeight="600"
-                                fontSize="16"
-                                color="brand500"
-                              >
-                                -₹{getDiscountAmount().toFixed(2)}
-                              </Text>
-                            </Flex>
-                            <CustomInput
-                              name="discount"
-                              type="number"
-                              min={0}
-                              max={100}
-                              placeholder="0"
-                              size="md"
-                              borderRadius="8px"
-                              viewOnly={isViewMode}
-                              rightAddon="%"
-                              style={{ bg: "gray.50" }}
-                            />
-                          </VStack>
-                        </Box>
-
-                        {/* Tax */}
-                        <Box
-                          bg="white"
-                          p={4}
-                          borderBottom="1px solid"
-                          borderColor="gray.200"
-                        >
-                          <Flex
-                            justifyContent="space-between"
-                            alignItems="center"
-                          >
-                            <Text fontWeight="500" fontSize="15">
-                              Tax
-                            </Text>
-                            <Text
-                              fontWeight="600"
-                              fontSize="16"
-                              color="brand500"
-                            >
-                              +₹{getTaxAmount().toFixed(2)}
-                            </Text>
-                          </Flex>
-                        </Box>
-
-                        {/* Adjustment */}
-                        <Box bg="white" p={4}>
-                          <VStack spacing={3} align="stretch">
-                            <Flex
-                              justifyContent="space-between"
-                              alignItems="center"
-                            >
-                              <Text fontWeight="500" fontSize="15">
-                                Adjustment
-                              </Text>
-                              <Text
-                                fontWeight="600"
-                                fontSize="16"
-                                color="brand500"
-                              >
-                                {getAdjustment() >= 0 ? "+" : ""}₹
-                                {getAdjustment().toFixed(2)}
-                              </Text>
-                            </Flex>
-                            <CustomInput
-                              name="adjustment"
-                              type="number"
-                              placeholder="0"
-                              size="md"
-                              borderRadius="8px"
-                              viewOnly={isViewMode}
-                              style={{ bg: "gray.50" }}
-                            />
-                          </VStack>
-                        </Box>
-
-                        {/* Total */}
-                        <Box
-                          bg="brand50"
-                          p={5}
-                          borderRadius="8px"
-                          border="2px solid"
-                          borderColor="brand200"
-                        >
-                          <Flex
-                            justifyContent="space-between"
-                            alignItems="center"
-                          >
-                            <Text
-                              fontWeight="700"
-                              fontSize="18"
-                              color="brand700"
-                            >
-                              Total
-                            </Text>
-                            <Text
-                              fontWeight="800"
-                              fontSize="22"
-                              color="brand700"
-                            >
-                              ₹{getTotal().toFixed(2)}
-                            </Text>
-                          </Flex>
-                        </Box>
-                      </VStack>
-                    </Box>
-                  </CustomContainer>
-                </Flex>
-
-                {/* <FormErrors errors={errors} isViewMode={isViewMode} /> */}
-
-                <Flex mt="32px" justifyContent="flex-end">
-                  <Checkbox.Root colorPalette="brand" variant="subtle" checked={accountEntryDone} onChange={(e) => setAccountEntryDone(e.target.checked)}>
                     <Checkbox.HiddenInput />
                     <Checkbox.Control />
                     <Checkbox.Label>Account Entry Done</Checkbox.Label>
@@ -1102,14 +1061,12 @@ export default function PurchaseEntryForm({ params }) {
 
                 <Flex
                   justifyContent="flex-end"
-                  mt="32px"
-                  gap="16px"
+                  gap="12px"
                   direction={{ base: "column", md: "row" }}
                 >
                   <Link href="/purchase-entry" passHref>
                     <Button
-                      colorScheme="red"
-                      variant="outline"
+                      variant="subtle"
                       w={{ base: "100%", md: "auto" }}
                     >
                       {isViewMode ? "Back" : "Cancel"}
@@ -1117,7 +1074,9 @@ export default function PurchaseEntryForm({ params }) {
                   </Link>
                   {!isViewMode && (
                     <Button
-                      colorScheme="purple"
+                      bg="#F47721"
+                      color="white"
+                      _hover={{ bg: "#E06612" }}
                       onClick={formikHandleSubmit}
                       w={{ base: "100%", md: "auto" }}
                       disabled={!accountEntryDone}
@@ -1126,7 +1085,7 @@ export default function PurchaseEntryForm({ params }) {
                     </Button>
                   )}
                 </Flex>
-              </Box>
+              </Flex>
             );
           }}
         </Formik>

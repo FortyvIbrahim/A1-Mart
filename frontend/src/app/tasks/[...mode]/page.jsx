@@ -6,7 +6,7 @@ import CustomInput from "@/components/CustomInput";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import TaskComments from "@/components/TaskComments";
 import { capitalizeWords } from "@/utils/string";
-import { Button, Flex, Grid } from "@chakra-ui/react";
+import { Box, Button, Flex, Grid, HStack, Text, VStack } from "@chakra-ui/react";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import Link from "next/link";
@@ -118,8 +118,45 @@ export default function TaskForm({ params }) {
       return "Edit Task";
     }
 
-    return `Task : #${task?.id ?? ""}`;
+    return "Task Details";
   };
+
+  const resolvedTaskId = task?.task_id ?? task?.id ?? taskId ?? "";
+  const taskCode = resolvedTaskId
+    ? `TASK-${String(resolvedTaskId).padStart(3, "0")}`
+    : "";
+
+  const statusLabel =
+    STATUS_OPTIONS.find((opt) => opt.value === (task?.status || initialValues.status))
+      ?.label ??
+    task?.status ??
+    "-";
+
+  const priorityLabel =
+    PRIORITY_OPTIONS.find(
+      (opt) => opt.value === (task?.priority || initialValues.priority)
+    )?.label ??
+    task?.priority ??
+    "-";
+
+  const assignedToDisplay = (() => {
+    const code = task?.assigned_to || initialValues.assigned_to;
+    if (!code) return "-";
+    const matched = filteredEmployees.find((emp) => emp.value == code);
+    if (matched) return matched.label;
+    if (task?.assigned_to_name) {
+      return `${code} - ${capitalizeWords(task.assigned_to_name)}`;
+    }
+    return code;
+  })();
+
+  const attachedFiles = Array.isArray(initialValues.files)
+    ? initialValues.files
+    : [];
+  const voiceNoteUrl =
+    typeof initialValues.voice_note === "string"
+      ? initialValues.voice_note
+      : task?.voice_recording || null;
 
   const handleSubmit = async (values) => {
     try {
@@ -300,94 +337,252 @@ export default function TaskForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer pageForm title={getTitle()}>
-        <Formik
-          initialValues={initialValues}
-          validationSchema={VALIDATION_SCHEMA}
-          onSubmit={handleSubmit}
-          enableReinitialize
-        >
-          {({ handleSubmit }) => {
-            return (
-              <Flex flexDirection="column" gap="22px">
+      <CustomContainer
+        pageForm
+        headerBand
+        title={getTitle()}
+        subtitle={isViewMode && taskCode ? taskCode : undefined}
+      >
+        {isViewMode ? (
+          <Flex direction="column" gap="20px">
+            <Box
+              bg="white"
+              borderWidth="1px"
+              borderColor="border"
+              borderRadius="12px"
+              p={{ base: "16px", md: "24px" }}
+            >
+              <Text
+                fontSize="16px"
+                lineHeight="22px"
+                fontWeight="600"
+                color="fg"
+                mb="18px"
+              >
+                Task information
+              </Text>
+
+              <Flex direction="column" gap="18px">
                 <Grid
                   templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
-                  gap="22px"
+                  gap="18px"
                 >
-                  <CustomInput
-                    label="Title"
-                    name="title"
-                    type="text"
-                    isRequired
-                    viewOnly={isViewMode || myTaskMode}
-                  />
-                  <CustomInput
-                    label="Status"
-                    name="status"
-                    method="dropdown"
-                    placeholder="Select status"
-                    options={STATUS_OPTIONS}
-                    isRequired
-                    viewOnly={isViewMode}
-                  />
-                  <CustomInput
-                    label="Priority"
-                    name="priority"
-                    method="dropdown"
-                    placeholder="Select priority"
-                    options={PRIORITY_OPTIONS}
-                    isRequired
-                    viewOnly={isViewMode || myTaskMode}
-                  />
-                  <CustomInput
-                    label="Assigned To"
-                    name="assigned_to"
-                    method="searchable-dropdown"
-                    placeholder="Select employee"
-                    options={filteredEmployees}
-                    viewOnly={isViewMode || myTaskMode}
-                  />
+                  <Box>
+                    <Text fontSize="12px" color="fg.muted" mb="4px">
+                      Title
+                    </Text>
+                    <Text fontSize="14px" fontWeight="500" color="fg">
+                      {initialValues.title || "-"}
+                    </Text>
+                  </Box>
+                  <Box>
+                    <Text fontSize="12px" color="fg.muted" mb="4px">
+                      Status
+                    </Text>
+                    <Text fontSize="14px" fontWeight="500" color="fg">
+                      {statusLabel}
+                    </Text>
+                  </Box>
+                  <Box>
+                    <Text fontSize="12px" color="fg.muted" mb="4px">
+                      Priority
+                    </Text>
+                    <Text fontSize="14px" fontWeight="500" color="fg">
+                      {priorityLabel}
+                    </Text>
+                  </Box>
+                  <Box>
+                    <Text fontSize="12px" color="fg.muted" mb="4px">
+                      Assigned To
+                    </Text>
+                    <Text fontSize="14px" fontWeight="500" color="fg">
+                      {assignedToDisplay}
+                    </Text>
+                  </Box>
                 </Grid>
-                <CustomInput
-                  label="Description"
-                  name="description"
-                  type="text"
-                  viewOnly={isViewMode || myTaskMode}
-                />
 
-                <CustomInput
-                  label="Files"
-                  name="files"
-                  method="multiple-files"
-                  accept="*/*"
-                  viewOnly={isViewMode || myTaskMode}
-                />
+                <Box>
+                  <Text fontSize="12px" color="fg.muted" mb="4px">
+                    Description
+                  </Text>
+                  <Text
+                    fontSize="14px"
+                    fontWeight="500"
+                    color="fg"
+                    whiteSpace="pre-wrap"
+                  >
+                    {initialValues.description || "-"}
+                  </Text>
+                </Box>
 
-                <CustomInput
-                  label="Voice Note"
-                  name="voice_note"
-                  method="voice-recorder"
-                  viewOnly={isViewMode}
-                />
+                <Box>
+                  <Text fontSize="12px" color="fg.muted" mb="4px">
+                    Files
+                  </Text>
+                  {attachedFiles.length === 0 ? (
+                    <Text fontSize="14px" fontWeight="500" color="fg">
+                      No files attached
+                    </Text>
+                  ) : (
+                    <VStack align="stretch" gap="8px">
+                      {attachedFiles.map((fileItem, index) => {
+                        const fileUrl =
+                          typeof fileItem === "string"
+                            ? fileItem
+                            : fileItem?.uri || fileItem?.file_url;
+                        const fileName =
+                          (fileUrl && fileUrl.split("/").pop().split("?")[0]) ||
+                          `File ${index + 1}`;
+                        return (
+                          <HStack
+                            key={fileItem?.id ?? index}
+                            p="8px 12px"
+                            bg="#FFF5ED"
+                            borderWidth="1px"
+                            borderColor="border"
+                            borderRadius="8px"
+                            w="fit-content"
+                            maxW="100%"
+                          >
+                            <Text
+                              as="a"
+                              href={fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              fontSize="13px"
+                              fontWeight="500"
+                              color="#C95C18"
+                              _hover={{ textDecoration: "underline" }}
+                            >
+                              {fileName}
+                            </Text>
+                          </HStack>
+                        );
+                      })}
+                    </VStack>
+                  )}
+                </Box>
 
-                <Flex gap="22px" justifyContent="flex-end">
+                <Box>
+                  <Text fontSize="12px" color="fg.muted" mb="4px">
+                    Voice Note
+                  </Text>
+                  {voiceNoteUrl ? (
+                    <audio
+                      controls
+                      src={voiceNoteUrl}
+                      style={{ maxWidth: "400px", marginTop: "4px" }}
+                    >
+                      Your browser does not support the audio element.
+                    </audio>
+                  ) : (
+                    <Text fontSize="14px" fontWeight="500" color="fg">
+                      No recording
+                    </Text>
+                  )}
+                </Box>
+
+                <Flex justifyContent="flex-end" pt="4px">
                   <Link href={myTaskMode ? "/tasks/mine" : "/tasks"}>
                     <Button variant="subtle">Back</Button>
                   </Link>
-                  {(isCreateMode || isEditMode) && (
-                    <Button onClick={handleSubmit}>
-                      {isCreateMode ? "Create" : "Update"}
-                    </Button>
-                  )}
                 </Flex>
               </Flex>
-            );
-          }}
-        </Formik>
+            </Box>
+
+            {taskId && <TaskComments taskId={taskId} />}
+          </Flex>
+        ) : (
+          <Formik
+            initialValues={initialValues}
+            validationSchema={VALIDATION_SCHEMA}
+            onSubmit={handleSubmit}
+            enableReinitialize
+          >
+            {({ handleSubmit }) => {
+              return (
+                <Flex flexDirection="column" gap="22px">
+                  <Grid
+                    templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+                    gap="22px"
+                  >
+                    <CustomInput
+                      label="Title"
+                      name="title"
+                      type="text"
+                      isRequired
+                      viewOnly={myTaskMode}
+                    />
+                    <CustomInput
+                      label="Status"
+                      name="status"
+                      method="dropdown"
+                      placeholder="Select status"
+                      options={STATUS_OPTIONS}
+                      isRequired
+                    />
+                    <CustomInput
+                      label="Priority"
+                      name="priority"
+                      method="dropdown"
+                      placeholder="Select priority"
+                      options={PRIORITY_OPTIONS}
+                      isRequired
+                      viewOnly={myTaskMode}
+                    />
+                    <CustomInput
+                      label="Assigned To"
+                      name="assigned_to"
+                      method="searchable-dropdown"
+                      placeholder="Select employee"
+                      options={filteredEmployees}
+                      viewOnly={myTaskMode}
+                    />
+                  </Grid>
+                  <CustomInput
+                    label="Description"
+                    name="description"
+                    type="text"
+                    viewOnly={myTaskMode}
+                  />
+
+                  <CustomInput
+                    label="Files"
+                    name="files"
+                    method="multiple-files"
+                    accept="*/*"
+                    viewOnly={myTaskMode}
+                  />
+
+                  <CustomInput
+                    label="Voice Note"
+                    name="voice_note"
+                    method="voice-recorder"
+                  />
+
+                  <Flex gap="22px" justifyContent="flex-end">
+                    <Link href={myTaskMode ? "/tasks/mine" : "/tasks"}>
+                      <Button variant="subtle">Back</Button>
+                    </Link>
+                    {(isCreateMode || isEditMode) && (
+                      <Button onClick={handleSubmit}>
+                        {isCreateMode ? "Create" : "Update"}
+                      </Button>
+                    )}
+                  </Flex>
+                </Flex>
+              );
+            }}
+          </Formik>
+        )}
       </CustomContainer>
 
-      {/* Comments Section - Only show in view/edit mode */}
-      {(isViewMode || isEditMode) && taskId && <TaskComments taskId={taskId} />}
+      {/* Comments Section - Edit mode */}
+      {isEditMode && taskId && (
+        <Box mt="20px">
+          <TaskComments taskId={taskId} />
+        </Box>
+      )}
     </GlobalWrapper>
   );
 }

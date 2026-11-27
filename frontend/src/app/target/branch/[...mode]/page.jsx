@@ -2,7 +2,7 @@
 import CustomContainer from "@/components/CustomContainer";
 import CustomInput from "@/components/CustomInput";
 import GlobalWrapper from "@/components/GlobalWrapper";
-import { Button, Flex, Grid } from "@chakra-ui/react";
+import { Box, Button, Flex, Grid, Text } from "@chakra-ui/react";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import Link from "next/link";
@@ -151,77 +151,142 @@ export default function TargetBranchForm({ params }) {
     }
   };
 
+  const viewBranchName =
+    filteredBranches.find((b) => b.value == initialValues.branch_id)?.label ||
+    "—";
+  const viewMonthLabel = initialValues.target_month
+    ? moment(initialValues.target_month).format("MMM YYYY")
+    : "—";
+
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer pageForm breadcrumb="Sales Target  /  Branch" title={getTitle()}>
-        <Formik
-          initialValues={initialValues}
-          validationSchema={VALIDATION_SCHEMA}
-          onSubmit={handleSubmit}
-          enableReinitialize
-        >
-          {({ handleSubmit, values, setFieldValue }) => {
-            return (
-              <Flex flexDirection="column" gap="22px">
-                <Grid
-                  templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
-                  gap="22px"
+      <CustomContainer pageForm headerBand title={getTitle()}>
+        {isViewMode ? (
+          <Flex direction="column" gap="20px">
+            <Box
+              bg="white"
+              borderWidth="1px"
+              borderColor="border"
+              borderRadius="12px"
+              p={{ base: "16px", md: "20px" }}
+            >
+              <Grid
+                templateColumns={{ base: "1fr", md: "1fr 1fr 1.2fr" }}
+                gap="18px"
+                alignItems="center"
+              >
+                <Box>
+                  <Text fontSize="12px" color="fg.muted" mb="4px">
+                    Branch
+                  </Text>
+                  <Text fontSize="14px" fontWeight="600" color="fg">
+                    {viewBranchName}
+                  </Text>
+                </Box>
+                <Box>
+                  <Text fontSize="12px" color="fg.muted" mb="4px">
+                    Target Month
+                  </Text>
+                  <Text fontSize="14px" fontWeight="600" color="fg">
+                    {viewMonthLabel}
+                  </Text>
+                </Box>
+                <Box
+                  bg="#FFF5ED"
+                  borderWidth="1px"
+                  borderColor="border"
+                  borderRadius="10px"
+                  px="18px"
+                  py="14px"
                 >
-                  <CustomInput
-                    label="Select Branch"
-                    isRequired
-                    placeholder="Click here to select branch..."
-                    name="branch_id"
-                    method="dropdown"
-                    options={filteredBranches}
-                    viewOnly={isViewMode}
-                    disabled={isStoreSelected}
-                    onChange={(value) =>
-                      handleDateBranchChange(
-                        values.target_month,
-                        value.target.value,
-                        setFieldValue
-                      )
-                    }
-                  />
+                  <Text fontSize="12px" color="fg.muted" mb="4px">
+                    Target Amount
+                  </Text>
+                  <Text fontSize="20px" lineHeight="26px" fontWeight="600" color="#C95C18">
+                    {initialValues.target_amount ?? "—"}
+                  </Text>
+                </Box>
+              </Grid>
+            </Box>
 
-                  <CustomInput
-                    label="Target Month"
-                    name="target_month"
-                    type="month"
-                    method="date-picker"
-                    viewOnly={isViewMode}
-                    onChange={(value) =>
-                      handleDateBranchChange(
-                        value,
-                        values.branch_id,
-                        setFieldValue
-                      )
-                    }
-                  />
+            <Flex justifyContent="flex-end">
+              <Link href="/target/branch">
+                <Button variant="subtle">Back</Button>
+              </Link>
+            </Flex>
+          </Flex>
+        ) : (
+          <Formik
+            initialValues={initialValues}
+            validationSchema={VALIDATION_SCHEMA}
+            onSubmit={handleSubmit}
+            enableReinitialize
+          >
+            {({ handleSubmit, values, setFieldValue }) => {
+              return (
+                <Flex flexDirection="column" gap="22px">
+                  <Grid
+                    templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
+                    gap="22px"
+                  >
+                    <CustomInput
+                      label="Select Branch"
+                      isRequired
+                      placeholder="Click here to select branch..."
+                      name="branch_id"
+                      method="dropdown"
+                      options={filteredBranches}
+                      disabled={isStoreSelected}
+                      onChange={(value) =>
+                        handleDateBranchChange(
+                          values.target_month,
+                          value.target.value,
+                          setFieldValue
+                        )
+                      }
+                    />
 
-                  <CustomInput
-                    label="Target Amount"
-                    name="target_amount"
-                    type="number"
-                    viewOnly={isViewMode}
-                  />
-                </Grid>
+                    <CustomInput
+                      label="Target Month"
+                      name="target_month"
+                      type="month"
+                      method="date-picker"
+                      onChange={(value) =>
+                        handleDateBranchChange(
+                          value,
+                          values.branch_id,
+                          setFieldValue
+                        )
+                      }
+                    />
 
-                <Flex gap="22px" justifyContent="flex-end">
-                  <Link href="/target/branch">
-                    <Button variant="subtle">Back</Button>
-                  </Link>
-                  {(isCreateMode || isEditMode) && (
-                    <Button onClick={handleSubmit}>
-                      {isCreateMode ? "Create" : "Update"}
-                    </Button>
-                  )}
+                    <CustomInput
+                      label="Target Amount"
+                      name="target_amount"
+                      type="number"
+                    />
+                  </Grid>
+
+                  <Flex gap="12px" justifyContent="flex-end">
+                    <Link href="/target/branch">
+                      <Button variant="subtle">Back</Button>
+                    </Link>
+                    {(isCreateMode || isEditMode) && (
+                      <Button
+                        bg="#F47721"
+                        color="white"
+                        _hover={{ bg: "#E06612" }}
+                        onClick={handleSubmit}
+                      >
+                        {isCreateMode ? "Create" : "Update"}
+                      </Button>
+                    )}
+                  </Flex>
                 </Flex>
-              </Flex>
-            );
-          }}
-        </Formik>
+              );
+            }}
+          </Formik>
+        )}
       </CustomContainer>
     </GlobalWrapper>
   );

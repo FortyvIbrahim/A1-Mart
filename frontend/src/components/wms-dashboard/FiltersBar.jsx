@@ -1,10 +1,11 @@
 "use client";
 
 import React, { forwardRef } from "react";
-import { Box, Flex, NativeSelect, Text } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
+import CustomSelect from "@/components/CustomSelect";
 import DatePicker from "react-datepicker";
 import moment from "moment";
-import { LuCalendar, LuChevronDown } from "react-icons/lu";
+import { LuCalendar } from "react-icons/lu";
 
 /*
  * Figma "WMS Dashboard" heading filters: one "Date" range field (calendar
@@ -73,26 +74,16 @@ function FiltersBar({
         />
       </Box>
       <Box w={{ base: "100%", md: "200px" }}>
-        <NativeSelect.Root disabled={branchDisabled}>
-          <NativeSelect.Field
-            {...FIELD}
-            pe="34px"
-            color={selectedBranchId ? "fg" : "fg.muted"}
-            value={selectedBranchId ?? ""}
-            onChange={(e) => setSelectedBranchId?.(e.target.value || "")}
-            aria-label="Branch"
-          >
-            <option value="">All Branches</option>
-            {branchOptions.map((b) => (
-              <option key={b.value} value={b.value}>
-                {b.label}
-              </option>
-            ))}
-          </NativeSelect.Field>
-          <NativeSelect.Indicator right="12px" color="#C95C18">
-            <LuChevronDown size={14} />
-          </NativeSelect.Indicator>
-        </NativeSelect.Root>
+        <CustomSelect
+          h="40px"
+          fontSize="12px"
+          disabled={branchDisabled}
+          value={selectedBranchId ?? ""}
+          emptyLabel="All Branches"
+          onChange={(val) => setSelectedBranchId?.(val || "")}
+          ariaLabel="Branch"
+          options={branchOptions}
+        />
       </Box>
     </Flex>
   );

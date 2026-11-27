@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Box, Text, VStack, Icon, Button, HStack, Spinner } from "@chakra-ui/react";
 import { FaFileExcel, FaUpload, FaTimes, FaPaste } from "react-icons/fa";
+import { LuUpload } from "react-icons/lu";
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
 import { parseStringCell } from "@/utils/importValues";
@@ -518,47 +519,30 @@ function CustomFileUploader({
       {!title && !uploadedFile && !isProcessing && (
         <Box
           {...getRootProps()}
-          p={sizeStyles[size].padding}
-          border="2px dashed"
-          borderColor={
-            isDragActive
-              ? `${color}.400`
-              : isDragReject
-              ? "red.400"
-              : `${color}.300`
-          }
-          borderRadius="lg"
-          bg={
-            isDragActive
-              ? `${color}.50`
-              : isDragReject
-              ? "red.50"
-              : `${color}.25`
-          }
+          px={sizeStyles[size].padding}
+          py={{ base: "48px", md: "68px" }}
+          border="1.5px dashed"
+          borderColor={isDragReject ? "red.400" : "#F47721"}
+          borderRadius="10px"
+          bg={isDragReject ? "red.50" : isDragActive ? "#FDEEE1" : "#FFF5ED"}
           cursor="pointer"
           transition="all 0.2s"
           _hover={{
-            borderColor: `${color}.400`,
-            bg: `${color}.50`,
+            bg: "#FDEEE1",
           }}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
           textAlign="center"
         >
           <input {...getInputProps()} />
-          <VStack spacing={4}>
-            <Icon
-              as={FaUpload}
-              boxSize={sizeStyles[size].iconSize}
-              color={`${color}.400`}
-            />
-            <VStack spacing={2}>
-              <Text
-                fontSize={sizeStyles[size].fontSize}
-                fontWeight={sizeStyles[size].fontWeight}
-                color={`${color}.700`}
-              >
+          <VStack gap="12px">
+            <Icon as={LuUpload} boxSize="22px" color="#F47721" />
+            <VStack gap="4px">
+              <Text fontSize="13.5px" fontWeight="600" color="#C95C18">
                 {isDragActive ? "Drop the file here..." : placeholder}
               </Text>
-              <Text fontSize="sm" color={`${color}.600`}>
+              <Text fontSize="12px" color="fg.muted">
                 {acceptedFileTypes}
               </Text>
             </VStack>
@@ -566,15 +550,14 @@ function CustomFileUploader({
             {/* Clipboard Import Button */}
             {showClipboardButton && !uploadedFile && (
               <>
-                <Text fontSize="sm" color={`${color}.600`}>
+                <Text fontSize="12px" color="fg.muted">
                   or
                 </Text>
                 <Button
                   leftIcon={<FaPaste />}
                   onClick={handleClipboardPaste}
-                  colorScheme={color}
-                  size={size}
                   variant="outline"
+                  size={size}
                 >
                   Paste from Clipboard
                 </Button>

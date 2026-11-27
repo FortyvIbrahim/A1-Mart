@@ -2,7 +2,7 @@
 import CustomContainer from "@/components/CustomContainer";
 import CustomInput from "@/components/CustomInput";
 import GlobalWrapper from "@/components/GlobalWrapper";
-import { Button, Flex, Grid, IconButton, Table } from "@chakra-ui/react";
+import { Box, Button, Flex, Grid, IconButton, Table, Text } from "@chakra-ui/react";
 import { FieldArray, Formik } from "formik";
 import * as Yup from "yup";
 import Link from "next/link";
@@ -157,16 +157,17 @@ export default function MaterialsForm({ params }) {
         >
           {({ handleSubmit, values }) => {
             return (
-              <Flex flexDirection="column" gap="22px">
-                <CustomContainer pageForm headerBand
-                  title="Invoice Details"
-                  size="sm"
-                  color="secondary"
+              <Flex flexDirection="column" gap="20px">
+                <Box
+                  bg="white"
+                  borderWidth="1px"
+                  borderColor="border"
+                  borderRadius="12px"
+                  p={{ base: "16px", md: "20px" }}
                 >
                   <Grid
                     templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
-                    gap="22px"
-                    mt="10px"
+                    gap="20px"
                   >
                     <CustomInput
                       label="Invoice Number"
@@ -195,110 +196,149 @@ export default function MaterialsForm({ params }) {
                       viewOnly={isViewMode}
                     />
                   </Grid>
-                </CustomContainer>
+                </Box>
 
-                <CustomContainer pageForm headerBand title="Items" size="sm" color="secondary">
-                  {values.stock_addition && values.stock_addition.length > 0 ? (
-                    <FieldArray name="stock_addition">
-                      {(arrayHelpers) => (
-                        <div>
-                          <Table.Root
-                            variant="striped"
-                            mt="22px"
-                            sx={{
-                              "tbody tr:nth-of-type(odd) td": {
-                                background: "#f7f7f7", // your custom stripe color
-                              },
-                            }}
-                          >
-                            <Table.Header>
-                              <Table.Row>
-                                <Table.ColumnHeader>
-                                  Material
-                                </Table.ColumnHeader>
-                                <Table.ColumnHeader>
-                                  Quantity
-                                </Table.ColumnHeader>
-                                <Table.ColumnHeader>Remark</Table.ColumnHeader>
-                              </Table.Row>
-                            </Table.Header>
-                            <Table.Body>
-                              {values.stock_addition.map((item, idx) => (
-                                <Table.Row key={`${item.material_id}-${idx}`}>
-                                  <Table.Cell>
-                                    <CustomInput
-                                      name={`stock_addition.${idx}.product_id`}
-                                      options={materialsOptions}
-                                      method="searchable-dropdown"
-                                      placeholder="Select Material"
-                                      viewOnly={isViewMode}
-                                    />
-                                  </Table.Cell>
-                                  <Table.Cell>
-                                    <CustomInput
-                                      name={`stock_addition.${idx}.quantity`}
-                                      type="number"
-                                      min={1}
-                                      value={item.quantity}
-                                      placeholder="Quantity"
-                                      viewOnly={isViewMode}
-                                    />
-                                  </Table.Cell>
-                                  <Table.Cell>
-                                    <CustomInput
-                                      name={`stock_addition.${idx}.remark`}
-                                      value={item.remark}
-                                      placeholder="Remark"
-                                      viewOnly={isViewMode}
-                                    />
-                                  </Table.Cell>
-                                  <Table.Cell>
-                                    {values.stock_addition.length > 1 && (
-                                      <IconButton
-                                        colorPalette="red"
-                                        variant="ghost"
-                                        size="sm"
-                                        title="Remove"
-                                        onClick={() => arrayHelpers.remove(idx)}
-                                      >
-                                        <i className="fa fa-trash" />
-                                      </IconButton>
-                                    )}
-                                  </Table.Cell>
+                <Flex direction="column" gap="12px">
+                  <Text fontSize="15px" lineHeight="20px" fontWeight="600" color="fg">
+                    Items
+                  </Text>
+                  <Box
+                    bg="white"
+                    borderWidth="1px"
+                    borderColor="border"
+                    borderRadius="12px"
+                    overflow="hidden"
+                  >
+                    {values.stock_addition && values.stock_addition.length > 0 ? (
+                      <FieldArray name="stock_addition">
+                        {(arrayHelpers) => (
+                          <Box>
+                            <Table.Root
+                              css={{
+                                "& thead th": {
+                                  bg: "#FFF5ED",
+                                  color: "#637188",
+                                  fontWeight: "600",
+                                  fontSize: "12px",
+                                  borderBottomColor: "#F1E3D9",
+                                },
+                                "& tbody tr:nth-of-type(odd) td": {
+                                  bg: "#FFFFFF",
+                                },
+                                "& tbody tr:nth-of-type(even) td": {
+                                  bg: "#FFF5ED",
+                                },
+                                "& tbody td": {
+                                  borderBottomColor: "#F1E3D9",
+                                },
+                              }}
+                            >
+                              <Table.Header>
+                                <Table.Row bg="#FFF5ED">
+                                  <Table.ColumnHeader bg="#FFF5ED">
+                                    Material
+                                  </Table.ColumnHeader>
+                                  <Table.ColumnHeader bg="#FFF5ED" textAlign="center">
+                                    Quantity
+                                  </Table.ColumnHeader>
+                                  <Table.ColumnHeader bg="#FFF5ED" textAlign="center">
+                                    Remark
+                                  </Table.ColumnHeader>
+                                  {!isViewMode && (
+                                    <Table.ColumnHeader bg="#FFF5ED" textAlign="center" w="64px" />
+                                  )}
                                 </Table.Row>
-                              ))}
-                            </Table.Body>
-                          </Table.Root>
+                              </Table.Header>
+                              <Table.Body>
+                                {values.stock_addition.map((item, idx) => (
+                                  <Table.Row key={`${item.material_id}-${idx}`}>
+                                    <Table.Cell>
+                                      <CustomInput
+                                        name={`stock_addition.${idx}.product_id`}
+                                        options={materialsOptions}
+                                        method="searchable-dropdown"
+                                        placeholder="Select Material"
+                                        viewOnly={isViewMode}
+                                      />
+                                    </Table.Cell>
+                                    <Table.Cell textAlign="center">
+                                      <Flex justify="center">
+                                        <CustomInput
+                                          name={`stock_addition.${idx}.quantity`}
+                                          type="number"
+                                          min={1}
+                                          value={item.quantity}
+                                          placeholder="Quantity"
+                                          viewOnly={isViewMode}
+                                        />
+                                      </Flex>
+                                    </Table.Cell>
+                                    <Table.Cell textAlign="center">
+                                      <Flex justify="center">
+                                        <CustomInput
+                                          name={`stock_addition.${idx}.remark`}
+                                          value={item.remark}
+                                          placeholder="Remark"
+                                          viewOnly={isViewMode}
+                                        />
+                                      </Flex>
+                                    </Table.Cell>
+                                    {!isViewMode && (
+                                      <Table.Cell textAlign="center">
+                                        {values.stock_addition.length > 1 && (
+                                          <IconButton
+                                            colorPalette="red"
+                                            variant="ghost"
+                                            size="sm"
+                                            title="Remove"
+                                            onClick={() => arrayHelpers.remove(idx)}
+                                          >
+                                            <i className="fa fa-trash" />
+                                          </IconButton>
+                                        )}
+                                      </Table.Cell>
+                                    )}
+                                  </Table.Row>
+                                ))}
+                              </Table.Body>
+                            </Table.Root>
 
-                          {(isCreateMode || isEditMode) && (
-                            <Flex>
-                              <Button
-                                mt="22px"
-                                ml="10px"
-                                onClick={() =>
-                                  arrayHelpers.push({
-                                    product_id: "",
-                                    quantity: "",
-                                    remark: "",
-                                  })
-                                }
-                              >
-                                Add Row
-                              </Button>
-                            </Flex>
-                          )}
-                        </div>
-                      )}
-                    </FieldArray>
-                  ) : null}
-                </CustomContainer>
+                            {(isCreateMode || isEditMode) && (
+                              <Flex p="14px" justifyContent="flex-end">
+                                <Button
+                                  bg="#F47721"
+                                  color="white"
+                                  _hover={{ bg: "#E06612" }}
+                                  onClick={() =>
+                                    arrayHelpers.push({
+                                      product_id: "",
+                                      quantity: "",
+                                      remark: "",
+                                    })
+                                  }
+                                >
+                                  Add Row
+                                </Button>
+                              </Flex>
+                            )}
+                          </Box>
+                        )}
+                      </FieldArray>
+                    ) : null}
+                  </Box>
+                </Flex>
 
-                <Flex gap="22px" justifyContent="flex-end">
+                <Flex gap="12px" justifyContent="flex-end">
                   <Link href="/materials/stock-addition">
                     <Button variant="subtle">Back</Button>
                   </Link>
                   {(isCreateMode || isEditMode) && (
-                    <Button onClick={handleSubmit}>
+                    <Button
+                      bg="#F47721"
+                      color="white"
+                      _hover={{ bg: "#E06612" }}
+                      onClick={handleSubmit}
+                    >
                       {isCreateMode ? "Create" : "Update"}
                     </Button>
                   )}

@@ -4,7 +4,7 @@ import CustomContainer from "@/components/CustomContainer";
 import CustomInput from "@/components/CustomInput";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import { capitalizeWords } from "@/utils/string";
-import { Box, Button, Flex, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Grid, Text } from "@chakra-ui/react";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import Link from "next/link";
@@ -179,7 +179,11 @@ export default function AccountsForm({ params }) {
   const [initialValues, setInitialValues] = useState(INITIAL_VALUES);
   const [selectedBranchId, setSelectedBranchId] = useState(null);
 
-  const { employees } = useEmployee();
+  const isCreateMode = mode[0] === "create";
+  const isViewMode = mode[0] === "view";
+  const isEditMode = mode[0] === "edit";
+
+  const { employees } = useEmployee({ allBranches: isViewMode || isEditMode });
   const { billingCounters } = useBillingCounters();
   const { branches } = useBranches();
   const canAccessAllBranches = usePermission("access_all_branches");
@@ -218,10 +222,6 @@ export default function AccountsForm({ params }) {
   const filteredBillingCounters = selectedBranchId
     ? billingCounters.filter((counter) => counter.branch_id == selectedBranchId)
     : billingCounters;
-
-  const isCreateMode = mode[0] === "create";
-  const isViewMode = mode[0] === "view";
-  const isEditMode = mode[0] === "edit";
 
   // Branch options
   const branchOptions = branches
@@ -291,19 +291,17 @@ export default function AccountsForm({ params }) {
 
   const getTenderRow = (key, title, setFieldValue) => {
     return (
-      <Flex
-        gap="22px"
-        w={"100%"}
-        alignItems="center"
-        flexDirection={{ base: "column", md: "row" }}
+      <Grid
+        templateColumns={{ base: "1fr", sm: "68px 1fr 1fr" }}
+        gap="14px"
+        alignItems="start"
+        w="100%"
       >
         <Text
-          mt="16px"
-          fontWeight="semibold"
-          fontSize="sm"
-          color="secondary.800"
-          minW={{ base: "100%", md: "80px" }}
-          textAlign={{ base: "center", md: "left" }}
+          fontWeight="600"
+          fontSize="13.5px"
+          color="fg"
+          pt={{ base: "0px", sm: "28px" }}
         >
           {title}
         </Text>
@@ -339,16 +337,20 @@ export default function AccountsForm({ params }) {
             { value: "exact", label: "Correct" },
           ]}
         />
-        {/* <CustomInput
-          label="Reason"
-          isRequired
-          placeholder="Enter reason for cash short/excess"
-          name={`${key}.reason`}
-          method="text"
-          type="text"
-          viewOnly={isViewMode}
-        /> */}
-      </Flex>
+      </Grid>
+    );
+  };
+
+  const isBillingOperatorEmployee = (emp, sheet) => {
+    const desId = emp?.designation_id ?? sheet?.designation_id;
+    const desName = String(
+      emp?.designation_name ?? sheet?.designation_name ?? ""
+    )
+      .trim()
+      .toLowerCase();
+    return (
+      Number(desId) === BILLING_OPERATOR_DESIGNATION_ID ||
+      desName === "billing operator"
     );
   };
 
@@ -435,8 +437,80 @@ export default function AccountsForm({ params }) {
       return "Edit Performance Entry";
     }
 
-    return `Performance Entry : #${accountSheet?.id ?? ""}`;
+    return `Performance Entry : #${accountSheet?.id ?? mode[1] ?? ""}`;
   };
+
+  const formatTenderType = (type) => {
+    if (type === "exact") return "Correct";
+    if (type === "excess") return "Excess";
+    if (type === "short") return "Short";
+    return type || "-";
+  };
+
+  const viewEmployee = employees.find(
+    (emp) => emp.employee_code === accountSheet?.employee_id
+  );
+  const viewSelectBranchName =
+    accountSheet?.branch_id != null
+      ? branches.find((b) => Number(b.branch_id) === Number(accountSheet.branch_id))
+          ?.branch_name || "—"
+      : "—";
+  const viewCounterName =
+    accountSheet?.counter_name ||
+    billingCounters.find(
+      (c) => Number(c.counter_id) === Number(accountSheet?.billing_counter_id)
+    )?.counter_name ||
+    "—";
+  const viewEmployeeDisplay = accountSheet?.employee_id
+    ? `${accountSheet.employee_id} - ${
+        (viewEmployee?.employee_name || accountSheet?.employee_name || "")
+          .toString()
+          .toUpperCase() || accountSheet.employee_id
+      }`
+    : "—";
+  const viewDesignation =
+    viewEmployee?.designation_name || accountSheet?.designation_name
+      ? String(
+          viewEmployee?.designation_name || accountSheet?.designation_name
+        ).toUpperCase()
+      : "—";
+  const viewBranch =
+    viewEmployee?.branch_name || accountSheet?.employee_branch_name
+      ? String(
+          viewEmployee?.branch_name || accountSheet?.employee_branch_name
+        ).toUpperCase()
+      : "—";
+  const hasAnyTenderData =
+    accountSheet?.cash_sales != null ||
+    accountSheet?.card_sales != null ||
+    accountSheet?.paytm_sales != null;
+  const hasNonZeroTenderData =
+    Number(accountSheet?.cash_sales || 0) > 0 ||
+    Number(accountSheet?.card_sales || 0) > 0 ||
+    Number(accountSheet?.paytm_sales || 0) > 0;
+  const showViewTenderDetails =
+    isBillingOperatorEmployee(viewEmployee, accountSheet) ||
+    hasNonZeroTenderData ||
+    (!viewEmployee?.designation_id &&
+      !accountSheet?.designation_id &&
+      hasAnyTenderData);
+  const tenderRows = [
+    {
+      label: "Cash",
+      value: Number(accountSheet?.cash_sales ?? 0).toFixed(2),
+      type: formatTenderType(accountSheet?.cash_type),
+    },
+    {
+      label: "Card",
+      value: Number(accountSheet?.card_sales ?? 0).toFixed(2),
+      type: formatTenderType(accountSheet?.card_type),
+    },
+    {
+      label: "Paytm",
+      value: Number(accountSheet?.paytm_sales ?? 0).toFixed(2),
+      type: formatTenderType(accountSheet?.paytm_type),
+    },
+  ];
 
   const getPermissionKey = () => {
     if (isCreateMode || isEditMode) {
@@ -452,330 +526,601 @@ export default function AccountsForm({ params }) {
     }
 
     return (
-      <Flex borderRadius="md" flexWrap="wrap" gap="22px">
-        <Flex
-          flexDirection="column"
-          gap="6px"
-          border="1px solid"
-          borderColor="brand500"
-          bg="brand50/50"
-          p="12px 20px"
-          borderRadius="md"
-        >
-          <Text fontSize="xs" color="brand500">
+      <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap="18px">
+        <Box>
+          <Text fontSize="12px" color="fg.muted" mb="4px">
             Designation
           </Text>
-          <Text fontSize="sm" color="brand700">
-            {capitalizeWords(employee.designation_name)}
+          <Text fontSize="14px" fontWeight="600" color="fg">
+            {String(employee.designation_name || "—").toUpperCase()}
           </Text>
-        </Flex>
+        </Box>
 
-        <Flex
-          flexDirection="column"
-          gap="6px"
-          border="1px solid"
-          borderColor="brand500"
-          bg="brand50/50"
-          p="12px 20px"
-          borderRadius="md"
-        >
-          <Text fontSize="xs" color="brand500">
+        <Box>
+          <Text fontSize="12px" color="fg.muted" mb="4px">
             Branch
           </Text>
-          <Text fontSize="sm" color="brand700">
-            {capitalizeWords(employee.branch_name)}
+          <Text fontSize="14px" fontWeight="600" color="fg">
+            {String(employee.branch_name || "—").toUpperCase()}
           </Text>
-        </Flex>
-      </Flex>
+        </Box>
+      </Grid>
     );
   };
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
       <CustomContainer pageForm headerBand title={getTitle()}>
-        <Formik
-          initialValues={initialValues}
-          validationSchema={getAccountValidationSchema(employees)}
-          onSubmit={handleCreate}
-          enableReinitialize
-        >
-          {({ handleSubmit, setFieldValue, values }) => {
-            const selectedEmployee = employees.find(
-              (employee) => employee.employee_code === values.employee_id
-            );
+        {isViewMode ? (
+          <Flex direction="column" gap="20px">
+            {/* Entry details card */}
+            <Box
+              bg="white"
+              borderWidth="1px"
+              borderColor="border"
+              borderRadius="12px"
+              p={{ base: "16px", md: "20px" }}
+            >
+              <Text
+                fontSize="15px"
+                lineHeight="20px"
+                fontWeight="600"
+                color="fg"
+                mb="16px"
+              >
+                Entry details
+              </Text>
+              <Grid
+                templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
+                gap="18px"
+              >
+                <Box>
+                  <Text fontSize="12px" color="fg.muted" mb="4px">
+                    Date
+                  </Text>
+                  <Text fontSize="14px" fontWeight="500" color="fg">
+                    {accountSheet?.date
+                      ? moment(accountSheet.date).format("DD/MM/YYYY")
+                      : "—"}
+                  </Text>
+                </Box>
+                <Box>
+                  <Text fontSize="12px" color="fg.muted" mb="4px">
+                    Select Branch
+                  </Text>
+                  <Text fontSize="14px" fontWeight="500" color="fg">
+                    {viewSelectBranchName}
+                  </Text>
+                </Box>
+                <Box>
+                  <Text fontSize="12px" color="fg.muted" mb="4px">
+                    Select Billing Counter
+                  </Text>
+                  <Text fontSize="14px" fontWeight="500" color="fg">
+                    {viewCounterName}
+                  </Text>
+                </Box>
+                <Box>
+                  <Text fontSize="12px" color="fg.muted" mb="4px">
+                    Select Employee
+                  </Text>
+                  <Text fontSize="14px" fontWeight="500" color="fg">
+                    {viewEmployeeDisplay}
+                  </Text>
+                </Box>
+                <Box>
+                  <Text fontSize="12px" color="fg.muted" mb="4px">
+                    Designation
+                  </Text>
+                  <Text fontSize="14px" fontWeight="500" color="fg">
+                    {viewDesignation}
+                  </Text>
+                </Box>
+                <Box>
+                  <Text fontSize="12px" color="fg.muted" mb="4px">
+                    Branch
+                  </Text>
+                  <Text fontSize="14px" fontWeight="500" color="fg">
+                    {viewBranch}
+                  </Text>
+                </Box>
+              </Grid>
+            </Box>
 
-            const billingDuplicateWarning =
-              !isViewMode && accountSheets?.length
-                ? getBillingDesignationDuplicateWarning({
-                    accountSheets,
-                    employees,
-                    date: values.date,
-                    branchId: values.branch_id,
-                    billingCounterId: values.billing_counter_id,
-                    selectedEmployeeCode: values.employee_id,
-                    excludeSheetId:
-                      isEditMode && accountSheet?.id != null
-                        ? accountSheet.id
-                        : null,
-                  })
-                : null;
+            {/* Stat KPI cards */}
+            <Grid
+              templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
+              gap="16px"
+            >
+              <Box bg="#FFF5ED" borderRadius="10px" px="20px" py="16px">
+                <Text fontSize="12px" color="fg.muted" mb="6px">
+                  No of Bills
+                </Text>
+                <Text fontSize="22px" lineHeight="28px" fontWeight="600" color="fg">
+                  {accountSheet?.no_of_bills ?? "—"}
+                </Text>
+              </Box>
+              <Box bg="#FFF5ED" borderRadius="10px" px="20px" py="16px">
+                <Text fontSize="12px" color="fg.muted" mb="6px">
+                  No of Items
+                </Text>
+                <Text fontSize="22px" lineHeight="28px" fontWeight="600" color="fg">
+                  {accountSheet?.no_of_items ?? "—"}
+                </Text>
+              </Box>
+              <Box bg="#FFF5ED" borderRadius="10px" px="20px" py="16px">
+                <Text fontSize="12px" color="fg.muted" mb="6px">
+                  Total Sales
+                </Text>
+                <Text fontSize="22px" lineHeight="28px" fontWeight="600" color="fg">
+                  {accountSheet?.total_sales != null
+                    ? Number(accountSheet.total_sales).toFixed(2)
+                    : "—"}
+                </Text>
+              </Box>
+            </Grid>
 
-            const isBillingCounterRequired =
-              selectedEmployee &&
-              (selectedEmployee.designation_id ===
-                BILLING_CHECKER_DESIGNATION_ID ||
-                selectedEmployee.designation_id ===
-                  BILLING_OPERATOR_DESIGNATION_ID);
-
-            const billingCounterOptions = filteredBillingCounters.map(
-              (counter) => ({
-                value: counter.counter_id,
-                label: capitalizeWords(counter.counter_name),
-              })
-            );
-
-            const onCounterAndBranchChange = (
-              billing_counter_id,
-              branch_id,
-              date
-            ) => {
-              if (branch_id && billing_counter_id && date) {
-                const dataListKey = moment(date).format("YYYY-MM-DD");
-                const dataList = preloadedAccountsData[dataListKey];
-                const selectedCounterData = dataList.find(
-                  (item) =>
-                    item.billing_counter_id == billing_counter_id &&
-                    item.branch_id == branch_id
-                );
-
-                if (selectedCounterData) {
-                  setFieldValue(
-                    "no_of_bills",
-                    parseInt(selectedCounterData.no_of_bills)
-                  );
-                  setFieldValue("no_of_items", selectedCounterData.no_of_items);
-                  setFieldValue("total_sales", selectedCounterData.total_sales);
-                } else {
-                  setFieldValue("no_of_bills", "");
-                  setFieldValue("no_of_items", "");
-                  setFieldValue("total_sales", "");
-                }
-              }
-            };
-
-            return (
-              <Flex flexDirection="column" gap="22px">
-                <CustomInput
-                  label="Date"
-                  isRequired
-                  placeholder="DD/MM/YYYY"
-                  name="date"
-                  type="date"
-                  method="date-picker"
-                  viewOnly={isViewMode}
-                  onChange={(date) => {
-                    onCounterAndBranchChange(
-                      values.billing_counter_id,
-                      values.branch_id,
-                      date
-                    );
-                  }}
-                />
-                <CustomInput
-                  label="Select Branch"
-                  isRequired
-                  placeholder="Click here to select branch..."
-                  name="branch_id"
-                  method="dropdown"
-                  options={branchOptions}
-                  viewOnly={isViewMode}
-                  disabled={!canAccessAllBranches || isViewMode}
-                  onChange={(e) => {
-                    setSelectedBranchId(e.target.value);
-                    // Reset counter when branch changes
-                    setFieldValue("billing_counter_id", null);
-                    onCounterAndBranchChange(
-                      values.billing_counter_id,
-                      e.target.value,
-                      values.date
-                    );
-                  }}
-                />
-
-                <CustomInput
-                  label="Select Billing Counter"
-                  isRequired={isBillingCounterRequired}
-                  placeholder={
-                    values.branch_id
-                      ? "Select billing counter"
-                      : "Select branch first"
-                  }
-                  name="billing_counter_id"
-                  method="dropdown"
-                  options={billingCounterOptions}
-                  viewOnly={isViewMode}
-                  disabled={!values.branch_id || isViewMode}
-                  onChange={(e) => {
-                    onCounterAndBranchChange(
-                      e.target.value,
-                      values.branch_id,
-                      values.date
-                    );
-                  }}
-                />
-
-                <CustomInput
-                  label="Select Employee"
-                  isRequired
-                  placeholder="Click here to select employee..."
-                  name="employee_id"
-                  method="searchable-dropdown"
-                  options={filteredEmployees}
-                  viewOnly={isViewMode}
-                  customRender={(item) => (
-                    <Flex
-                      flexDirection="column"
-                      align="flex-start"
-                      gap="0"
-                      py="0.5"
-                    >
-                      <Text fontSize="sm" fontWeight="medium" lineHeight="short">
-                        {item.label}
-                      </Text>
-                      <Text fontSize="xs" color="gray.500" lineHeight="short">
-                        {[item.designation_name, item.branch_name]
-                          .filter(Boolean)
-                          .join(" · ") || "\u2014"}
-                      </Text>
-                    </Flex>
-                  )}
-                  onChange={(employee_id) => {
-                    const selectedEmployee = employees.find(
-                      (employee) => employee.employee_code === employee_id
-                    );
-
-                    if (
-                      selectedEmployee &&
-                      selectedEmployee.designation_id !==
-                        BILLING_OPERATOR_DESIGNATION_ID
-                    ) {
-                      setFieldValue("cash.sales", "0");
-                      setFieldValue("cash.type", "exact");
-                      setFieldValue("cash.reason", "");
-                      setFieldValue("card.sales", "0");
-                      setFieldValue("card.type", "exact");
-                      setFieldValue("card.reason", "");
-                      setFieldValue("paytm.sales", "0");
-                      setFieldValue("paytm.type", "exact");
-                      setFieldValue("paytm.reason", "");
-                    } else {
-                      setFieldValue("cash.sales", "");
-                      setFieldValue("cash.type", "");
-                      setFieldValue("cash.reason", "");
-                      setFieldValue("card.sales", "");
-                      setFieldValue("card.type", "");
-                      setFieldValue("card.reason", "");
-                      setFieldValue("paytm.sales", "");
-                      setFieldValue("paytm.type", "");
-                      setFieldValue("paytm.reason", "");
-                    }
-                  }}
-                />
-
-                {selectedEmployee && renderEmployeeDetails(selectedEmployee)}
-
-                {billingDuplicateWarning && (
-                  <Box
-                    borderWidth="1px"
-                    borderColor="orange.400"
-                    bg="orange.50"
-                    _dark={{
-                      borderColor: "orange.500",
-                      bg: "rgba(251, 146, 60, 0.12)",
-                    }}
-                    borderRadius="md"
-                    px="4"
-                    py="3"
+            {/* Tender Details table (without Settings) */}
+            {showViewTenderDetails && (
+              <Flex direction="column" gap="14px">
+                <Text fontSize="15px" lineHeight="20px" fontWeight="600" color="fg">
+                  Tender Details
+                </Text>
+                <Box
+                  bg="white"
+                  borderWidth="1px"
+                  borderColor="border"
+                  borderRadius="12px"
+                  overflow="hidden"
+                >
+                  <Grid
+                    templateColumns="1fr 120px 140px"
+                    bg="#FFF5ED"
+                    px="20px"
+                    py="14px"
+                    alignItems="center"
                   >
-                    <Text fontSize="sm" color="orange.900" _dark={{ color: "orange.100" }}>
-                      Data entry already done by{" "}
-                      <Text as="span" fontWeight="semibold">
-                        {billingDuplicateWarning.existingName}
-                      </Text>
-                      . Only one billing checker and one billing operator entry
-                      is allowed per day for this branch.
+                    <Text fontSize="12px" fontWeight="600" color="fg.muted">
+                      Tender
                     </Text>
-                  </Box>
-                )}
-
-                <Flex gap="22px">
-                  <CustomInput
-                    label="No of Bills"
-                    isRequired
-                    placeholder="0"
-                    name="no_of_bills"
-                    method="text"
-                    type="number"
-                    viewOnly={isViewMode}
-                    disabled={true}
-                  />
-                  <CustomInput
-                    label="No of Items"
-                    isRequired
-                    placeholder="0"
-                    name="no_of_items"
-                    method="text"
-                    type="number"
-                    viewOnly={isViewMode}
-                    disabled={true}
-                  />
-                  <CustomInput
-                    label="Total Sales"
-                    isRequired
-                    placeholder="0"
-                    name="total_sales"
-                    method="text"
-                    type="number"
-                    viewOnly={isViewMode}
-                    disabled={true}
-                  />
-                </Flex>
-
-                {selectedEmployee &&
-                  selectedEmployee.designation_id ===
-                    BILLING_OPERATOR_DESIGNATION_ID && (
-                    <CustomContainer pageForm headerBand
-                      title="Tender Details"
-                      size="sm"
-                      color="secondary"
+                    <Text
+                      fontSize="12px"
+                      fontWeight="600"
+                      color="fg.muted"
+                      textAlign="right"
                     >
-                      <Flex flexDirection="column" gap="22px">
-                        {getTenderRow("cash", "Cash", setFieldValue)}
-                        <hr />
-                        {getTenderRow("card", "Card", setFieldValue)}
-                        <hr />
-                        {getTenderRow("paytm", "Paytm", setFieldValue)}
-                      </Flex>
-                    </CustomContainer>
-                  )}
-
-                <Flex gap="22px" justifyContent="flex-end">
-                  <Link href="/performance">
-                    <Button variant="subtle">Back</Button>
-                  </Link>
-                  {(isCreateMode || isEditMode) && (
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={Boolean(billingDuplicateWarning)}
+                      Value
+                    </Text>
+                    <Text
+                      fontSize="12px"
+                      fontWeight="600"
+                      color="fg.muted"
+                      pl="24px"
                     >
-                      {isCreateMode ? "Create" : "Update"}
-                    </Button>
-                  )}
-                </Flex>
+                      Type
+                    </Text>
+                  </Grid>
+                  {tenderRows.map((row, idx) => (
+                    <Grid
+                      key={row.label}
+                      templateColumns="1fr 120px 140px"
+                      px="20px"
+                      py="18px"
+                      alignItems="center"
+                      borderTopWidth={idx > 0 ? "1px" : "0px"}
+                      borderColor="border.subtle"
+                    >
+                      <Text fontSize="13px" color="fg">
+                        {row.label}
+                      </Text>
+                      <Text fontSize="13px" color="fg" textAlign="right">
+                        {row.value}
+                      </Text>
+                      <Text fontSize="13px" color="fg" pl="24px">
+                        {row.type}
+                      </Text>
+                    </Grid>
+                  ))}
+                </Box>
               </Flex>
-            );
-          }}
-        </Formik>
+            )}
+
+            <Flex justifyContent="flex-end" pt="4px">
+              <Link href="/performance">
+                <Button variant="subtle">Back</Button>
+              </Link>
+            </Flex>
+          </Flex>
+        ) : (
+          <Formik
+            initialValues={initialValues}
+            validationSchema={getAccountValidationSchema(employees)}
+            onSubmit={handleCreate}
+            enableReinitialize
+          >
+            {({ handleSubmit, setFieldValue, values }) => {
+              const selectedEmployee = employees.find(
+                (employee) => employee.employee_code === values.employee_id
+              );
+
+              const billingDuplicateWarning =
+                accountSheets?.length
+                  ? getBillingDesignationDuplicateWarning({
+                      accountSheets,
+                      employees,
+                      date: values.date,
+                      branchId: values.branch_id,
+                      billingCounterId: values.billing_counter_id,
+                      selectedEmployeeCode: values.employee_id,
+                      excludeSheetId:
+                        isEditMode && accountSheet?.id != null
+                          ? accountSheet.id
+                          : null,
+                    })
+                  : null;
+
+              const isBillingCounterRequired =
+                selectedEmployee &&
+                (selectedEmployee.designation_id ===
+                  BILLING_CHECKER_DESIGNATION_ID ||
+                  selectedEmployee.designation_id ===
+                    BILLING_OPERATOR_DESIGNATION_ID);
+
+              const billingCounterOptions = filteredBillingCounters.map(
+                (counter) => ({
+                  value: counter.counter_id,
+                  label: capitalizeWords(counter.counter_name),
+                })
+              );
+
+              const onCounterAndBranchChange = (
+                billing_counter_id,
+                branch_id,
+                date
+              ) => {
+                if (branch_id && billing_counter_id && date) {
+                  const dataListKey = moment(date).format("YYYY-MM-DD");
+                  const dataList = preloadedAccountsData[dataListKey];
+                  const selectedCounterData = dataList.find(
+                    (item) =>
+                      item.billing_counter_id == billing_counter_id &&
+                      item.branch_id == branch_id
+                  );
+
+                  if (selectedCounterData) {
+                    setFieldValue(
+                      "no_of_bills",
+                      parseInt(selectedCounterData.no_of_bills)
+                    );
+                    setFieldValue("no_of_items", selectedCounterData.no_of_items);
+                    setFieldValue("total_sales", selectedCounterData.total_sales);
+                  } else {
+                    setFieldValue("no_of_bills", "");
+                    setFieldValue("no_of_items", "");
+                    setFieldValue("total_sales", "");
+                  }
+                }
+              };
+
+              const showFormTenderDetails =
+                selectedEmployee && isBillingOperatorEmployee(selectedEmployee);
+
+              const entryFormCard = (
+                <Box
+                  bg="white"
+                  borderWidth="1px"
+                  borderColor="border"
+                  borderRadius="12px"
+                  p={{ base: "16px", md: "20px" }}
+                >
+                  <Text
+                    fontSize="15px"
+                    lineHeight="20px"
+                    fontWeight="600"
+                    color="fg"
+                    mb="16px"
+                  >
+                    Entry details
+                  </Text>
+                  <Flex direction="column" gap="18px">
+                    <Grid
+                      templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+                      gap="16px"
+                    >
+                      <CustomInput
+                        label="Date"
+                        isRequired
+                        placeholder="DD/MM/YYYY"
+                        name="date"
+                        type="date"
+                        method="date-picker"
+                        onChange={(date) => {
+                          onCounterAndBranchChange(
+                            values.billing_counter_id,
+                            values.branch_id,
+                            date
+                          );
+                        }}
+                      />
+                      <CustomInput
+                        label="Select Branch"
+                        isRequired
+                        placeholder="Click here to select branch..."
+                        name="branch_id"
+                        method="dropdown"
+                        options={branchOptions}
+                        disabled={!canAccessAllBranches}
+                        onChange={(e) => {
+                          setSelectedBranchId(e.target.value);
+                          // Reset counter when branch changes
+                          setFieldValue("billing_counter_id", null);
+                          onCounterAndBranchChange(
+                            values.billing_counter_id,
+                            e.target.value,
+                            values.date
+                          );
+                        }}
+                      />
+
+                      <CustomInput
+                        label="Select Billing Counter"
+                        isRequired={isBillingCounterRequired}
+                        placeholder={
+                          values.branch_id
+                            ? "Select billing counter"
+                            : "Select branch first"
+                        }
+                        name="billing_counter_id"
+                        method="dropdown"
+                        options={billingCounterOptions}
+                        disabled={!values.branch_id}
+                        onChange={(e) => {
+                          onCounterAndBranchChange(
+                            e.target.value,
+                            values.branch_id,
+                            values.date
+                          );
+                        }}
+                      />
+
+                      <CustomInput
+                        label="Select Employee"
+                        isRequired
+                        placeholder="Click here to select employee..."
+                        name="employee_id"
+                        method="searchable-dropdown"
+                        options={filteredEmployees}
+                        customRender={(item) => (
+                          <Flex
+                            flexDirection="column"
+                            align="flex-start"
+                            gap="0"
+                            py="0.5"
+                          >
+                            <Text fontSize="sm" fontWeight="medium" lineHeight="short">
+                              {item.label}
+                            </Text>
+                            <Text fontSize="xs" color="gray.500" lineHeight="short">
+                              {[item.designation_name, item.branch_name]
+                                .filter(Boolean)
+                                .join(" · ") || "\u2014"}
+                            </Text>
+                          </Flex>
+                        )}
+                        onChange={(employee_id) => {
+                          const emp = employees.find(
+                            (employee) => employee.employee_code === employee_id
+                          );
+
+                          if (emp && !isBillingOperatorEmployee(emp)) {
+                            setFieldValue("cash.sales", "0");
+                            setFieldValue("cash.type", "exact");
+                            setFieldValue("cash.reason", "");
+                            setFieldValue("card.sales", "0");
+                            setFieldValue("card.type", "exact");
+                            setFieldValue("card.reason", "");
+                            setFieldValue("paytm.sales", "0");
+                            setFieldValue("paytm.type", "exact");
+                            setFieldValue("paytm.reason", "");
+                          } else {
+                            setFieldValue("cash.sales", "");
+                            setFieldValue("cash.type", "");
+                            setFieldValue("cash.reason", "");
+                            setFieldValue("card.sales", "");
+                            setFieldValue("card.type", "");
+                            setFieldValue("card.reason", "");
+                            setFieldValue("paytm.sales", "");
+                            setFieldValue("paytm.type", "");
+                            setFieldValue("paytm.reason", "");
+                          }
+                        }}
+                      />
+                    </Grid>
+
+                    {selectedEmployee && renderEmployeeDetails(selectedEmployee)}
+
+                    {billingDuplicateWarning && (
+                      <Box
+                        borderWidth="1px"
+                        borderColor="orange.400"
+                        bg="orange.50"
+                        _dark={{
+                          borderColor: "orange.500",
+                          bg: "rgba(251, 146, 60, 0.12)",
+                        }}
+                        borderRadius="md"
+                        px="4"
+                        py="3"
+                      >
+                        <Text
+                          fontSize="sm"
+                          color="orange.900"
+                          _dark={{ color: "orange.100" }}
+                        >
+                          Data entry already done by{" "}
+                          <Text as="span" fontWeight="semibold">
+                            {billingDuplicateWarning.existingName}
+                          </Text>
+                          . Only one billing checker and one billing operator
+                          entry is allowed per day for this branch.
+                        </Text>
+                      </Box>
+                    )}
+
+                    {isEditMode && (
+                      <Grid
+                        templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
+                        gap="14px"
+                      >
+                        <CustomInput
+                          label="No of Bills"
+                          isRequired
+                          placeholder="0"
+                          name="no_of_bills"
+                          method="text"
+                          type="number"
+                          disabled={true}
+                        />
+                        <CustomInput
+                          label="No of Items"
+                          isRequired
+                          placeholder="0"
+                          name="no_of_items"
+                          method="text"
+                          type="number"
+                          disabled={true}
+                        />
+                        <CustomInput
+                          label="Total Sales"
+                          isRequired
+                          placeholder="0"
+                          name="total_sales"
+                          method="text"
+                          type="number"
+                          disabled={true}
+                        />
+                      </Grid>
+                    )}
+                  </Flex>
+                </Box>
+              );
+
+              const tenderDetailsCard = showFormTenderDetails ? (
+                <Box
+                  bg="white"
+                  borderWidth="1px"
+                  borderColor="border"
+                  borderRadius="12px"
+                  p={{ base: "16px", md: "20px" }}
+                >
+                  <Text
+                    fontSize="15px"
+                    lineHeight="20px"
+                    fontWeight="600"
+                    color="fg"
+                    mb="16px"
+                  >
+                    Tender Details
+                  </Text>
+                  <Flex direction="column" gap="16px">
+                    {getTenderRow("cash", "Cash", setFieldValue)}
+                    {getTenderRow("card", "Card", setFieldValue)}
+                    {getTenderRow("paytm", "Paytm", setFieldValue)}
+                  </Flex>
+                </Box>
+              ) : null;
+
+              return (
+                <Flex flexDirection="column" gap="20px">
+                  {isEditMode ? (
+                    <Grid
+                      templateColumns={{
+                        base: "1fr",
+                        lg: showFormTenderDetails ? "1.45fr 1fr" : "1fr",
+                      }}
+                      gap="20px"
+                      alignItems="start"
+                    >
+                      {entryFormCard}
+                      {tenderDetailsCard}
+                    </Grid>
+                  ) : (
+                    <>
+                      {entryFormCard}
+                      <Box
+                        bg="white"
+                        borderWidth="1px"
+                        borderColor="border"
+                        borderRadius="12px"
+                        p={{ base: "16px", md: "20px" }}
+                      >
+                        <Text
+                          fontSize="15px"
+                          lineHeight="20px"
+                          fontWeight="600"
+                          color="fg"
+                          mb="16px"
+                        >
+                          Performance figures
+                        </Text>
+                        <Grid
+                          templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
+                          gap="16px"
+                        >
+                          <CustomInput
+                            label="No of Bills"
+                            isRequired
+                            placeholder="0"
+                            name="no_of_bills"
+                            method="text"
+                            type="number"
+                            disabled={true}
+                          />
+                          <CustomInput
+                            label="No of Items"
+                            isRequired
+                            placeholder="0"
+                            name="no_of_items"
+                            method="text"
+                            type="number"
+                            disabled={true}
+                          />
+                          <CustomInput
+                            label="Total Sales"
+                            isRequired
+                            placeholder="0"
+                            name="total_sales"
+                            method="text"
+                            type="number"
+                            disabled={true}
+                          />
+                        </Grid>
+                      </Box>
+                      {tenderDetailsCard}
+                    </>
+                  )}
+
+                  <Flex gap="12px" justifyContent="flex-end">
+                    <Link href="/performance">
+                      <Button variant="subtle">Back</Button>
+                    </Link>
+                    {(isCreateMode || isEditMode) && (
+                      <Button
+                        bg="#F47721"
+                        color="white"
+                        _hover={{ bg: "#E06612" }}
+                        onClick={handleSubmit}
+                        disabled={Boolean(billingDuplicateWarning)}
+                      >
+                        {isCreateMode ? "Create" : "Update"}
+                      </Button>
+                    )}
+                  </Flex>
+                </Flex>
+              );
+            }}
+          </Formik>
+        )}
       </CustomContainer>
     </GlobalWrapper>
   );

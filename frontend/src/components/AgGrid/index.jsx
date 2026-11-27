@@ -2,7 +2,12 @@
 
 import { LuChevronDown, LuX } from "react-icons/lu";
 import agGridTheme from "@/theme/aggrid";
-import { useInsideCard, useInsideMainCard, useRegisterGrid } from "../CustomContainer";
+import {
+  useHeaderSettingsSlot,
+  useInsideCard,
+  useInsideMainCard,
+  useRegisterGrid,
+} from "../CustomContainer";
 import TableSkeleton from "../TableSkeleton";
 import usePendingRequests from "@/customHooks/usePendingRequests";
 import { capitalizeWordsLatest } from "@/utils/string";
@@ -26,11 +31,13 @@ import { AgGridReact } from "ag-grid-react";
 import React, {
   useCallback,
   useEffect,
+  useId,
   useImperativeHandle,
   useMemo,
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import MobileVirtualizedList from "./MobileVirtualizedList";
 import BadgeColumnFilter, { badgeFilterHandler } from "./BadgeColumnFilter";
 import { downloadCsv, exportToExcel } from "@/utils/exportCSVFile";
@@ -124,6 +131,16 @@ const AgGrid = React.forwardRef(function AgGrid(
   const insideMainCard = useInsideMainCard();
   const framed = !bare && !insideCard;
   useEffect(() => registerGrid?.(), [registerGrid]);
+
+  const gridSlotId = useId();
+  const headerSlot = useHeaderSettingsSlot();
+  const isMobileView = !noMobileVersion && isMobile;
+
+  useEffect(() => {
+    if (isMobileView || !showColumnSettings || !headerSlot?.settingsSlotEl) return;
+    headerSlot.claimSettingsSlot?.(gridSlotId);
+    return () => headerSlot.releaseSettingsSlot?.(gridSlotId);
+  }, [isMobileView, showColumnSettings, headerSlot, gridSlotId]);
 
   // Skeleton while the page's first data load is in flight. Pages may pass
   // `loading` explicitly; otherwise we infer it from pending API requests.
@@ -846,117 +863,129 @@ const AgGrid = React.forwardRef(function AgGrid(
     return gridContent;
   }
 
+  const renderInHeader = Boolean(
+    headerSlot?.settingsSlotEl && headerSlot?.settingsOwnerId === gridSlotId
+  );
+
+  const settingsPopover = (
+    <Popover.Root
+      open={settingsOpen}
+      onOpenChange={(e) => setSettingsOpen(e.open)}
+      positioning={{ placement: "bottom-end", gutter: 8 }}
+      lazyMount
+      unmountOnExit
+    >
+      <Popover.Trigger asChild>
+        <Button
+          aria-label="Table settings"
+          size="xs"
+          h={renderInHeader ? "38px" : "34px"}
+          px={renderInHeader ? "14px" : "0"}
+          w={renderInHeader ? "auto" : "122px"}
+          variant="outline"
+          colorPalette="brand"
+          bg={renderInHeader ? "white" : "app.tableHeader"}
+          borderColor={settingsOpen ? "brand.300" : "border"}
+          color="#C95C18"
+          fontSize="12px"
+          fontWeight="500"
+          borderRadius="8px"
+          gap="8px"
+          _hover={{ bg: "brand.50", borderColor: "brand.200" }}
+        >
+          <FaCog style={{ width: 15, height: 15 }} />
+          Settings
+          <LuChevronDown style={{ width: 12, height: 12 }} />
+        </Button>
+      </Popover.Trigger>
+      <Portal>
+        <Popover.Positioner>
+          <Popover.Content
+            w={{ base: "calc(100vw - 32px)", sm: "380px" }}
+            maxW="380px"
+            bg="white"
+            borderRadius="14px"
+            borderWidth="1px"
+            borderColor="border"
+            boxShadow="0 20px 48px rgba(31, 41, 55, 0.16)"
+            overflow="hidden"
+            zIndex={1400}
+          >
+            <Flex
+              alignItems="center"
+              justifyContent="space-between"
+              px="16px"
+              py="13px"
+              bg="brand.50"
+              borderBottomWidth="1px"
+              borderColor="border.muted"
+            >
+              <Text fontSize="16px" fontWeight="600" color="brand.600">
+                Table settings
+              </Text>
+              <Popover.CloseTrigger asChild>
+                <IconButton
+                  variant="ghost"
+                  size="2xs"
+                  aria-label="Close table settings"
+                  color="brand.500"
+                  _hover={{ bg: "brand.100" }}
+                >
+                  <LuX />
+                </IconButton>
+              </Popover.CloseTrigger>
+            </Flex>
+            <Box px="16px" py="16px" maxH="min(60vh, 520px)" overflowY="auto">
+              <SettingsDrawerContent
+                onExportCsv={handleExportCsv}
+                onExportXlsx={handleExportXlsx}
+                onExportPdf={handleExportPdf}
+                defsById={defsById}
+                columnOrder={columnOrder}
+                hiddenIds={hiddenIds}
+                onToggleVisible={handleToggleVisible}
+                onDragEnd={handleDragEnd}
+                showComputationSection={showComputationSection}
+                computationColumnIds={computationColumnIds}
+                selectedComputationIds={selectedComputationIds}
+                onToggleComputation={handleToggleComputation}
+              />
+            </Box>
+            <Flex
+              justifyContent="flex-end"
+              px="16px"
+              py="12px"
+              borderTopWidth="1px"
+              borderColor="border.muted"
+            >
+              <Button
+                size="sm"
+                h="36px"
+                px="20px"
+                bg="brand.500"
+                color="white"
+                _hover={{ bg: "brand.600" }}
+                onClick={() => setSettingsOpen(false)}
+              >
+                Done
+              </Button>
+            </Flex>
+          </Popover.Content>
+        </Popover.Positioner>
+      </Portal>
+    </Popover.Root>
+  );
+
   return (
     <Box position="relative" w="100%" onContextMenu={handleContextMenu}>
       <Box position="relative">
-        <Flex justifyContent="flex-end" mb="8px">
-          <Popover.Root
-            open={settingsOpen}
-            onOpenChange={(e) => setSettingsOpen(e.open)}
-            positioning={{ placement: "bottom-end", gutter: 8 }}
-            lazyMount
-            unmountOnExit
-          >
-            <Popover.Trigger asChild>
-              <Button
-                aria-label="Table settings"
-                size="xs"
-                h="34px"
-                w="122px"
-                px="0"
-                variant="outline"
-                colorPalette="brand"
-                bg="app.tableHeader"
-                borderColor={settingsOpen ? "brand.200" : "border"}
-                color="#C95C18"
-                fontSize="12px"
-                fontWeight="500"
-                borderRadius="8px"
-                gap="8px"
-                _hover={{ bg: "brand.100", borderColor: "brand.200" }}
-              >
-                <FaCog style={{ width: 16, height: 16 }} />
-                Settings
-                <LuChevronDown style={{ width: 12, height: 12 }} />
-              </Button>
-            </Popover.Trigger>
-            <Portal>
-              <Popover.Positioner>
-                <Popover.Content
-                  w={{ base: "calc(100vw - 32px)", sm: "380px" }}
-                  maxW="380px"
-                  bg="white"
-                  borderRadius="14px"
-                  borderWidth="1px"
-                  borderColor="border"
-                  boxShadow="0 20px 48px rgba(31, 41, 55, 0.16)"
-                  overflow="hidden"
-                  zIndex={1400}
-                >
-                  <Flex
-                    alignItems="center"
-                    justifyContent="space-between"
-                    px="16px"
-                    py="13px"
-                    bg="brand.50"
-                    borderBottomWidth="1px"
-                    borderColor="border.muted"
-                  >
-                    <Text fontSize="16px" fontWeight="600" color="brand.600">
-                      Table settings
-                    </Text>
-                    <Popover.CloseTrigger asChild>
-                      <IconButton
-                        variant="ghost"
-                        size="2xs"
-                        aria-label="Close table settings"
-                        color="brand.500"
-                        _hover={{ bg: "brand.100" }}
-                      >
-                        <LuX />
-                      </IconButton>
-                    </Popover.CloseTrigger>
-                  </Flex>
-                  <Box px="16px" py="16px" maxH="min(60vh, 520px)" overflowY="auto">
-                    <SettingsDrawerContent
-                      onExportCsv={handleExportCsv}
-                      onExportXlsx={handleExportXlsx}
-                      onExportPdf={handleExportPdf}
-                      defsById={defsById}
-                      columnOrder={columnOrder}
-                      hiddenIds={hiddenIds}
-                      onToggleVisible={handleToggleVisible}
-                      onDragEnd={handleDragEnd}
-                      showComputationSection={showComputationSection}
-                      computationColumnIds={computationColumnIds}
-                      selectedComputationIds={selectedComputationIds}
-                      onToggleComputation={handleToggleComputation}
-                    />
-                  </Box>
-                  <Flex
-                    justifyContent="flex-end"
-                    px="16px"
-                    py="12px"
-                    borderTopWidth="1px"
-                    borderColor="border.muted"
-                  >
-                    <Button
-                      size="sm"
-                      h="36px"
-                      px="20px"
-                      bg="brand.500"
-                      color="white"
-                      _hover={{ bg: "brand.600" }}
-                      onClick={() => setSettingsOpen(false)}
-                    >
-                      Done
-                    </Button>
-                  </Flex>
-                </Popover.Content>
-              </Popover.Positioner>
-            </Portal>
-          </Popover.Root>
-        </Flex>
+        {renderInHeader ? (
+          createPortal(settingsPopover, headerSlot.settingsSlotEl)
+        ) : (
+          <Flex justifyContent="flex-end" mb="8px">
+            {settingsPopover}
+          </Flex>
+        )}
 
         {gridContent}
       </Box>

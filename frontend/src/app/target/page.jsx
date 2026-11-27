@@ -7,6 +7,7 @@ import useUserTarget from "@/api/customHooks/useUserTarget";
 import AgGrid from "@/components/AgGrid";
 import CustomContainer from "@/components/CustomContainer";
 import CustomMenu from "@/components/CustomMenu";
+import { useListFilters } from "@/components/ListFilters";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import { useUser } from "@/contexts/UserContext";
 import usePermission from "@/customHooks/usePermission";
@@ -26,18 +27,42 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
 
-const getDataCard = (title, value, color = "brand600") => {
+const getDataCard = (title, value, color = "#C95C18") => {
   return (
-    <Box>
-      <Text fontSize="xs" color="gray.600" fontWeight="medium">
+    <Box
+      bg="white"
+      borderWidth="1px"
+      borderColor="border"
+      borderRadius="12px"
+      px="18px"
+      py="16px"
+    >
+      <Text fontSize="12px" color="fg.muted" fontWeight="500" mb="8px">
         {title}
       </Text>
-      <Text fontSize="2xl" fontWeight="bold" color={color}>
+      <Text fontSize="22px" lineHeight="28px" fontWeight="600" color={color}>
         {value}
       </Text>
     </Box>
   );
 };
+
+const LIST_FILTERS = [
+  {
+    key: "q",
+    type: "search",
+    label: "Search",
+    placeholder: "Search employee name...",
+    getText: (r) => `${r.employee_name ?? ""} ${r.employee_code ?? ""}`,
+  },
+  {
+    key: "date",
+    type: "date",
+    label: "Date",
+    placeholder: "All dates",
+    getValue: (r) => r.date,
+  },
+];
 
 const TODAY = new Date();
 
@@ -134,66 +159,84 @@ function TargetEntry() {
     return "green.500";
   };
 
+  const { filtered: filteredRows, filterCard } = useListFilters(
+    targets,
+    LIST_FILTERS,
+    { reset: true }
+  );
+
   return (
     <GlobalWrapper permissionKey="add_sales_target">
       <CustomContainer
-        title="Sales Target - Branch"
+        headerBand
+        title="Target Entry"
         rightSection={
           allowAdd &&
           target && (
-            <Flex gap="18px">
+            <Flex gap="12px">
               <Link href="/target/create">
-                <Button>Add</Button>
+                <Button bg="#F47721" color="white" _hover={{ bg: "#E06612" }}>
+                  Add
+                </Button>
               </Link>
             </Flex>
           )
         }
       >
-        <CustomContainer containerStyle={{ marginBottom: "22px" }}>
-          <Grid templateColumns="repeat(3, 1fr)" gap={6}>
-            {getDataCard(
-              "Current Target",
-              target ? (
-                <FormatNumber value={target} style="currency" currency="INR" />
-              ) : (
-                "-"
-              )
-            )}
-            {getDataCard(
-              "Total Sales Made",
-              salesMade ? (
-                <FormatNumber
-                  value={salesMade}
-                  style="currency"
-                  currency="INR"
-                />
-              ) : (
-                "-"
-              )
-            )}
-            {getDataCard(
-              "Pending Sales to Make",
-              pendingSales ? (
-                <FormatNumber
-                  value={Math.abs(pendingSales)}
-                  style="currency"
-                  currency="INR"
-                />
-              ) : (
-                "-"
-              ),
-              pendingSales < 0 ? "green.500" : "red.500"
-            )}
-            {getDataCard(
-              "Achievement %",
-              achievementPerc ? Math.round(achievementPerc) + " %" : "-",
-              getPercentageColor()
-            )}
-          </Grid>
-        </CustomContainer>
+        <Grid
+          templateColumns={{
+            base: "1fr",
+            sm: "repeat(2, 1fr)",
+            lg: "repeat(4, 1fr)",
+          }}
+          gap="16px"
+        >
+          {getDataCard(
+            "Current Target",
+            target ? (
+              <FormatNumber value={target} style="currency" currency="INR" />
+            ) : (
+              "—"
+            ),
+            "#C95C18"
+          )}
+          {getDataCard(
+            "Total Sales Made",
+            salesMade ? (
+              <FormatNumber
+                value={salesMade}
+                style="currency"
+                currency="INR"
+              />
+            ) : (
+              "—"
+            ),
+            "#C95C18"
+          )}
+          {getDataCard(
+            "Pending Sales to Make",
+            pendingSales ? (
+              <FormatNumber
+                value={Math.abs(pendingSales)}
+                style="currency"
+                currency="INR"
+              />
+            ) : (
+              "—"
+            ),
+            pendingSales < 0 ? "#15803D" : "#DC2626"
+          )}
+          {getDataCard(
+            "Achievement %",
+            achievementPerc ? Math.round(achievementPerc) + " %" : "—",
+            achievementPerc ? getPercentageColor() : "#15803D"
+          )}
+        </Grid>
+
+        {filterCard}
 
         <AgGrid
-          rowData={targets}
+          rowData={filteredRows}
           columnDefs={colDefs}
           tableKey="target-branch"
         />

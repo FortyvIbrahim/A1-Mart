@@ -314,32 +314,38 @@ export function getColumnTypes() {
       resizable: false,
       flex: 0,
       width: 96,
+      cellStyle: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      },
       cellRenderer: (props) => {
         const objectFit =
-          props.column?.colDef?.imageSettings?.objectFit || "cover";
-        // Figma table thumbnail: 40px, radius 6, fits the 44–48px row.
+          props.column?.colDef?.imageSettings?.objectFit || "contain";
+        // Figma table thumbnail: centered in cell.
         return (
-          <Flex
-            justifyContent="center"
-            alignItems="center"
-            height="40px"
-            width="40px"
-            my="2px"
-            borderRadius="6px"
-            overflow="hidden"
-            position="relative"
-            bg="#FFFBF8"
-          >
-            {props.value ? (
-              <Image
-                src={props.value}
-                alt="Product Image"
-                fill
-                style={{ objectFit }}
-              />
-            ) : (
-              <EmptyImage />
-            )}
+          <Flex w="100%" h="100%" justifyContent="center" alignItems="center">
+            <Flex
+              justifyContent="center"
+              alignItems="center"
+              height="40px"
+              width="40px"
+              borderRadius="6px"
+              overflow="hidden"
+              position="relative"
+              bg="#FFFBF8"
+            >
+              {props.value ? (
+                <Image
+                  src={props.value}
+                  alt="Product Image"
+                  fill
+                  style={{ objectFit }}
+                />
+              ) : (
+                <EmptyImage />
+              )}
+            </Flex>
           </Flex>
         );
       },

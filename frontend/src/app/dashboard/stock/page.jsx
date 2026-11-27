@@ -9,7 +9,6 @@ import {
   FormatNumber,
   Grid,
   Input,
-  NativeSelect,
   Spinner,
   Tabs,
   Text,
@@ -27,6 +26,7 @@ import toast from "react-hot-toast";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import CustomContainer from "@/components/CustomContainer";
 import CustomInput from "@/components/CustomInput";
+import CustomSelect from "@/components/CustomSelect";
 import CustomDialog from "@/components/CustomDialog";
 import AgGrid from "@/components/AgGrid";
 import DashboardPageTitle, {
@@ -1095,20 +1095,16 @@ export default function StockDashboardPage() {
                 <Text fontSize="sm" color="gray.600" mb={1}>
                   Branch
                 </Text>
-                <NativeSelect.Root size="sm">
-                  <NativeSelect.Field
-                    value={modalBranchFilter}
-                    onChange={(e) => setModalBranchFilter(e.target.value)}
-                  >
-                    <option value="">All</option>
-                    {modalBranchOptions.map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
-                    ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
+                <CustomSelect
+                  h="36px"
+                  value={modalBranchFilter}
+                  emptyLabel="All"
+                  onChange={(val) => setModalBranchFilter(val)}
+                  options={modalBranchOptions.map((o) => ({
+                    value: o,
+                    label: o,
+                  }))}
+                />
               </Box>
             )}
           </Flex>

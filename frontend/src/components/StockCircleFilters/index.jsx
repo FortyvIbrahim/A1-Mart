@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Box, Grid, Input, NativeSelect } from "@chakra-ui/react";
+import { Box, Grid, Input } from "@chakra-ui/react";
 import { capitalizeWordsLatest as capitalizeWords } from "@/utils/string";
 import { calculateDaysLeft } from "@/utils/stockCirclePeriod";
+import CustomSelect from "@/components/CustomSelect";
 
 /**
  * Figma "INV / Stock Circles" + "INV / Stock Checker" filter card:
@@ -30,28 +31,15 @@ export function circleStatus(c) {
 
 function Select({ value, onChange, placeholder, options }) {
   return (
-    <NativeSelect.Root>
-      <NativeSelect.Field
-        h="44px"
-        ps="12px"
-        fontSize="12px"
-        fontWeight="500"
-        borderRadius="8px"
-        borderColor="border"
-        value={value}
-        color={value ? "fg" : "fg.muted"}
-        onChange={(e) => onChange(e.target.value)}
-        aria-label={placeholder}
-      >
-        <option value="">{placeholder}</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </NativeSelect.Field>
-      <NativeSelect.Indicator color="#C95C18" />
-    </NativeSelect.Root>
+    <CustomSelect
+      h="44px"
+      fontSize="12px"
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      options={options}
+      ariaLabel={placeholder}
+    />
   );
 }
 

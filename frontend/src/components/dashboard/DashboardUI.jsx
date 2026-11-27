@@ -10,7 +10,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import DashboardChartLegend from "@/components/dashboard/DashboardChartLegend";
-import { Box, Flex, Grid, Input, NativeSelect, Text } from "@chakra-ui/react";
+import { Box, Flex, Grid, Input, Text } from "@chakra-ui/react";
+import CustomSelect from "@/components/CustomSelect";
 import { LuChevronDown, LuSearch } from "react-icons/lu";
 
 /*
@@ -136,28 +137,17 @@ export function DashboardFilterField({ field, size = "md" }) {
   } else {
     const hasValue = value !== undefined && value !== null && value !== "";
     control = (
-      <NativeSelect.Root>
-        <NativeSelect.Field
-          {...CONTROL}
-          pr="34px"
-          color={hasValue ? "fg" : "fg.muted"}
-          value={hasValue ? String(value) : ""}
-          onChange={(e) => onChange?.(e.target.value)}
-          aria-label={label ?? placeholder}
-        >
-          {placeholder !== false && (
-            <option value="">{placeholder ?? "All"}</option>
-          )}
-          {(field.options ?? []).map((o) => (
-            <option key={String(o.value)} value={String(o.value)}>
-              {o.label}
-            </option>
-          ))}
-        </NativeSelect.Field>
-        <NativeSelect.Indicator right="12px" color="#C95C18">
-          <LuChevronDown size={14} />
-        </NativeSelect.Indicator>
-      </NativeSelect.Root>
+      <CustomSelect
+        h={CONTROL.h}
+        fontSize={CONTROL.fontSize}
+        borderRadius={CONTROL.borderRadius}
+        value={hasValue ? String(value) : ""}
+        onChange={(v) => onChange?.(v)}
+        allowEmpty={placeholder !== false}
+        placeholder={placeholder === false ? undefined : placeholder ?? "All"}
+        options={field.options ?? []}
+        ariaLabel={label ?? placeholder}
+      />
     );
   }
 

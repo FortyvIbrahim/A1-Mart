@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Box, Button, Flex, Grid, NativeSelect, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Grid, Text } from "@chakra-ui/react";
 import CustomDialog from "@/components/CustomDialog";
+import CustomSelect from "@/components/CustomSelect";
 import AgGrid from "@/components/AgGrid";
 import {
   AGE_BUCKETS,
@@ -119,23 +120,19 @@ export default function ViewInvoicesModal({ open, onClose, title, invoices = [] 
           <Text fontSize="sm" color="gray.600" mb={1}>
             Category
           </Text>
-          <NativeSelect.Root size="sm">
-            <NativeSelect.Field
-              value={categoryFilter}
-              onChange={(e) => {
-                setCategoryFilter(e.target.value);
-                setSlotFilter(null);
-              }}
-            >
-              <option value="">All</option>
-              {OUTSTANDING_CATEGORIES.map((c) => (
-                <option key={c.key} value={c.key}>
-                  {c.label}
-                </option>
-              ))}
-            </NativeSelect.Field>
-            <NativeSelect.Indicator />
-          </NativeSelect.Root>
+          <CustomSelect
+            h="36px"
+            value={categoryFilter}
+            emptyLabel="All"
+            onChange={(val) => {
+              setCategoryFilter(val);
+              setSlotFilter(null);
+            }}
+            options={OUTSTANDING_CATEGORIES.map((c) => ({
+              value: c.key,
+              label: c.label,
+            }))}
+          />
         </Box>
       </Flex>
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
-import { Box, Button, Flex, NativeSelect, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import AgGrid from "@/components/AgGrid";
+import CustomSelect from "@/components/CustomSelect";
 import { purchaseAckStatusBadgeLabel } from "@/utils/string";
 
 const REPACK_ENTRY_STATUS_FILTER_MODEL = {
@@ -48,24 +49,17 @@ function RepackEntryTabContent({
           <Text fontSize="xs" mb={1} color="gray.500">
             Repack supervisor
           </Text>
-          <NativeSelect.Root width={{ base: "100%", md: "280px" }}>
-            <NativeSelect.Field
-              value={selectedRepackSupervisor ?? ""}
-              onChange={(e) =>
-                setSelectedRepackSupervisor(
-                  e.target.value ? e.target.value : null
-                )
-              }
-            >
-              <option value="">All supervisors</option>
-              {repackSummary.map((r) => (
-                <option key={r.name} value={r.name}>
-                  {r.name}
-                </option>
-              ))}
-            </NativeSelect.Field>
-            <NativeSelect.Indicator />
-          </NativeSelect.Root>
+          <CustomSelect
+            width={{ base: "100%", md: "280px" }}
+            h="40px"
+            value={selectedRepackSupervisor ?? ""}
+            emptyLabel="All supervisors"
+            onChange={(val) => setSelectedRepackSupervisor(val ? val : null)}
+            options={repackSummary.map((r) => ({
+              value: r.name,
+              label: r.name,
+            }))}
+          />
         </Box>
         <Flex gap={2} flexWrap="wrap">
           <Button variant="outline" onClick={handleExportRepackPurchases}>

@@ -5,7 +5,7 @@ import CustomContainer from "@/components/CustomContainer";
 import usePayslips from "@/api/customHooks/usePayslips";
 import moment from "moment";
 import { Box, Button, Flex, Grid, Text } from "@chakra-ui/react";
-import { NativeSelect } from "@chakra-ui/react";
+import CustomSelect from "@/components/CustomSelect";
 import React, { useMemo, useState } from "react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { PayslipDetailsDrawer } from "@/components/payroll";
@@ -81,19 +81,14 @@ function MyPayslipsPage() {
             <Text fontSize="sm" fontWeight="medium" mb="8px">
               Year
             </Text>
-            <NativeSelect.Root width="120px">
-              <NativeSelect.Field
-                value={String(selectedYear)}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-              >
-                {years.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
+            <CustomSelect
+              w="120px"
+              h="44px"
+              allowEmpty={false}
+              value={String(selectedYear)}
+              onChange={(v) => setSelectedYear(Number(v))}
+              options={years.map((y) => ({ value: String(y), label: String(y) }))}
+            />
           </Box>
 
           <Grid

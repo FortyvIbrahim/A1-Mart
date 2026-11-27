@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Box, Button, Flex, Grid, Input, NativeSelect, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Grid, Input, Text } from "@chakra-ui/react";
 import { capitalizeWordsLatest } from "@/utils/string";
 import { useInsideMainCard } from "@/components/CustomContainer";
+import CustomSelect from "@/components/CustomSelect";
 import { DashboardFilterField } from "@/components/dashboard/DashboardUI";
 
 /**
@@ -118,46 +119,25 @@ export function useListFilters(rows, fields, { columns, reset = false } = {}) {
           aria-label={f.label ?? f.placeholder ?? "Search"}
         />
       ) : f.type === "sort" ? (
-        <NativeSelect.Root>
-          <NativeSelect.Field
-            h="44px"
-            ps="12px"
-            fontSize="12px"
-            fontWeight="500"
-            color="fg"
-            value={values[f.key] ?? f.options?.[0]?.value ?? ""}
-            onChange={(e) => set(f.key, e.target.value)}
-            aria-label={f.label}
-          >
-            {(f.options || []).map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </NativeSelect.Field>
-          <NativeSelect.Indicator color="#C95C18" />
-        </NativeSelect.Root>
+        <CustomSelect
+          h="44px"
+          fontSize="12px"
+          allowEmpty={false}
+          value={values[f.key] ?? f.options?.[0]?.value ?? ""}
+          onChange={(v) => set(f.key, v)}
+          options={f.options || []}
+          ariaLabel={f.label}
+        />
       ) : f.type === "select" ? (
-        <NativeSelect.Root>
-          <NativeSelect.Field
-            h="44px"
-            ps="12px"
-            fontSize="12px"
-            fontWeight="500"
-            value={values[f.key] ?? ""}
-            color={values[f.key] ? "fg" : "fg.muted"}
-            onChange={(e) => set(f.key, e.target.value)}
-            aria-label={f.label ?? f.placeholder}
-          >
-            <option value="">{f.placeholder ?? "All"}</option>
-            {(options[f.key] || []).map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </NativeSelect.Field>
-          <NativeSelect.Indicator color="#C95C18" />
-        </NativeSelect.Root>
+        <CustomSelect
+          h="44px"
+          fontSize="12px"
+          value={values[f.key] ?? ""}
+          placeholder={f.placeholder ?? "All"}
+          onChange={(v) => set(f.key, v)}
+          options={options[f.key] || []}
+          ariaLabel={f.label ?? f.placeholder}
+        />
       ) : (
         // Figma date filter: dropdown-style field reading "All dates".
         <DashboardFilterField

@@ -5,7 +5,6 @@ import {
   Flex,
   Grid,
   Input,
-  NativeSelect,
   Text,
 } from "@chakra-ui/react";
 import { ErrorMessage, useFormikContext } from "formik";
@@ -13,6 +12,7 @@ import React from "react";
 import { FaPlus, FaTrash } from "react-icons/fa";
 import { validateRange } from "@/utils/rangeValidation";
 import CustomContainer from "../CustomContainer";
+import CustomSelect from "../CustomSelect";
 
 const RangeSelector = ({
   name,
@@ -99,20 +99,20 @@ const RangeSelector = ({
                     <Text fontSize="xs" mb="4px" color="gray.600">
                       Start Operator
                     </Text>
-                    <NativeSelect.Root>
-                      <NativeSelect.Field
-                        value={range.startOperator || "more_than"}
-                        onChange={(e) =>
-                          updateRange(index, "startOperator", e.target.value)
-                        }
-                        disabled={viewOnly}
-                      >
-                        <option value="more_than">More Than</option>
-                        <option value="less_than">Less Than</option>
-                        <option value="none">No Limit</option>
-                      </NativeSelect.Field>
-                      <NativeSelect.Indicator />
-                    </NativeSelect.Root>
+                    <CustomSelect
+                      h="40px"
+                      allowEmpty={false}
+                      disabled={viewOnly}
+                      value={range.startOperator || "more_than"}
+                      onChange={(val) =>
+                        updateRange(index, "startOperator", val)
+                      }
+                      options={[
+                        { value: "more_than", label: "More Than" },
+                        { value: "less_than", label: "Less Than" },
+                        { value: "none", label: "No Limit" },
+                      ]}
+                    />
                   </Box>
 
                   {/* Start Value */}
@@ -143,20 +143,20 @@ const RangeSelector = ({
                     <Text fontSize="xs" mb="4px" color="gray.600">
                       End Operator
                     </Text>
-                    <NativeSelect.Root>
-                      <NativeSelect.Field
-                        value={range.endOperator || "less_than"}
-                        onChange={(e) =>
-                          updateRange(index, "endOperator", e.target.value)
-                        }
-                        disabled={viewOnly}
-                      >
-                        <option value="more_than">More Than</option>
-                        <option value="less_than">Less Than</option>
-                        <option value="none">No Limit</option>
-                      </NativeSelect.Field>
-                      <NativeSelect.Indicator />
-                    </NativeSelect.Root>
+                    <CustomSelect
+                      h="40px"
+                      allowEmpty={false}
+                      disabled={viewOnly}
+                      value={range.endOperator || "less_than"}
+                      onChange={(val) =>
+                        updateRange(index, "endOperator", val)
+                      }
+                      options={[
+                        { value: "more_than", label: "More Than" },
+                        { value: "less_than", label: "Less Than" },
+                        { value: "none", label: "No Limit" },
+                      ]}
+                    />
                   </Box>
 
                   {/* End Value */}

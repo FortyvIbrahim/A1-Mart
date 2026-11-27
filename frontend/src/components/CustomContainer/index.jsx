@@ -2,21 +2,33 @@ import { Box, Flex, Icon, Text } from "@chakra-ui/react";
 import React, { createContext, useCallback, useContext, useState } from "react";
 import { LuChevronDown } from "react-icons/lu";
 
-/**
- * Nesting + table detection for containers.
- * - depth: 0 for a page-level container, >0 when nested in another one.
- * - registerGrid: AgGrid calls this so a page-level container can switch to the
- *   Figma listing layout (title on the page, table as its own card).
- */
-export const ContainerContext = createContext({
+export const EMPTY_CONTAINER_CONTEXT = {
   depth: -1,
   registerGrid: null,
   isPageLayout: false,
   mainCard: false,
-});
+  settingsSlotEl: null,
+  settingsOwnerId: null,
+  claimSettingsSlot: null,
+  releaseSettingsSlot: null,
+};
+
+/**
+ * Nesting + table detection for containers.
+ * - depth: 0 for a page-level container, >0 when nested in another one.
+ * - registerGrid: AgGrid calls this so a page-level container can switch to the
+ *   Figma listing layout.
+ * - settingsSlotEl: DOM node inside the top peach banner where the primary AgGrid
+ *   portals its Settings button next to Add / rightSection.
+ */
+export const ContainerContext = createContext(EMPTY_CONTAINER_CONTEXT);
 
 export function useRegisterGrid() {
   return useContext(ContainerContext).registerGrid;
+}
+
+export function useHeaderSettingsSlot() {
+  return useContext(ContainerContext);
 }
 
 /** True when the nearest container is a titled white card (not a page). */
@@ -55,6 +67,8 @@ function CustomContainer({
   headerBand = false,
   // Optional "Section  /  Page" trail above a page title (Figma Sales Target).
   breadcrumb,
+  // Optional subtitle directly under the banner title (e.g. "TASK-026").
+  subtitle,
   // Figma Accounts lists: title outside, filters + table in one white card
   // (radius 12, 1px #F0E1D7, padding 20).
   contentCard = false,
@@ -65,7 +79,17 @@ function CustomContainer({
   const depth = parent.depth + 1;
   const [hasGrid, setHasGrid] = useState(false);
   const [open, setOpen] = useState(defaultOpen);
+  const [settingsSlotEl, setSettingsSlotEl] = useState(null);
+  const [settingsOwnerId, setSettingsOwnerId] = useState(null);
   const showBody = !collapsible || open;
+
+  const claimSettingsSlot = useCallback((id) => {
+    setSettingsOwnerId((prev) => prev ?? id);
+  }, []);
+
+  const releaseSettingsSlot = useCallback((id) => {
+    setSettingsOwnerId((prev) => (prev === id ? null : prev));
+  }, []);
 
   const registerGrid = useCallback(() => {
     if (depth === 0) {
@@ -76,28 +100,40 @@ function CustomContainer({
   }, [depth, parent]);
 
   const pageLayout = depth === 0 && hasGrid && !collapsible;
-
+  const useBannerLayout =
+    depth === 0 &&
+    !collapsible &&
+    Boolean(title) &&
+    (headerBand || mainCard || contentCard || pageLayout || pageForm || size !== "sm");
+  const hasSettingsSlot = useBannerLayout || (headerBand && Boolean(title));
 
   const provider = (node) => (
     <ContainerContext.Provider
       value={{
         depth,
         registerGrid,
-        isPageLayout: pageLayout || mainCard || headerBand || contentCard,
-        mainCard: mainCard || headerBand || contentCard,
+        isPageLayout: useBannerLayout || pageLayout || mainCard || headerBand || contentCard,
+        mainCard: useBannerLayout || mainCard || headerBand || contentCard,
+        settingsSlotEl: hasSettingsSlot ? settingsSlotEl : null,
+        settingsOwnerId: hasSettingsSlot ? settingsOwnerId : null,
+        claimSettingsSlot: hasSettingsSlot ? claimSettingsSlot : null,
+        releaseSettingsSlot: hasSettingsSlot ? releaseSettingsSlot : null,
       }}
     >
       {node}
     </ContainerContext.Provider>
   );
 
-  if (headerBand && depth === 0) {
+  if (useBannerLayout) {
     return provider(
       <Flex
         direction="column"
         bg="white"
-        borderRadius="8px"
+        borderWidth="1px"
+        borderColor="border"
+        borderRadius="12px"
         overflow="hidden"
+        w={fullWidth ? "100%" : "auto"}
         style={containerStyle}
       >
         <Flex
@@ -106,17 +142,86 @@ function CustomContainer({
           gap="16px"
           minH="72px"
           px={{ base: "16px", md: "24px" }}
+          py="14px"
           bg="#FFF5ED"
+          borderBottomWidth="1px"
+          borderColor="border.subtle"
           flexWrap="wrap"
         >
-          <Text as="h1" fontSize="20px" lineHeight="24px" fontWeight="600" color="fg">
-            {title}
-          </Text>
-          {rightSection && <Box>{rightSection}</Box>}
+          <Box minW={0}>
+            <Text as="h1" fontSize="20px" lineHeight="26px" fontWeight="600" color="fg">
+              {title}
+            </Text>
+            {subtitle && (
+              <Text fontSize="12px" lineHeight="16px" color="fg.muted" mt="2px">
+                {subtitle}
+              </Text>
+            )}
+          </Box>
+          <Flex align="center" gap="10px" flexShrink={0} flexWrap="wrap">
+            <Flex
+              ref={setSettingsSlotEl}
+              align="center"
+              gap="10px"
+              css={{ "&:empty": { display: "none" } }}
+            />
+            {rightSection && <Box>{rightSection}</Box>}
+          </Flex>
         </Flex>
-        <Flex direction="column" gap="24px" p={{ base: "16px", md: "24px" }}>
+        <Flex direction="column" gap="20px" p={{ base: "16px", md: "24px" }}>
           {children}
         </Flex>
+      </Flex>
+    );
+  }
+
+  if (headerBand) {
+    return provider(
+      <Flex
+        direction="column"
+        bg="white"
+        borderWidth="1px"
+        borderColor="border"
+        borderRadius="12px"
+        overflow="hidden"
+        w={fullWidth ? "100%" : "auto"}
+        style={containerStyle}
+      >
+        <Flex
+          align="center"
+          justify="space-between"
+          gap="16px"
+          minH="60px"
+          px={{ base: "16px", md: "20px" }}
+          py="12px"
+          bg="#FFF5ED"
+          borderBottomWidth="1px"
+          borderColor="border.subtle"
+          flexWrap="wrap"
+        >
+          <Box minW={0}>
+            <Text as={depth === 0 ? "h1" : "h2"} fontSize={depth === 0 ? "20px" : "15px"} lineHeight="24px" fontWeight="600" color="fg">
+              {title}
+            </Text>
+            {subtitle && (
+              <Text fontSize="12px" lineHeight="16px" color="fg.muted" mt="2px">
+                {subtitle}
+              </Text>
+            )}
+          </Box>
+          <Flex align="center" gap="10px" flexShrink={0} flexWrap="wrap">
+            <Flex
+              ref={setSettingsSlotEl}
+              align="center"
+              gap="10px"
+              css={{ "&:empty": { display: "none" } }}
+            />
+            {rightSection && <Box>{rightSection}</Box>}
+          </Flex>
+        </Flex>
+        <Box w="100%" p={size === "sm" ? { base: "14px", md: "16px" } : { base: "16px", md: "24px" }}>
+          {children}
+        </Box>
       </Flex>
     );
   }
@@ -148,7 +253,7 @@ function CustomContainer({
     );
   }
 
-  if (pageLayout || (depth === 0 && (contentCard || breadcrumb))) {
+  if (pageLayout || (depth === 0 && contentCard)) {
     return provider(
       <Flex
         direction="column"
@@ -157,17 +262,12 @@ function CustomContainer({
         style={containerStyle}
         {...containerStyle}
       >
-        {breadcrumb && (
-          <Text fontSize="12px" lineHeight="18px" color="fg.muted" whiteSpace="pre">
-            {breadcrumb}
-          </Text>
-        )}
         {title && (
           <Flex alignItems="center" justifyContent="space-between" gap="12px" flexWrap="wrap">
             <Text
               as="h1"
-              fontSize={breadcrumb ? "24px" : "20px"}
-              lineHeight={breadcrumb ? "36px" : "24px"}
+              fontSize="20px"
+              lineHeight="24px"
               fontWeight="600"
               color="fg"
               minW="160px"
@@ -177,16 +277,16 @@ function CustomContainer({
             {rightSection && <Box>{rightSection}</Box>}
           </Flex>
         )}
-        {contentCard || (breadcrumb && !hasGrid) ? (
+        {contentCard ? (
           <Flex
             direction="column"
             gap="16px"
             w="100%"
             bg="white"
             borderWidth="1px"
-            borderColor={contentCard ? "#F0E1D7" : "border"}
-            borderRadius={contentCard ? "12px" : "8px"}
-            p={contentCard ? { base: "16px", md: "20px" } : { base: "16px", md: "24px" }}
+            borderColor="#F0E1D7"
+            borderRadius="12px"
+            p={{ base: "16px", md: "20px" }}
           >
             {children}
           </Flex>

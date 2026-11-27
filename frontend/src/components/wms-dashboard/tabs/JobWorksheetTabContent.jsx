@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from "react";
-import { Box, Button, Flex, Grid, NativeSelect, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Grid, Text } from "@chakra-ui/react";
 import AgGrid from "@/components/AgGrid";
 import CustomDialog from "@/components/CustomDialog";
+import CustomSelect from "@/components/CustomSelect";
 import { purchaseAckStatusBadgeLabel } from "@/utils/string";
 
 const JOB_WORKSHEET_STATUS_FILTER_MODEL = {
@@ -68,22 +69,17 @@ function JobWorksheetTabContent({
           <Text fontSize="xs" mb={1} color="gray.500">
             Job supervisor
           </Text>
-          <NativeSelect.Root width={{ base: "100%", md: "280px" }}>
-            <NativeSelect.Field
-              value={selectedJobSupervisor ?? ""}
-              onChange={(e) =>
-                setSelectedJobSupervisor(e.target.value ? e.target.value : null)
-              }
-            >
-              <option value="">All supervisors</option>
-              {jobSummary.map((r) => (
-                <option key={r.name} value={r.name}>
-                  {r.name}
-                </option>
-              ))}
-            </NativeSelect.Field>
-            <NativeSelect.Indicator />
-          </NativeSelect.Root>
+          <CustomSelect
+            width={{ base: "100%", md: "280px" }}
+            h="40px"
+            value={selectedJobSupervisor ?? ""}
+            emptyLabel="All supervisors"
+            onChange={(val) => setSelectedJobSupervisor(val ? val : null)}
+            options={jobSummary.map((r) => ({
+              value: r.name,
+              label: r.name,
+            }))}
+          />
         </Box>
         <Flex gap={2} flexWrap="wrap">
           <Button variant="outline" onClick={handleExportJobWorksheetPurchases}>

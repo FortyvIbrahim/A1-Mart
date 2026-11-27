@@ -1,6 +1,7 @@
 "use client";
 
-import { LuChevronDown } from "react-icons/lu";
+import { LuCheck, LuChevronDown, LuChevronUp } from "react-icons/lu";
+import CustomSelect from "@/components/CustomSelect";
 import { getNestedValue } from "@/utils/object";
 import {
   Box,
@@ -12,7 +13,6 @@ import {
   Input,
   InputGroup,
   Switch,
-  NativeSelect,
   RadioGroup,
   Text,
   Portal,
@@ -467,37 +467,32 @@ function CustomInput({
         return datePickerComponent;
       case "dropdown":
         return (
-          <NativeSelect.Root>
-            <NativeSelect.Field
-              name={name}
-              placeholder={placeholder}
-              value={fieldValue || ""}
-              color={fieldValue == null || fieldValue === "" ? "fg.muted" : "fg"}
-              {...props}
-              disabled={props.disabled || viewOnly}
-              onChange={(e) => {
-                if (props.disabled || viewOnly) return;
-                if (formikHandleChange) {
-                  formikHandleChange(e);
-                } else if (!hasExternalValue) {
-                  setLocalValue(e.target.value);
-                }
-                if (onChange) onChange(e);
-              }}
-              onBlur={(e) => {
-                if (formikHandleBlur) {
-                  formikHandleBlur(e);
-                }
-              }}
-            >
-              {options?.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </NativeSelect.Field>
-            <NativeSelect.Indicator />
-          </NativeSelect.Root>
+          <CustomSelect
+            value={fieldValue ?? ""}
+            placeholder={placeholder || "Select..."}
+            options={options}
+            disabled={props.disabled || viewOnly}
+            h={props.h ?? "44px"}
+            fontSize={props.fontSize ?? "13px"}
+            portalContainer={portalRef}
+            onBlur={() => {
+              if (formikHandleBlur) {
+                formikHandleBlur({ target: { name } });
+              }
+            }}
+            onChange={(val) => {
+              if (props.disabled || viewOnly) return;
+              const syntheticEvent = { target: { name, value: val } };
+              if (formikSetFieldValue) {
+                formikSetFieldValue(name, val);
+              } else if (formikHandleChange) {
+                formikHandleChange(syntheticEvent);
+              } else if (!hasExternalValue) {
+                setLocalValue(val);
+              }
+              if (onChange) onChange(syntheticEvent);
+            }}
+          />
         );
       case "searchable-dropdown":
         const handleClear = () => {
@@ -542,34 +537,18 @@ function CustomInput({
           top: menuPosition.top,
           left: menuPosition.left,
           width: menuPosition.width,
-          maxH: "240px",
+          maxH: "260px",
           mt: portalRef ? "4px" : "6px",
           bg: "white",
-          _dark: { bg: "gray.800", borderColor: "gray.600" },
           borderWidth: "1px",
           borderRadius: "12px",
-          borderColor: "gray.200",
+          borderColor: "border",
+          p: "6px",
           boxShadow:
-            "0 10px 40px -10px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04)",
+            "0 12px 32px rgba(31, 41, 55, 0.12), 0 2px 6px rgba(244, 119, 33, 0.06)",
           overflow: "hidden",
           zIndex: portalRef ? 9999 : 1400,
           pointerEvents: "auto",
-        };
-
-        const dropdownItemSx = {
-          w: "100%",
-          textAlign: "left",
-          px: "3",
-          py: "2.5",
-          color: "gray.800",
-          _dark: { color: "gray.200" },
-          fontSize: "sm",
-          _hover: { bg: "gray.50", _dark: { bg: "gray.700" } },
-          _active: { bg: "gray.100", _dark: { bg: "gray.600" } },
-          borderBottom: "1px solid",
-          borderColor: "gray.100",
-          _dark: { borderColor: "gray.600" },
-          _last: { borderBottom: "none" },
         };
 
         return (
@@ -594,9 +573,8 @@ function CustomInput({
                     <FaTimes />
                   </IconButton>
                 ) : (
-                  // Figma select: orange chevron while empty.
                   <Box color="#C95C18" pointerEvents="none" display="flex">
-                    <LuChevronDown size={16} />
+                    {isSearchOpen ? <LuChevronUp size={15} /> : <LuChevronDown size={15} />}
                   </Box>
                 )
               }
@@ -607,6 +585,7 @@ function CustomInput({
                 placeholder={placeholder}
                 value={searchTerm || selectedOptionLabel}
                 disabled={props.disabled || viewOnly}
+                borderColor={isSearchOpen ? "#F47721" : "border"}
                 onChange={handleInputChange}
                 onFocus={() => {
                   if (props.disabled || viewOnly) return;
@@ -626,43 +605,67 @@ function CustomInput({
                   onMouseDown={(e) => e.stopPropagation()}
                   {...dropdownPanelSx}
                 >
-                  <Box overflowY="auto" maxH="220px">
+                  <Box overflowY="auto" maxH="240px">
                     {filteredOptions.length === 0 ? (
-                      <Box px="4" py="4">
-                        <Text fontSize="sm" color="gray.500">
+                      <Box px="12px" py="10px">
+                        <Text fontSize="13px" color="fg.muted">
                           No results
                         </Text>
                       </Box>
                     ) : (
-                      filteredOptions.map((item) => (
-                        <Box
-                          as="button"
-                          type="button"
-                          key={item.value}
-                          {...dropdownItemSx}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                          onClick={() => {
-                            if (props.disabled || viewOnly) return;
-                            if (formikSetFieldValue) {
-                              formikSetFieldValue(name, item.value);
-                            } else if (!hasExternalValue) {
-                              setLocalValue(item.value);
-                            }
-                            if (onChange) onChange(item.value);
-                            setIsSearchOpen(false);
-                            setSearchTerm("");
-                          }}
-                        >
-                          {customRender ? (
-                            customRender(item)
-                          ) : (
-                            <Text fontSize="sm">{item.label}</Text>
-                          )}
-                        </Box>
-                      ))
+                      filteredOptions.map((item) => {
+                        const isSelected = fieldValue != null && fieldValue == item.value;
+                        return (
+                          <Flex
+                            as="button"
+                            type="button"
+                            key={item.value}
+                            w="100%"
+                            alignItems="center"
+                            justifyContent="space-between"
+                            gap="10px"
+                            px="12px"
+                            py="9px"
+                            borderRadius="8px"
+                            bg={isSelected ? "#FFF5ED" : "transparent"}
+                            color={isSelected ? "#C95C18" : "fg"}
+                            fontSize="13px"
+                            fontWeight={isSelected ? "500" : "400"}
+                            textAlign="left"
+                            cursor="pointer"
+                            transition="background-color 0.12s ease"
+                            _hover={{ bg: "#FFF5ED" }}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                            onClick={() => {
+                              if (props.disabled || viewOnly) return;
+                              if (formikSetFieldValue) {
+                                formikSetFieldValue(name, item.value);
+                              } else if (!hasExternalValue) {
+                                setLocalValue(item.value);
+                              }
+                              if (onChange) onChange(item.value);
+                              setIsSearchOpen(false);
+                              setSearchTerm("");
+                            }}
+                          >
+                            <Box flex={1} minW={0}>
+                              {customRender ? (
+                                customRender(item)
+                              ) : (
+                                <Text truncate>{item.label}</Text>
+                              )}
+                            </Box>
+                            {isSelected && (
+                              <Box color="#F47721" flexShrink={0} display="flex">
+                                <LuCheck size={15} />
+                              </Box>
+                            )}
+                          </Flex>
+                        );
+                      })
                     )}
                   </Box>
                 </Box>
@@ -730,33 +733,18 @@ function CustomInput({
           left: menuPosition.left,
           width: "max(min(100%, 320px), 280px)",
           maxW: menuPosition.width,
-          maxH: "320px",
+          maxH: "340px",
           mt: portalRef ? "4px" : "6px",
           bg: "white",
-          _dark: { bg: "gray.800", borderColor: "gray.600" },
           borderWidth: "1px",
           borderRadius: "12px",
-          borderColor: "gray.200",
+          borderColor: "border",
+          p: "6px",
           boxShadow:
-            "0 10px 40px -10px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04)",
+            "0 12px 32px rgba(31, 41, 55, 0.12), 0 2px 6px rgba(244, 119, 33, 0.06)",
           overflow: "hidden",
           zIndex: portalRef ? 9999 : 1400,
           pointerEvents: "auto",
-        };
-
-        const multiDropdownItemSx = {
-          w: "100%",
-          textAlign: "left",
-          px: "3",
-          py: "2",
-          color: "gray.800",
-          _dark: { color: "gray.200" },
-          fontSize: "sm",
-          _hover: { bg: "gray.50", _dark: { bg: "gray.700" } },
-          borderBottom: "1px solid",
-          borderColor: "gray.100",
-          _dark: { borderColor: "gray.600" },
-          _last: { borderBottom: "none" },
         };
 
         return (
@@ -764,7 +752,7 @@ function CustomInput({
             <InputGroup
               endElement={
                 <Box color="#C95C18" pointerEvents="none" display="flex">
-                  <LuChevronDown size={16} />
+                  {isSearchOpen ? <LuChevronUp size={15} /> : <LuChevronDown size={15} />}
                 </Box>
               }
             >
@@ -774,6 +762,7 @@ function CustomInput({
                 readOnly
                 placeholder={placeholder}
                 value={triggerLabel}
+                borderColor={isSearchOpen ? "#F47721" : "border"}
                 cursor={props.disabled || viewOnly ? "not-allowed" : "pointer"}
                 disabled={props.disabled || viewOnly}
                 onClick={() => {
@@ -793,11 +782,12 @@ function CustomInput({
                   {...multiDropdownPanelSx}
                 >
                   <Box
-                    px="2"
-                    py="2"
+                    px="6px"
+                    pt="4px"
+                    pb="8px"
+                    mb="4px"
                     borderBottomWidth="1px"
-                    borderColor="gray.100"
-                    _dark={{ borderColor: "gray.600" }}
+                    borderColor="border.subtle"
                   >
                     <Input
                       placeholder="Search..."
@@ -806,14 +796,15 @@ function CustomInput({
                         setSearchTerm(e.target.value);
                       }}
                       size="sm"
+                      h="36px"
                       borderRadius="8px"
                       autoComplete="off"
-                      mb="2"
+                      mb="8px"
                     />
                     <Flex gap="2" flexWrap="wrap">
                       <Button
                         size="xs"
-                        variant="outline"
+                        variant="subtle"
                         colorPalette="brand"
                         onClick={handleSelectAll}
                       >
@@ -822,6 +813,7 @@ function CustomInput({
                       <Button
                         size="xs"
                         variant="ghost"
+                        color="fg.muted"
                         onClick={handleClearAll}
                       >
                         Clear
@@ -835,8 +827,8 @@ function CustomInput({
                     onWheel={(e) => e.stopPropagation()}
                   >
                     {filteredOptions.length === 0 ? (
-                      <Box px="4" py="4">
-                        <Text fontSize="sm" color="gray.500">
+                      <Box px="12px" py="10px">
+                        <Text fontSize="13px" color="fg.muted">
                           No results
                         </Text>
                       </Box>
@@ -846,39 +838,44 @@ function CustomInput({
                           (v) => v == item.value
                         );
                         return (
-                          <Box
+                          <Flex
                             as="button"
                             type="button"
                             key={item.value}
-                            {...multiDropdownItemSx}
-                            display="flex"
+                            w="100%"
                             alignItems="center"
-                            gap="2"
+                            justifyContent="space-between"
+                            gap="10px"
+                            px="12px"
+                            py="9px"
+                            borderRadius="8px"
+                            bg={isSelected ? "#FFF5ED" : "transparent"}
+                            color={isSelected ? "#C95C18" : "fg"}
+                            fontSize="13px"
+                            fontWeight={isSelected ? "500" : "400"}
+                            textAlign="left"
+                            cursor="pointer"
+                            transition="background-color 0.12s ease"
+                            _hover={{ bg: "#FFF5ED" }}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleToggleOption(item);
                             }}
                             onMouseDown={(e) => e.stopPropagation()}
                           >
-                            <Checkbox.Root
-                              checked={isSelected}
-                              colorPalette="brand"
-                              size="sm"
-                              pointerEvents="none"
-                            >
-                              <Checkbox.HiddenInput />
-                              <Checkbox.Control>
-                                <Checkbox.Indicator />
-                              </Checkbox.Control>
-                            </Checkbox.Root>
-                            {customRender ? (
-                              customRender(item)
-                            ) : (
-                              <Text fontSize="sm" flex={1} textAlign="left">
-                                {item.label}
-                              </Text>
+                            <Box flex={1} minW={0}>
+                              {customRender ? (
+                                customRender(item)
+                              ) : (
+                                <Text truncate>{item.label}</Text>
+                              )}
+                            </Box>
+                            {isSelected && (
+                              <Box color="#F47721" flexShrink={0} display="flex">
+                                <LuCheck size={15} />
+                              </Box>
                             )}
-                          </Box>
+                          </Flex>
                         );
                       })
                     )}

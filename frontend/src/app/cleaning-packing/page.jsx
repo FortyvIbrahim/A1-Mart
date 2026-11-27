@@ -254,9 +254,10 @@ function Repack() {
         title="Cleaning and Packing"
         rightSection={
           <Flex gap={4} alignItems="center">
-            {getLastSyncedComponent(machinePackedItems)}
+            
 
             <Button onClick={handleSync}>Sync Now</Button>
+            {getLastSyncedComponent(machinePackedItems)}
             {/* <Button onClick={handleExportAll}>Export All</Button> */}
           </Flex>
         }

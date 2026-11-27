@@ -69,14 +69,15 @@ export default function Home() {
         title="Employees List"
         rightSection={
           <Flex gap="12px" align="center">
-            <Text fontSize="13px" color="#30384B">
-              Last sync: {getLastSync()}
-            </Text>
+            
 
             <Button h="36px" px="14px" fontSize="13px" fontWeight="600" borderRadius="6px" onClick={sync}>
               <i className="fa fa-sync" />
               Sync Now
             </Button>
+            <Text fontSize="13px" color="#30384B">
+              Last sync: {getLastSync()}
+            </Text>
           </Flex>
         }
       >
