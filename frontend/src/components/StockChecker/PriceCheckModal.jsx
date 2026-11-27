@@ -318,9 +318,9 @@ function PriceCheckModal({
         overflowX: "hidden",
       }}
       footer={
-        <Box py={3} w="100%">
-          <HStack gap={3} w="100%" justify="flex-end">
-            {product ? (
+        product ? (
+          <Box py={3} w="100%">
+            <HStack gap={3} w="100%" justify="flex-end">
               <Button
                 type="button"
                 variant="subtle"
@@ -330,18 +330,9 @@ function PriceCheckModal({
               >
                 Back
               </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="md"
-              w={product ? undefined : "100%"}
-              onClick={() => onOpenChange?.({ open: false })}
-            >
-              Close
-            </Button>
-          </HStack>
-        </Box>
+            </HStack>
+          </Box>
+        ) : null
       }
     >
       <Flex direction="column" w="100%" minW={0}>
