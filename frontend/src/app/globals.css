@@ -5,7 +5,7 @@
   --a1-primary: #f47721;
   --a1-primary-hover: #db6516;
   --a1-base: #fffbf8;
-  --a1-sidebar: #fef1e9;
+  --a1-sidebar: #fffbf8;
   --a1-tab-active: #fde9da;
   --a1-border: #f2e2d6;
   --a1-border-subtle: #f7ece3;
@@ -27,6 +27,7 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
+  background-color: var(--a1-base);
 }
 
 body {

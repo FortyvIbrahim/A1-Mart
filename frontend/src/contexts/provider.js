@@ -7,7 +7,7 @@ import { UserProvider } from "@/contexts/UserContext";
 export function Providers({ children }) {
   return (
     <ChakraProvider value={system}>
-      <Theme appearance="light" colorPalette="brand">
+      <Theme appearance="light" colorPalette="brand" bg="app.base">
         <UserProvider>{children}</UserProvider>
       </Theme>
     </ChakraProvider>

@@ -2,19 +2,19 @@ import { createSystem, defaultConfig, defineConfig } from "@chakra-ui/react";
 
 /**
  * A1 MART design tokens — Figma "Concept C · Pearl Orange" (Shade 01).
- * Base #FFFBF8 · Sidebar #FEF1E9 · Primary #F47721.
+ * Base & Sidebar #FFFBF8 · Primary #F47721.
  */
 export const DESIGN = {
   primary: "#F47721",
   primaryHover: "#DB6516",
   base: "#FFFBF8",
-  sidebar: "#FEF1E9",
+  sidebar: "#FFFBF8",
   tabActive: "#FFF5ED",
   accentText: "#C95C18",
   border: "#F1E3D9",
   borderSubtle: "#F7ECE3",
   tableHeader: "#FFF5ED",
-  rowAlt: "#FFFBF8",
+  rowAlt: "#FFF5EC",
   text: "#202938",
   textMuted: "#637188",
   textSubtle: "#9CA3AF",
@@ -127,7 +127,7 @@ const config = defineConfig({
           emphasized: { value: "#E9CDB8" },
         },
         bg: {
-          DEFAULT: { value: "#FFFFFF" },
+          DEFAULT: { value: DESIGN.base },
           subtle: { value: DESIGN.rowAlt },
           muted: { value: DESIGN.sidebar },
         },

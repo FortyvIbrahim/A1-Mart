@@ -73,7 +73,7 @@ function LayoutContent({ children }) {
   }
 
   if (isAuthRoute) {
-    return <Box minH="100dvh">{children}</Box>;
+    return <Box minH="100dvh" bg="app.base">{children}</Box>;
   }
 
   return (
@@ -87,11 +87,12 @@ function LayoutContent({ children }) {
         flexDirection="column"
         overflowY="auto"
         overflowX="hidden"
+        bg="app.base"
         id="app-scroll-container"
       >
         <Header />
         <ModuleTabs />
-        <Box flex={1} minW={0}>
+        <Box flex={1} minW={0} bg="app.base">
           {children}
         </Box>
       </Flex>

@@ -5,7 +5,7 @@
   flex-direction: row;
   height: 100dvh;
   flex-shrink: 0;
-  background: #ffffff;
+  background: var(--a1-sidebar, #fffbf8);
   border-right: 1px solid var(--a1-border, #f2e2d6);
   position: relative;
   z-index: 20;
@@ -20,7 +20,7 @@
   align-items: center;
   gap: 8px;
   padding: 16px 0;
-  background: #ffffff;
+  background: var(--a1-sidebar, #fffbf8);
   border-right: 1px solid var(--a1-border, #f2e2d6);
 }
 
@@ -56,7 +56,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: #ffffff;
+  background: var(--a1-sidebar, #fffbf8);
   transition: width 0.22s ease;
 }
 

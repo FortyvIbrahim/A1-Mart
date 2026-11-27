@@ -52,7 +52,7 @@ function ModuleTabs() {
   return (
     // Figma "Header / Quick dashboard navigation": 56px row, 28px sides,
     // 36px items 12px apart, radius 8, 11/500; active #FFF5ED / #C95C18.
-    <Box px={{ base: "14px", md: "28px" }}>
+    <Box px={{ base: "14px", md: "28px" }} bg="app.base">
       {showTabs && (
         <Flex
           as="nav"
