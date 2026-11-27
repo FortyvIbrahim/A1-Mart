@@ -86,15 +86,6 @@ function ApiCallLogsPage() {
       .sort((a, b) => b.last_call_ts - a.last_call_ts);
   }, [logs]);
 
-  const selectedGroupCalls = useMemo(() => {
-    if (!selectedGroup) return [];
-    return (Array.isArray(logs) ? logs : []).filter(
-      (log) =>
-        (log.api_type || "-") === selectedGroup.api_type &&
-        (log.secondary_type || "-") === selectedGroup.secondary_type
-    );
-  }, [logs, selectedGroup]);
-
   const colDefs = useMemo(
     () => [
       {
