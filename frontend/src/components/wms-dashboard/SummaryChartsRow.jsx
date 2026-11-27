@@ -1,18 +1,33 @@
 "use client";
 
 import React, { useMemo } from "react";
-import {
-  Box,
-  Flex,
-  Grid,
-  GridItem,
-  Text,
-  useBreakpointValue,
-  IconButton,
-} from "@chakra-ui/react";
-import CustomContainer from "@/components/CustomContainer";
+import { Box, Flex, Grid, IconButton, Text, useBreakpointValue } from "@chakra-ui/react";
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import DashboardBarChart from "@/components/dashboard/DashboardBarChart";
 import DashboardChartLegend from "@/components/dashboard/DashboardChartLegend";
+import { DashboardCard } from "@/components/dashboard/DashboardUI";
+
+/*
+ * Figma "WMS Dashboard / Purchases": By Status (donut + two-column legend)
+ * beside Pending Stats (Job worksheet | Repacking panels), then Purchase
+ * Return Pending across the full width. Titles sit inside the cards.
+ */
+const JOB = { pending: "#E3B63E", done: "#11976A" };
+const REPACK = { pending: "#F47721", done: "#526FA8" };
+const PR_COLORS = ["#F47721", "#11976A", "#526FA8", "#E3B63E", "#9AAAC1", "#E7474D"];
+
+function Panel({ title, children }) {
+  return (
+    <Flex direction="column" flex="1" minW={0} borderWidth="1px" borderColor="border" borderRadius="8px">
+      <Text px="12px" py="8px" fontSize="11px" fontWeight="500" color="fg" borderBottomWidth="1px" borderColor="border">
+        {title}
+      </Text>
+      <Box px="12px" py="8px">
+        {children}
+      </Box>
+    </Flex>
+  );
+}
 
 function SummaryChartsRow({
   byStatus,
@@ -27,219 +42,145 @@ function SummaryChartsRow({
 }) {
   const isMobile = useBreakpointValue({ base: true, md: false });
 
-  const jobChartData = useMemo(() => jobSummary ?? [], [jobSummary]);
+  const statusRows = useMemo(
+    () => (byStatus ?? []).filter((r) => Number(r.value) > 0),
+    [byStatus]
+  );
 
-  const repackChartData = useMemo(() => repackSummary ?? [], [repackSummary]);
+  const sum = (rows, key) => (rows ?? []).reduce((s, r) => s + Number(r[key] || 0), 0);
 
-  const jobLegendItems = useMemo(() => {
-    const rows = jobSummary ?? [];
-    const pending = rows.reduce((s, r) => s + Number(r.pending || 0), 0);
-    const done = rows.reduce((s, r) => s + Number(r.doneToday || 0), 0);
-    return [
-      { name: "Job Pending", value: pending, fill: "#ECC94B" },
-      { name: "Job Done", value: done, fill: "#38A169" },
-    ];
-  }, [jobSummary]);
-
-  const repackLegendItems = useMemo(() => {
-    const rows = repackSummary ?? [];
-    const pending = rows.reduce((s, r) => s + Number(r.pending || 0), 0);
-    const done = rows.reduce((s, r) => s + Number(r.doneToday || 0), 0);
-    return [
-      { name: "Repack Pending", value: pending, fill: "#F6AD55" },
-      { name: "Repack Done", value: done, fill: "#3182CE" },
-    ];
-  }, [repackSummary]);
-
-  const jobBars = [
-    { dataKey: "pending", fill: "#ECC94B", stackId: "job" },
-    {
-      dataKey: "doneToday",
-      fill: "#38A169",
-      stackId: "job",
-      labelOnTop: true,
-      labelDataKey: "total",
-    },
+  const jobLegendItems = [
+    { name: "Job Pending", value: sum(jobSummary, "pending"), fill: JOB.pending },
+    { name: "Job Done", value: sum(jobSummary, "doneToday"), fill: JOB.done },
+  ];
+  const repackLegendItems = [
+    { name: "Repack Pending", value: sum(repackSummary, "pending"), fill: REPACK.pending },
+    { name: "Repack Done", value: sum(repackSummary, "doneToday"), fill: REPACK.done },
   ];
 
-  const repackBars = [
-    { dataKey: "pending", fill: "#F6AD55", stackId: "repack" },
-    {
-      dataKey: "doneToday",
-      fill: "#3182CE",
-      stackId: "repack",
-      labelOnTop: true,
-      labelDataKey: "total",
-    },
+  const prData = useMemo(
+    () =>
+      (purchaseReturnSummary ?? []).map((r, i) => ({
+        ...r,
+        fill: PR_COLORS[i % PR_COLORS.length],
+      })),
+    [purchaseReturnSummary]
+  );
+
+  const stacked = (stackId, colors) => [
+    { dataKey: "pending", fill: colors.pending, stackId },
+    { dataKey: "doneToday", fill: colors.done, stackId, labelOnTop: true, labelDataKey: "total" },
   ];
-
-  const jobTooltipLabelMap = {
-    pending: "Job Pending",
-    doneToday: "Job Done",
-  };
-
-  const repackTooltipLabelMap = {
-    pending: "Repack Pending",
-    doneToday: "Repack Done",
-  };
 
   return (
-    <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap="22px">
-      <GridItem colSpan={{ base: 1, md: 1 }}>
-        <CustomContainer
+    <Flex direction="column" gap="16px">
+      <Grid templateColumns={{ base: "minmax(0,1fr)", lg: "minmax(0,1fr) minmax(0,2.2fr)" }} gap="16px">
+        <DashboardCard
           title="By Status"
-          size="sm"
-          fullWidth
           rightSection={
             onResetStatus ? (
-              <IconButton
-                aria-label="Reset status sort"
-                size="xs"
-                variant="ghost"
-                onClick={onResetStatus}
-              >
+              <IconButton aria-label="Reset status filter" size="2xs" variant="ghost" color="#C95C18" onClick={onResetStatus}>
                 <i className="fa fa-refresh" aria-hidden="true" />
               </IconButton>
             ) : null
           }
         >
-          <DashboardBarChart
-            data={byStatus ?? []}
-            xDataKey="name"
-            bars={[{ dataKey: "value", perBarColor: true }]}
-            showLegend={true}
-            hideXAxisLabels={isMobile}
-            emptyMessage="No data to display"
-            onBarClick={onStatusClick}
-          />
-        </CustomContainer>
-      </GridItem>
-      <CustomContainer title="Pending Stats" size="sm">
-        <Flex direction="column" w="100%" gap={{ base: 3, md: 2 }}>
-          <Box
-            w="100%"
-            borderWidth="1px"
-            borderStyle="solid"
-            borderColor="brand100"
-            borderRadius="md"
-            overflow="hidden"
-          >
-            <Flex
-              direction={{ base: "column", md: "row" }}
-              align="stretch"
-              w="100%"
-            >
-              <Box
-                flex="1"
-                minW={0}
-                borderBottom={{ base: "1px solid", md: "none" }}
-                borderRight={{ md: "1px solid var(--chakra-colors-brand-100)" }}
-              >
-                <Box
-                  px={3}
-                  py={2}
-                  borderBottom="1px solid"
-                  borderColor="brand100"
-                  bg="brand50"
-                >
-                  <Text
-                    fontSize="xs"
-                    fontWeight="medium"
-                    color="brand800"
-                    letterSpacing="-0.01em"
-                  >
-                    Job worksheet
-                  </Text>
-                </Box>
-                <Box px={3} py={3}>
-                  <DashboardBarChart
-                    data={jobChartData}
-                    xDataKey="name"
-                    bars={jobBars}
-                    legendItems={jobLegendItems}
-                    showLegend={false}
-                    height={"180px"}
-                    yAxisMaxPadding={6}
-                    hideXAxisLabels={isMobile}
-                    emptyMessage="No data to display"
-                    onBarClick={(entry) => {
-                      if (entry?.name) onJobBarClick?.(entry);
-                    }}
-                    tooltipLabelMap={jobTooltipLabelMap}
-                  />
-                </Box>
-              </Box>
-              <Box flex="1" minW={0}>
-                <Box
-                  px={3}
-                  py={2}
-                  borderBottom="1px solid"
-                  borderColor="brand100"
-                  bg="brand50"
-                >
-                  <Text
-                    fontSize="xs"
-                    fontWeight="medium"
-                    color="brand800"
-                    letterSpacing="-0.01em"
-                  >
-                    Repacking
-                  </Text>
-                </Box>
-                <Box px={3} py={3}>
-                  <DashboardBarChart
-                    data={repackChartData}
-                    xDataKey="name"
-                    bars={repackBars}
-                    height={"180px"}
-                    yAxisMaxPadding={6}
-                    legendItems={repackLegendItems}
-                    showLegend={false}
-                    hideXAxisLabels={isMobile}
-                    emptyMessage="No data to display"
-                    onBarClick={(entry) => {
-                      if (entry?.name) onRepackBarClick?.(entry);
-                    }}
-                    tooltipLabelMap={repackTooltipLabelMap}
-                  />
-                </Box>
-              </Box>
+          {statusRows.length === 0 ? (
+            <Flex h="150px" align="center" justify="center">
+              <Text fontSize="12px" color="fg.muted">
+                No data to display
+              </Text>
             </Flex>
-          </Box>
-          <Flex
-            direction={{ base: "column", md: "row" }}
-            align="flex-start"
-            gap={{ base: 3, md: 4 }}
-            w="100%"
-          >
-            <Box flex="1" minW={0}>
+          ) : (
+            <Box>
+              <Box h="150px" w="150px" mx="auto">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={statusRows}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={52}
+                      outerRadius={72}
+                      startAngle={90}
+                      endAngle={-270}
+                      stroke="none"
+                      isAnimationActive={false}
+                    >
+                      {statusRows.map((r) => (
+                        <Cell
+                          key={r.code ?? r.name}
+                          fill={r.color ?? r.fill}
+                          cursor="pointer"
+                          onClick={() => onStatusClick?.(r)}
+                        />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip formatter={(v, n) => [`${v}`, n]} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Box>
               <DashboardChartLegend
-                items={jobLegendItems}
-                columns={1}
-                showDivider
+                columns={2}
+                items={statusRows.map((r) => ({
+                  name: `${r.name} · ${r.value}`,
+                  fill: r.color ?? r.fill,
+                  onClick: () => onStatusClick?.(r),
+                }))}
               />
             </Box>
-            <Box flex="1" minW={0}>
-              <DashboardChartLegend
-                items={repackLegendItems}
-                columns={1}
-                showDivider
+          )}
+        </DashboardCard>
+
+        <DashboardCard title="Pending Stats">
+          <Flex direction={{ base: "column", md: "row" }} gap="12px">
+            <Panel title="Job worksheet">
+              <DashboardBarChart
+                data={jobSummary ?? []}
+                xDataKey="name"
+                bars={stacked("job", JOB)}
+                showLegend={false}
+                height="150px"
+                hideXAxisLabels={isMobile}
+                emptyMessage="No data to display"
+                onBarClick={(entry) => entry?.name && onJobBarClick?.(entry)}
+                tooltipLabelMap={{ pending: "Job Pending", doneToday: "Job Done" }}
               />
-            </Box>
+            </Panel>
+            <Panel title="Repacking">
+              <DashboardBarChart
+                data={repackSummary ?? []}
+                xDataKey="name"
+                bars={stacked("repack", REPACK)}
+                showLegend={false}
+                height="150px"
+                hideXAxisLabels={isMobile}
+                emptyMessage="No data to display"
+                onBarClick={(entry) => entry?.name && onRepackBarClick?.(entry)}
+                tooltipLabelMap={{ pending: "Repack Pending", doneToday: "Repack Done" }}
+              />
+            </Panel>
           </Flex>
-        </Flex>
-      </CustomContainer>
-      <CustomContainer title="Purchase Return Pending" size="sm">
+          <Grid templateColumns="repeat(2, minmax(0,1fr))" columnGap="12px" mt="-16px">
+            <DashboardChartLegend columns={1} items={jobLegendItems} />
+            <DashboardChartLegend columns={1} items={repackLegendItems} />
+          </Grid>
+        </DashboardCard>
+      </Grid>
+
+      <DashboardCard title="Purchase Return Pending">
         <DashboardBarChart
-          data={purchaseReturnSummary ?? []}
+          data={prData}
           xDataKey="name"
           bars={[{ dataKey: "value", perBarColor: true }]}
           showLegend={true}
+          legendColumns={Math.min(Math.max(prData.length, 1), 6)}
+          height="160px"
           emptyMessage="No data to display"
           onBarClick={onPurchaseReturnBarClick}
         />
-      </CustomContainer>
-    </Grid>
+      </DashboardCard>
+    </Flex>
   );
 }
 

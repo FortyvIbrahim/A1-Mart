@@ -492,7 +492,7 @@ export default function AccountsForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm headerBand title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={getAccountValidationSchema(employees)}
@@ -744,7 +744,7 @@ export default function AccountsForm({ params }) {
                 {selectedEmployee &&
                   selectedEmployee.designation_id ===
                     BILLING_OPERATOR_DESIGNATION_ID && (
-                    <CustomContainer
+                    <CustomContainer pageForm headerBand
                       title="Tender Details"
                       size="sm"
                       color="secondary"

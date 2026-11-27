@@ -2,6 +2,7 @@
 
 import usePurchaseEntries from "@/api/customHooks/usePurchaseEntries";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import useDeleteModal from "@/customHooks/useDeleteModal";
@@ -12,6 +13,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
 import moment from "moment";
+
+
+/** Figma list filters for this page. */
+const LIST_FILTERS = [
+  { key: "q", type: "search", label: "Search", placeholder: "Search records...", getText: (r) => `${r.purchase_entry_id ?? ""} ${r.invoice_no ?? ""} ${r.purchase_order_ref ?? ""} ${r.vendor_name ?? ""}` },
+  { key: "vendor", type: "select", label: "Vendor", placeholder: "All vendors", getValue: (r) => r.vendor_name },
+  { key: "date", type: "date", label: "Date", getValue: (r) => r.invoice_date },
+];
 
 function PurchaseEntry() {
   const router = useRouter();
@@ -164,10 +173,12 @@ function PurchaseEntry() {
     },
   ];
 
+  const { filtered: filteredRows, filterCard } = useListFilters(purchaseEntries, LIST_FILTERS, { reset: true });
+
   return (
     <GlobalWrapper permissionKey="view_purchase_entry">
       <DeleteModalComponent />
-      <CustomContainer
+      <CustomContainer headerBand
         title="Purchase Entries"
         rightSection={
           allowAdd && (
@@ -177,8 +188,9 @@ function PurchaseEntry() {
           )
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={purchaseEntries}
+          rowData={filteredRows}
           colDefs={colDefs}
           tableKey="purchase-entry"
         />

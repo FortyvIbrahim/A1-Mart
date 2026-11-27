@@ -218,7 +218,6 @@ export default function ChecklistFillQuestionFields({
               lineHeight="1.45"
               wordBreak="break-word"
               whiteSpace="pre-wrap"
-              letterSpacing="-0.02em"
             >
               {title}
             </Heading>

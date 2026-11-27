@@ -244,7 +244,6 @@ export default function ChecklistSubmissionReadOnly({
                   fontSize="xs"
                   fontWeight="semibold"
                   color="brand.700"
-                  letterSpacing="0.05em"
                   textTransform="uppercase"
                 >
                   Question {idx + 1}

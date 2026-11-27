@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { Box, Flex, Text } from "@chakra-ui/react";
-import CustomContainer from "@/components/CustomContainer";
+import { Box } from "@chakra-ui/react";
+import { DashboardCard } from "@/components/dashboard/DashboardUI";
+import DashboardChartLegend from "@/components/dashboard/DashboardChartLegend";
 import DashboardBarChart from "@/components/dashboard/DashboardBarChart";
 
 function PayrollDetailsCard({ selectedStats, paymentFilter, onFilterChange }) {
@@ -27,44 +28,38 @@ function PayrollDetailsCard({ selectedStats, paymentFilter, onFilterChange }) {
   });
 
   const data = [
-    { name: "Paid", value: paidCount, color: "#38A169" },
-    { name: "On Hold", value: onHoldCount, color: "#3182CE" },
-    { name: "Unpaid", value: unpaidCount, color: "#E53E3E" },
+    { name: "Paid", value: paidCount, color: "#11976A", label: "#147D52" },
+    { name: "On Hold", value: onHoldCount, color: "#526FA8", label: "#946200", dot: "#946200" },
+    { name: "Unpaid", value: unpaidCount, color: "#E7474D", label: "#637188" },
   ];
 
+  const toggle = (name) => onFilterChange((prev) => (prev === name ? null : name));
+
   return (
-    <CustomContainer title="Payroll Details" size="sm">
+    <DashboardCard title="Payroll Details" h="100%">
       <Box>
         <DashboardBarChart
-          data={data}
+          data={data.map((d) => ({ ...d, fill: d.color }))}
           xDataKey="name"
           bars={[{ dataKey: "value", perBarColor: true }]}
           showLegend={false}
-          height={{ base: "200px", md: "180px" }}
+          height="200px"
+          valueFormatter={(v) => v}
           emptyMessage="No data to display"
-          onBarClick={(entry) => {
-            const name = entry?.name;
-            if (!name) return;
-            onFilterChange((prev) => (prev === name ? null : name));
-          }}
+          onBarClick={(entry) => entry?.name && toggle(entry.name)}
         />
-
-        <Flex mt={3} gap={4} fontSize="xs" align="center" wrap="wrap">
-          <Flex align="center" gap={1}>
-            <Box w="10px" h="10px" borderRadius="2px" bg="#38A169" />
-            <Text>Paid ({paidCount})</Text>
-          </Flex>
-          <Flex align="center" gap={1}>
-            <Box w="10px" h="10px" borderRadius="2px" bg="#3182CE" />
-            <Text>On Hold ({onHoldCount})</Text>
-          </Flex>
-          <Flex align="center" gap={1}>
-            <Box w="10px" h="10px" borderRadius="2px" bg="#E53E3E" />
-            <Text>Unpaid ({unpaidCount})</Text>
-          </Flex>
-        </Flex>
+        <DashboardChartLegend
+          columns={3}
+          items={data.map((d) => ({
+            name: d.name,
+            value: d.value,
+            fill: d.dot ?? d.color,
+            labelColor: d.label,
+            onClick: () => toggle(d.name),
+          }))}
+        />
       </Box>
-    </CustomContainer>
+    </DashboardCard>
   );
 }
 

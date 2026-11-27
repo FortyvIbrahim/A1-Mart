@@ -2,6 +2,8 @@
 
 import usePurchaseAcknowledgments from "@/api/customHooks/usePurchaseAcknowledgments";
 import AgGrid from "@/components/AgGrid";
+import { FigmaBadge } from "@/components/AgGrid/columnTypes";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import CustomMenu from "@/components/CustomMenu";
 import GlobalWrapper from "@/components/GlobalWrapper";
@@ -94,15 +96,15 @@ function PurchaseAcknowledgments() {
         const purchaseEntryCreated = props.data.purchase_entry_id !== null;
 
         if (!hasGRN) {
-          return <Badge colorPalette="gray">GRN Pending</Badge>;
+          return <FigmaBadge colorScheme="blue">GRN Pending</FigmaBadge>;
         }
 
         if (purchaseEntryCreated && total == 0) {
-          return <Badge colorPalette="blue">Purchase Entry Done</Badge>;
+          return <FigmaBadge colorScheme="green">Purchase Entry Done</FigmaBadge>;
         }
 
         if (total == 0) {
-          return <Badge colorPalette="purple">GRN Done</Badge>;
+          return <FigmaBadge colorScheme="orange">GRN Done</FigmaBadge>;
         }
 
         return (
@@ -166,9 +168,38 @@ function PurchaseAcknowledgments() {
     },
   ];
 
+  // Figma PUR/03 filters: Search · Supplier · Branch · All status.
+  const ackStatus = (r) => {
+    const c = r.status_counts || {};
+    const totalDone = (c.done || 0) + (c.cancelled || 0);
+    const total = (c.open || 0) + (c.in_progress || 0) + totalDone;
+    if (!r.has_grn) return "GRN Pending";
+    if (r.purchase_entry_id !== null && total == 0) return "Purchase Entry Done";
+    if (total == 0) return "GRN Done";
+    return total === totalDone ? "Job Entry Done" : "Job Entry In Progress";
+  };
+  const { filtered: filteredAcks, filterCard } = useListFilters(
+    purchaseAcknowledgments ?? [],
+    [
+      {
+        key: "search",
+        type: "search",
+        placeholder: "Search...",
+        getText: (r) =>
+          [r.purchase_acknowledgment_id, r.supplier?.name, r.invoice_no, r.branch_name]
+            .filter(Boolean)
+            .join(" "),
+      },
+      { key: "supplier", type: "select", placeholder: "Supplier", getValue: (r) => r.supplier?.name },
+      { key: "branch", type: "select", placeholder: "Branch", getValue: (r) => r.branch_name },
+      { key: "status", type: "select", placeholder: "All status", getValue: ackStatus },
+    ]
+  );
+
   return (
     <GlobalWrapper permissionKey="view_purchase_acknowledgment">
       <CustomContainer
+        contentCard
         title="Purchase Acknowledgments"
         rightSection={
           canAdd && (
@@ -178,8 +209,9 @@ function PurchaseAcknowledgments() {
           )
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={purchaseAcknowledgments}
+          rowData={filteredAcks}
           columnDefs={colDefs}
           tableKey="purchase-acknowledgment"
         />

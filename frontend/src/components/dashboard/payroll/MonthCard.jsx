@@ -1,147 +1,99 @@
 "use client";
 
 import React from "react";
-import { Box, Flex, Text, VStack } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
+import { LuClock } from "react-icons/lu";
 import moment from "moment";
 import { formatCurrency } from "@/utils/string";
 
-const DATA_SECTION_HEIGHT = "108px";
+/*
+ * Figma "Card / April 2026": 211×188, radius 14, padding 20, 16px gap.
+ * Rows: label 10/400 + amount 12/600 (Paid green, On Hold blue, Unpaid red),
+ * 14px apart. Status pill radius 5 (Pending/Completed) or 8 (Upcoming).
+ * Selected month: #FFF5ED fill with a #F47721 border.
+ */
+const ROWS = [
+  { key: "totalPaidNet", label: "Paid", labelColor: "#147D52", color: "#11976A" },
+  { key: "totalOnHoldNet", label: "On Hold", labelColor: "#946200", color: "#526FA8" },
+  { key: "totalUnpaidNet", label: "Unpaid", labelColor: "#E7474D", color: "#E7474D" },
+];
 
-const Row = ({ label, amount, color, bgTint, isDisabled, showBorder }) => (
-  <Flex
-    justify="space-between"
-    align="center"
-    py={2}
-    pl={3}
-    pr={3}
-    borderTopWidth={showBorder ? "1px" : 0}
-    borderColor="gray.100"
-    bg={isDisabled ? "transparent" : bgTint}
-    _hover={isDisabled ? {} : { bg: "blackAlpha.04" }}
-    transition="background 0.1s"
-  >
-    <Flex align="center" gap={2}>
-      <Box
-        w="2"
-        h="2"
-        borderRadius="full"
-        bg={isDisabled ? "gray.300" : color}
-        flexShrink={0}
-      />
-      <Text
-        fontSize="xs"
-        fontWeight="medium"
-        color={isDisabled ? "gray.400" : "gray.700"}
-      >
-        {label}
-      </Text>
-    </Flex>
-    <Text
-      fontSize="sm"
-      fontWeight="bold"
-      color={isDisabled ? "gray.400" : color}
-      letterSpacing="tight"
-    >
-      {amount != null && amount > 0 ? formatCurrency(amount) : "-"}
-    </Text>
-  </Flex>
-);
+const STATUS = {
+  Completed: { bg: "#E8F6EF", color: "#147D52", r: "5px" },
+  Pending: { bg: "#FFF4DB", color: "#946200", r: "5px" },
+  Upcoming: { bg: "#FFF5ED", color: "#C95C18", r: "8px" },
+};
 
 function MonthCard({ month, stats, isActive, isDisabled, onClick }) {
   const isCompleted =
-    stats &&
-    stats.employeeCount > 0 &&
-    stats.paidEmployeesCount === stats.employeeCount;
-  const statusLabel = stats
-    ? isCompleted
-      ? "Completed"
-      : "Pending"
-    : "Upcoming";
-  const statusColor = stats
-    ? isCompleted
-      ? "green.500"
-      : "orange.500"
-    : "gray.400";
-
-  const totalPaid = stats?.totalPaidNet ?? 0;
-  const totalOnHold = stats?.totalOnHoldNet ?? 0;
-  const totalUnpaid = stats?.totalUnpaidNet ?? 0;
+    stats && stats.employeeCount > 0 && stats.paidEmployeesCount === stats.employeeCount;
+  const statusLabel = stats ? (isCompleted ? "Completed" : "Pending") : "Upcoming";
+  const status = STATUS[statusLabel];
 
   return (
-    <Box
+    <Flex
+      direction="column"
+      gap="16px"
+      w="211px"
+      minH="188px"
+      p="20px"
       borderWidth="1px"
-      borderRadius="lg"
-      p={0}
-      minW="200px"
-      cursor={isDisabled ? "not-allowed" : "pointer"}
-      bg={isActive ? "brand50" : isDisabled ? "gray.50" : "white"}
-      borderColor={isActive ? "brand500" : isDisabled ? "gray.300" : "gray.200"}
-      opacity={isDisabled ? 0.6 : 1}
+      borderRadius="14px"
+      bg={isActive ? "#FFF5ED" : "white"}
+      borderColor={isActive ? "#F47721" : "border"}
+      cursor={isDisabled ? "default" : "pointer"}
       onClick={isDisabled ? undefined : onClick}
-      _hover={isDisabled ? {} : { borderColor: "brand400", shadow: "sm" }}
-      transition="border-color 0.15s, box-shadow 0.15s"
+      _hover={isDisabled || isActive ? undefined : { borderColor: "brand.300" }}
+      transition="border-color 0.15s"
     >
-      <Box px={3} pt={3} pb={2}>
-        <Text
-          fontSize="sm"
-          fontWeight="semibold"
-          color={isDisabled ? "gray.400" : "gray.800"}
-        >
-          {moment(month).format("MMMM YYYY")}
-        </Text>
-      </Box>
+      <Text fontSize="16px" fontWeight="600" lineHeight="19px" color="fg">
+        {moment(month).format("MMMM YYYY")}
+      </Text>
+
       {stats ? (
-        <Box h={DATA_SECTION_HEIGHT}>
-          <VStack align="stretch" gap={0} h="100%">
-            <Row
-              label="Paid"
-              amount={totalPaid}
-              color="green.600"
-              bgTint="green.50"
-              isDisabled={isDisabled}
-              showBorder={false}
-            />
-            <Row
-              label="On Hold"
-              amount={totalOnHold}
-              color="blue.600"
-              bgTint="blue.50"
-              isDisabled={isDisabled}
-              showBorder
-            />
-            <Row
-              label="Unpaid"
-              amount={totalUnpaid}
-              color="red.600"
-              bgTint="red.50"
-              isDisabled={isDisabled}
-              showBorder
-            />
-          </VStack>
-        </Box>
+        <Flex direction="column" gap="14px">
+          {ROWS.map((r) => {
+            const amount = stats?.[r.key] ?? 0;
+            return (
+              <Flex key={r.key} justify="space-between" align="center" gap="16px">
+                <Text fontSize="10px" lineHeight="12px" color={r.labelColor}>
+                  {r.label}
+                </Text>
+                <Text fontSize="12px" fontWeight="600" lineHeight="15px" color={r.color}>
+                  {amount > 0 ? formatCurrency(amount) : "—"}
+                </Text>
+              </Flex>
+            );
+          })}
+        </Flex>
       ) : (
-        <Flex
-          direction="column"
-          align="center"
-          justify="center"
-          gap={2}
-          h={DATA_SECTION_HEIGHT}
-          px={3}
-        >
-          <Text as="span" fontSize="2xl" color="gray.300" aria-hidden>
-            <i className="fa fa-calendar" />
-          </Text>
-          <Text fontSize="xs" color="gray.400">
+        <Flex align="center" gap="12px" minH="73px">
+          <Box color="#C95C18" display="flex">
+            <LuClock size={18} />
+          </Box>
+          <Text fontSize="12px" color="fg.muted">
             No data
           </Text>
         </Flex>
       )}
-      <Flex justify="center" py={2} mt={1}>
-        <Text fontSize="xs" fontWeight="semibold" color={statusColor}>
+
+      <Box>
+        <Text
+          as="span"
+          display="inline-block"
+          px="8px"
+          py="5px"
+          borderRadius={status.r}
+          bg={status.bg}
+          color={status.color}
+          fontSize="10px"
+          fontWeight="500"
+          lineHeight="12px"
+        >
           {statusLabel}
         </Text>
-      </Flex>
-    </Box>
+      </Box>
+    </Flex>
   );
 }
 

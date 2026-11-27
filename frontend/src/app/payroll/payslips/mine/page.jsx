@@ -75,7 +75,7 @@ function MyPayslipsPage() {
 
   return (
     <GlobalWrapper permissionKey="view_my_payslips">
-      <CustomContainer title="Payslip">
+      <CustomContainer headerBand title="Payslip">
         <Flex flexDirection="column" gap="22px">
           <Box>
             <Text fontSize="sm" fontWeight="medium" mb="8px">
@@ -145,7 +145,6 @@ function MyPayslipsPage() {
                       color: hasPayslip ? "gray.100" : "gray.500",
                     }}
                     mb="14px"
-                    letterSpacing="tight"
                   >
                     {monthName}
                   </Text>

@@ -2,6 +2,7 @@
 
 import useEBConsumptions from "@/api/customHooks/useEBConsumptions";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import useDeleteModal from "@/customHooks/useDeleteModal";
@@ -12,6 +13,14 @@ import moment from "moment";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
+
+
+/** Figma EB01 filters: Search · Branch · Date · Reset. */
+const LIST_FILTERS = [
+  { key: "q", type: "search", label: "Search", placeholder: "Search ID or branch...", getText: (r) => `${r.consumption_id ?? ""} ${r.branch_name ?? ""}` },
+  { key: "branch", type: "select", label: "Branch", placeholder: "All branches", getValue: (r) => r.branch_name },
+  { key: "date", type: "date", label: "Date", getValue: (r) => r.date },
+];
 
 function EbConsumption() {
   const router = useRouter();
@@ -82,10 +91,6 @@ function EbConsumption() {
     },
     {
       field: "closing_units",
-      headerName: "Closing Units",
-    },
-    {
-      field: "closing_units",
       headerName: "Units Consumed",
       resizable: true,
       cellRenderer: (props) => `${props.value} units`,
@@ -98,6 +103,10 @@ function EbConsumption() {
           })
         ).toFixed(2);
       },
+    },
+    {
+      field: "closing_units",
+      headerName: "Closing Units",
     },
     {
       field: "consumption_id",
@@ -119,10 +128,13 @@ function EbConsumption() {
     },
   ];
 
+  const { filtered: filteredRows, filterCard } = useListFilters(ebConsumptions, LIST_FILTERS, { reset: true });
+
   return (
     <GlobalWrapper permissionKey="view_eb_consumption">
       <DeleteModalComponent />
       <CustomContainer
+        breadcrumb="Checklist Management  /  EB Consumption"
         title="EB Consumption"
         rightSection={
           <Link href="/eb-consumption/create">
@@ -130,8 +142,9 @@ function EbConsumption() {
           </Link>
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={ebConsumptions}
+          rowData={filteredRows}
           columnDefs={colDefs}
           tableKey="eb-consumption"
         />

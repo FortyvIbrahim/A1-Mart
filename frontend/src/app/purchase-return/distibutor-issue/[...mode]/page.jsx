@@ -476,7 +476,7 @@ function DistributorIssueFormContent({
           )}
 
           {showTableSection && !noDataForSupplier && (
-            <CustomContainer title="Pick up details" size="sm">
+            <CustomContainer pageForm headerBand title="Pick up details" size="sm">
               <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
                 <CustomInput
                   name="pick_up_name"
@@ -746,7 +746,7 @@ function DistributorIssueFormPage({ params }) {
   if ((isEditMode || isViewMode) && loadingDelivered) {
     return (
       <GlobalWrapper permissionKey="view_purchase_return_distibutor_issue">
-        <CustomContainer title={getTitle()} fullWidth>
+        <CustomContainer pageForm headerBand title={getTitle()} fullWidth>
           <Flex justifyContent="center" p={8}>
             <Text>Loading...</Text>
           </Flex>
@@ -758,7 +758,7 @@ function DistributorIssueFormPage({ params }) {
   if ((isEditMode || isViewMode) && !delivered && !loadingDelivered) {
     return (
       <GlobalWrapper permissionKey="view_purchase_return_distibutor_issue">
-        <CustomContainer title={getTitle()} fullWidth>
+        <CustomContainer pageForm headerBand title={getTitle()} fullWidth>
           <Flex flexDirection="column" gap={4} alignItems="center" p={8}>
             <Text>Returned record not found</Text>
             <Link href="/purchase-return/distibutor-issue">
@@ -774,7 +774,7 @@ function DistributorIssueFormPage({ params }) {
 
   return (
     <GlobalWrapper permissionKey="view_purchase_return_distibutor_issue">
-      <CustomContainer title={getTitle()} fullWidth>
+      <CustomContainer pageForm headerBand title={getTitle()} fullWidth>
         <Formik
           initialValues={initialValues}
           enableReinitialize

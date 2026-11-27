@@ -160,7 +160,7 @@ function EmployeeAllocationListing() {
 
   return (
     <GlobalWrapper permissionKey="view_employee_allocation">
-      <CustomContainer
+      <CustomContainer headerBand
         title="Employee Allocation"
         rightSection={
           canAdd && (

@@ -75,22 +75,10 @@ a {
   background-color: #dcbfa8;
 }
 
-/* AG Grid: brand pagination + header polish (Figma table spec) */
-.ag-theme-quartz,
-.ag-root-wrapper {
-  font-family: inherit;
-}
+/* AG Grid: font and pagination come from the theme (src/theme/aggrid.js)
+   and the Figma footer rules at the end of this file. */
 .ag-paging-panel {
-  border-top: 1px solid var(--a1-border-subtle) !important;
-  color: var(--a1-text-muted);
-  font-size: 12.5px;
   min-height: 52px;
-}
-.ag-paging-button {
-  color: var(--a1-primary);
-}
-.ag-header-cell-text {
-  letter-spacing: 0.01em;
 }
 
 /* React DatePicker - brand + white only, cleaner UI */
@@ -330,4 +318,22 @@ a {
 
 @media (prefers-reduced-motion: reduce) {
   .a1-skeleton { animation: none; }
+}
+
+/* Dashboard filter date field: fill its grid cell like the other controls. */
+.a1-dashboard-date,
+.a1-dashboard-date .react-datepicker__input-container {
+  display: block;
+  width: 100%;
+}
+
+/* Figma table footer: "Page size: 20 · 1–5 of 5 · >" in 10px #637188. */
+.ag-theme-quartz .ag-paging-panel,
+.ag-paging-panel {
+  font-size: 10px;
+  color: #637188;
+  border-top: none;
+}
+.ag-paging-panel .ag-paging-button {
+  color: #c95c18;
 }

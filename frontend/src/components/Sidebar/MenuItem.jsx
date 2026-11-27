@@ -5,7 +5,10 @@ import Link from "next/link";
 import { LuChevronDown } from "react-icons/lu";
 import styles from "./index.module.css";
 import { Tooltip } from "../ui/tooltip";
-import { getSectionPresentation } from "@/constants/navigation";
+import {
+  TABBED_SECTIONS_IN_INLINE,
+  getSectionPresentation,
+} from "@/constants/navigation";
 
 /**
  * One sidebar section.
@@ -23,6 +26,18 @@ function MenuItem({
 }) {
   const { label, icon: Icon } = getSectionPresentation(section.title);
   const pages = section.subMenu || [];
+  // Pages tagged with a `group` collapse into one sidebar row per group.
+  const groups = pages.some((p) => p.group)
+    ? pages.reduce((acc, p) => {
+        const name = p.group ?? p.sidebarTitle ?? p.title;
+        const g = acc.find((x) => x.name === name);
+        if (g) g.pages.push(p);
+        else acc.push({ name, pages: [p] });
+        return acc;
+      }, [])
+    : null;
+  // Figma warehouse "Dashboard" is one row; its dashboards are module tabs.
+  if (TABBED_SECTIONS_IN_INLINE.has(section.title)) inlineSubmenu = false;
   const [open, setOpen] = useState(isActive);
 
   useEffect(() => {
@@ -83,18 +98,34 @@ function MenuItem({
 
       {showInline && open && (
         <div className={styles.subMenu}>
-          {pages.map((page) => (
-            <Link
-              key={page.location + page.title}
-              href={page.location}
-              className={`${styles.subItem} ${
-                activeLocation === page.location ? styles.subItemActive : ""
-              }`}
-              aria-current={activeLocation === page.location ? "page" : undefined}
-            >
-              {page.title}
-            </Link>
-          ))}
+          {groups
+            ? // Figma warehouse list frames: the sidebar lists the groups; the
+              // pages of the active group appear as tabs above the content.
+              groups.map((g) => {
+                const active = g.pages.some((p) => p.location === activeLocation);
+                return (
+                  <Link
+                    key={g.name}
+                    href={g.pages[0].location}
+                    className={`${styles.subItem} ${active ? styles.subItemActive : ""}`}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    {g.name}
+                  </Link>
+                );
+              })
+            : pages.map((page) => (
+                <Link
+                  key={page.location + page.title}
+                  href={page.location}
+                  className={`${styles.subItem} ${
+                    activeLocation === page.location ? styles.subItemActive : ""
+                  }`}
+                  aria-current={activeLocation === page.location ? "page" : undefined}
+                >
+                  {page.sidebarTitle ?? page.title}
+                </Link>
+              ))}
         </div>
       )}
     </div>

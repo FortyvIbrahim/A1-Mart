@@ -254,7 +254,7 @@ function PaymentsForm({ params }) {
   if ((isEditMode || isViewMode) && loading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Flex justifyContent="center" p={8}>
             Loading...
           </Flex>
@@ -266,7 +266,7 @@ function PaymentsForm({ params }) {
   if ((isEditMode || isViewMode) && !payment && !loading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Flex flexDirection="column" gap="22px" alignItems="center" p={8}>
             <Text>Payment Entry not found</Text>
             <Button
@@ -283,7 +283,7 @@ function PaymentsForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}
@@ -351,7 +351,7 @@ function PaymentsForm({ params }) {
               </Grid>
 
               <Box>
-                <CustomContainer
+                <CustomContainer pageForm
                   title="Payment Entry Items"
                   size="sm"
                   color="secondary"

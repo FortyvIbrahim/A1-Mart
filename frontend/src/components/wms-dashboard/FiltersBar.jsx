@@ -1,9 +1,53 @@
 "use client";
 
-import React from "react";
-import { Flex, Button, Text, NativeSelect, Box } from "@chakra-ui/react";
+import React, { forwardRef } from "react";
+import { Box, Flex, NativeSelect, Text } from "@chakra-ui/react";
 import DatePicker from "react-datepicker";
-import { CustomDateTimeInput } from "@/components/CustomInput";
+import moment from "moment";
+import { LuCalendar, LuChevronDown } from "react-icons/lu";
+
+/*
+ * Figma "WMS Dashboard" heading filters: one "Date" range field (calendar
+ * icon) and an "All Branches" select — 40px, radius 8, 1px #F1E3D9, 12px text.
+ */
+const FIELD = {
+  h: "40px",
+  px: "12px",
+  borderWidth: "1px",
+  borderColor: "border",
+  borderRadius: "8px",
+  bg: "white",
+  fontSize: "12px",
+};
+
+const RangeButton = forwardRef(function RangeButton({ onClick, start, end }, ref) {
+  const label =
+    start || end
+      ? `${start ? moment(start).format("DD/MM/YYYY") : "…"} – ${end ? moment(end).format("DD/MM/YYYY") : "…"}`
+      : "Date";
+  return (
+    <Flex
+      as="button"
+      type="button"
+      ref={ref}
+      onClick={onClick}
+      align="center"
+      justify="space-between"
+      gap="8px"
+      w="100%"
+      cursor="pointer"
+      color={start || end ? "fg" : "fg.muted"}
+      {...FIELD}
+    >
+      <Text as="span" truncate>
+        {label}
+      </Text>
+      <Box color="#C95C18" display="flex">
+        <LuCalendar size={14} />
+      </Box>
+    </Flex>
+  );
+});
 
 function FiltersBar({
   dateRange,
@@ -14,90 +58,44 @@ function FiltersBar({
   branchDisabled = false,
 }) {
   return (
-    <Flex
-      w={{ base: "100%", md: "auto" }}
-      justifyContent={{ base: "flex-start", md: "flex-end" }}
-      flexShrink={0}
-    >
-      <Flex
-        gap={4}
-        width={{ base: "100%", md: "auto" }}
-        alignItems={{ base: "flex-start", md: "center" }}
-        flexDirection={{ base: "column", md: "row" }}
-        flexWrap={{ base: "nowrap", md: "wrap" }}
-      >
-        <Text width="fit-content" textWrap="nowrap" fontSize="sm" fontWeight="medium" color="brand700">Pending Date : </Text>
-        <Flex
-          gap={2}
-          align="center"
-          flexDirection={{ base: "column", md: "row" }}
-          w={{ base: "100%", md: "auto" }}
-        >
-          <Box w={{ base: "100%", md: "170px" }}>
-            <DatePicker
-              selected={dateRange.startDate}
-              onChange={(date) =>
-                setDateRange((prev) => ({ ...prev, startDate: date }))
-              }
-              selectsStart
-              startDate={dateRange.startDate}
-              endDate={dateRange.endDate}
-              customInput={
-                <CustomDateTimeInput format="DD/MM/YYYY" placeholder="From Date" />
-              }
-              dateFormat="dd/MM/yyyy"
-              isClearable
-              portalId="root-portal"
-            />
-          </Box>
-          <Box w={{ base: "100%", md: "170px" }}>
-            <DatePicker
-              selected={dateRange.endDate}
-              onChange={(date) =>
-                setDateRange((prev) => ({ ...prev, endDate: date }))
-              }
-              selectsEnd
-              startDate={dateRange.startDate}
-              endDate={dateRange.endDate}
-              minDate={dateRange.startDate}
-              customInput={
-                <CustomDateTimeInput format="DD/MM/YYYY" placeholder="To Date" />
-              }
-              dateFormat="dd/MM/yyyy"
-              isClearable
-              portalId="root-portal"
-            />
-          </Box>
-        </Flex>
-        <Box minW={{ base: "100%", md: "220px" }}>
-          <NativeSelect.Root size="sm" disabled={branchDisabled}>
-            <NativeSelect.Field
-              value={selectedBranchId ?? ""}
-              onChange={(e) => setSelectedBranchId?.(e.target.value || "")}
-            >
-              <option value="">All Branches</option>
-              {branchOptions.map((b) => (
-                <option key={b.value} value={b.value}>
-                  {b.label}
-                </option>
-              ))}
-            </NativeSelect.Field>
-            <NativeSelect.Indicator />
-          </NativeSelect.Root>
-        </Box>
-
-        <Button
-          size="sm"
-          variant="outline"
-          width={{ base: "100%", md: "fit-content" }}
-          onClick={() => setDateRange({ startDate: null, endDate: null })}
-        >
-          Clear
-        </Button>
-      </Flex>
+    <Flex gap="12px" align="center" wrap="wrap" w={{ base: "100%", md: "auto" }}>
+      <Box w={{ base: "100%", md: "200px" }}>
+        <DatePicker
+          selectsRange
+          startDate={dateRange.startDate}
+          endDate={dateRange.endDate}
+          onChange={([startDate, endDate]) => setDateRange({ startDate, endDate })}
+          isClearable
+          dateFormat="dd/MM/yyyy"
+          portalId="root-portal"
+          wrapperClassName="a1-dashboard-date"
+          customInput={<RangeButton start={dateRange.startDate} end={dateRange.endDate} />}
+        />
+      </Box>
+      <Box w={{ base: "100%", md: "200px" }}>
+        <NativeSelect.Root disabled={branchDisabled}>
+          <NativeSelect.Field
+            {...FIELD}
+            pe="34px"
+            color={selectedBranchId ? "fg" : "fg.muted"}
+            value={selectedBranchId ?? ""}
+            onChange={(e) => setSelectedBranchId?.(e.target.value || "")}
+            aria-label="Branch"
+          >
+            <option value="">All Branches</option>
+            {branchOptions.map((b) => (
+              <option key={b.value} value={b.value}>
+                {b.label}
+              </option>
+            ))}
+          </NativeSelect.Field>
+          <NativeSelect.Indicator right="12px" color="#C95C18">
+            <LuChevronDown size={14} />
+          </NativeSelect.Indicator>
+        </NativeSelect.Root>
+      </Box>
     </Flex>
   );
 }
 
 export default FiltersBar;
-

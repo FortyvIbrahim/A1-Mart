@@ -1,6 +1,6 @@
 "use client";
 
-import { Inter } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import {
   AllCommunityModule,
@@ -27,6 +27,15 @@ const inter = Inter({
   display: "swap",
 });
 
+// Figma list-page tables (Master Data, Transports, Logs, Stock Circle, Payroll,
+// Accounts) set headers, cells and pagination in Plus Jakarta Sans.
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
 ModuleRegistry.registerModules([AllCommunityModule, TextEditorModule]);
 
 const AUTH_ROUTES = ["/login", "/register"];
@@ -50,6 +59,14 @@ function LayoutContent({ children }) {
 
     setLoaded(true);
   }, []);
+
+  // The page scrolls inside #app-scroll-container (not the window), so Next's
+  // own scroll reset never applies — start every new page at the top.
+  useEffect(() => {
+    document
+      .getElementById("app-scroll-container")
+      ?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname]);
 
   if (!loaded) {
     return <div />;
@@ -91,7 +108,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" href="/images/A1MartLogo.jpeg" />
         <link rel="apple-touch-icon" href="/images/A1MartLogo.jpeg" />
       </head>
-      <body className={inter.variable} id="root-portal">
+      <body className={`${inter.variable} ${jakarta.variable}`} id="root-portal">
         <Providers>
           <SidebarProvider>
             <LocaleProvider locale="en-IN">

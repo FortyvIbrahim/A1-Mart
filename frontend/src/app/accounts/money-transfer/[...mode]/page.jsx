@@ -193,7 +193,7 @@ function MoneyTransferForm({ params }) {
   if ((isEditMode || isViewMode) && transferLoading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Flex justifyContent="center" p={8}>
             Loading...
           </Flex>
@@ -205,7 +205,7 @@ function MoneyTransferForm({ params }) {
   if ((isEditMode || isViewMode) && !transfer && !transferLoading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Flex flexDirection="column" gap="22px" alignItems="center" p={8}>
             <Text>Money transfer not found</Text>
             <Button
@@ -222,7 +222,7 @@ function MoneyTransferForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}

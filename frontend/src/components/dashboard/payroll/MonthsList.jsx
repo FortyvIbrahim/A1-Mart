@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { Box, Flex, IconButton, Text } from "@chakra-ui/react";
+import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
 import MonthCard from "./MonthCard";
 
 function MonthsList({
@@ -12,7 +13,7 @@ function MonthsList({
   onSelectPayrollId,
   maxH, // kept for backward compat; not used in horizontal mode
   maxW = "100%",
-  scrollStep = 220,
+  scrollStep = 227,
 }) {
   const scrollRef = useRef(null);
   const itemRefs = useRef({});
@@ -33,38 +34,46 @@ function MonthsList({
 
   return (
     <Box>
-      <Flex align="center" justify="space-between" mb={2}>
-        <Text fontSize="sm" fontWeight="medium">
+      {/* Figma "Payroll Months / Heading and navigation": 48px row, 16/600 title,
+          48px arrows (previous: white + #FFD6B8 border, next: #FFE1C8 fill). */}
+      <Flex align="center" justify="space-between" minH="48px" mb="24px">
+        <Text fontSize="16px" fontWeight="600" lineHeight="19px" color="fg">
           {title}
         </Text>
-        <Flex gap={2}>
+        <Flex gap="16px">
           <IconButton
             aria-label="Scroll months left"
-            size="sm"
-            variant="outline"
+            w="48px"
+            h="48px"
+            minW="48px"
+            borderRadius="6px"
+            bg="white"
+            borderWidth="1px"
+            borderColor="#FFD6B8"
+            color="#C95C18"
+            _hover={{ bg: "#FFF5ED" }}
             disabled={!canScroll}
             onClick={() => {
-              scrollRef.current?.scrollBy({
-                left: -scrollStep,
-                behavior: "smooth",
-              });
+              scrollRef.current?.scrollBy({ left: -scrollStep, behavior: "smooth" });
             }}
           >
-            <i className="fa fa-chevron-left" />
+            <LuChevronLeft size={20} />
           </IconButton>
           <IconButton
             aria-label="Scroll months right"
-            size="sm"
-            variant="outline"
+            w="48px"
+            h="48px"
+            minW="48px"
+            borderRadius="6px"
+            bg="#FFE1C8"
+            color="#C95C18"
+            _hover={{ bg: "#FFD6B8" }}
             disabled={!canScroll}
             onClick={() => {
-              scrollRef.current?.scrollBy({
-                left: scrollStep,
-                behavior: "smooth",
-              });
+              scrollRef.current?.scrollBy({ left: scrollStep, behavior: "smooth" });
             }}
           >
-            <i className="fa fa-chevron-right" />
+            <LuChevronRight size={20} />
           </IconButton>
         </Flex>
       </Flex>
@@ -74,7 +83,6 @@ function MonthsList({
         maxW={maxW}
         overflowX="auto"
         overflowY="hidden"
-        pb={2}
         css={{
           scrollBehavior: "smooth",
           // Hide scrollbar visuals but keep scrolling enabled
@@ -87,12 +95,13 @@ function MonthsList({
           },
         }}
       >
-        <Flex direction="row" gap={3} wrap="nowrap">
+        <Flex direction="row" gap="16px" wrap="nowrap">
           {months.map((month) => {
             const stats = month.payroll_id
               ? monthlyStats[month.payroll_id]
               : null;
-            const isActive = month.payroll_id === selectedPayrollId;
+            const isActive =
+              Boolean(month.payroll_id) && month.payroll_id === selectedPayrollId;
             const isDisabled = !month.hasData;
 
             return (

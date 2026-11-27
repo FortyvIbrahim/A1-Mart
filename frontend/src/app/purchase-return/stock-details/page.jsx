@@ -14,10 +14,12 @@ import {
   Spinner,
   Checkbox,
   Button,
+  Grid,
 } from "@chakra-ui/react";
 import { FaUser, FaBoxOpen } from "react-icons/fa";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import CustomContainer from "@/components/CustomContainer";
+import { DashboardFilterField } from "@/components/dashboard/DashboardUI";
 import CustomMenu from "@/components/CustomMenu";
 import AgGrid from "@/components/AgGrid";
 import usePurchaseReturns from "@/api/customHooks/usePurchaseReturns";
@@ -288,10 +290,38 @@ const ITEMS_COLUMN_DEFS_WITH_BUYER = [
   ...ITEMS_COLUMN_DEFS,
 ];
 
+const uniqOptions = (values) =>
+  [...new Set(values.filter((v) => v && v !== "—"))]
+    .sort((a, b) => String(a).localeCompare(String(b)))
+    .map((v) => ({ value: v, label: v }));
+
+const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : -Infinity);
+
+/** Figma "Stock Details" filters, applied inside each buyer / supplier group. */
+function filterItems(items, f) {
+  const q = f.search.trim().toLowerCase();
+  const out = items.filter((it) => {
+    if (f.outlet && it.outlet_name !== f.outlet) return false;
+    if (f.buyer && it.buyer_name && it.buyer_name !== f.buyer) return false;
+    if (q && !`${it.product_name ?? ""} ${it.pr_no ?? ""}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const key = f.sortBy === "amount" ? "total_amount" : "qty";
+  return out.sort((a, b) => num(b[key]) - num(a[key]));
+}
+
 function StockDetails() {
   const { purchaseReturns, loading } = usePurchaseReturns();
   const [detailsTab, setDetailsTab] = useState("by_buyer");
   const [showDelivered, setShowDelivered] = useState(false);
+  const [filters, setFilters] = useState({
+    search: "",
+    buyer: "",
+    supplier: "",
+    outlet: "",
+    sortBy: "qty",
+  });
+  const setFilter = (key) => (value) => setFilters((prev) => ({ ...prev, [key]: value }));
 
   const exportAsCsv = useCallback((rows, filename) => {
     if (!rows?.length) {
@@ -360,6 +390,39 @@ function StockDetails() {
     [purchaseReturns, showDelivered]
   );
 
+  const filterOptions = useMemo(() => {
+    const items = groupedBySupplier.flatMap((sup) => sup.items);
+    return {
+      buyers: uniqOptions(groupedByBuyer.map((b) => b.buyerName)),
+      suppliers: uniqOptions(groupedBySupplier.map((sup) => sup.supplierName)),
+      outlets: uniqOptions(items.map((it) => it.outlet_name)),
+    };
+  }, [groupedByBuyer, groupedBySupplier]);
+
+  const visibleByBuyer = useMemo(
+    () =>
+      groupedByBuyer
+        .filter((b) => !filters.buyer || b.buyerName === filters.buyer)
+        .map((b) => ({
+          ...b,
+          suppliers: b.suppliers
+            .filter((sup) => !filters.supplier || sup.supplierName === filters.supplier)
+            .map((sup) => ({ ...sup, items: filterItems(sup.items, { ...filters, buyer: "" }) }))
+            .filter((sup) => sup.items.length > 0),
+        }))
+        .filter((b) => b.suppliers.length > 0),
+    [groupedByBuyer, filters]
+  );
+
+  const visibleBySupplier = useMemo(
+    () =>
+      groupedBySupplier
+        .filter((sup) => !filters.supplier || sup.supplierName === filters.supplier)
+        .map((sup) => ({ ...sup, items: filterItems(sup.items, filters) }))
+        .filter((sup) => sup.items.length > 0),
+    [groupedBySupplier, filters]
+  );
+
   if (loading) {
     return (
       <GlobalWrapper permissionKey="view_purchase_return_issue_entry">
@@ -375,6 +438,7 @@ function StockDetails() {
   return (
     <GlobalWrapper permissionKey="view_purchase_return_issue_entry">
       <CustomContainer
+        headerBand
         title="Stock Details"
         fullWidth
         rightSection={
@@ -386,7 +450,7 @@ function StockDetails() {
             >
               <Checkbox.HiddenInput />
               <Checkbox.Control />
-              <Checkbox.Label fontSize="sm" color="brand700">
+              <Checkbox.Label fontSize="12px" color="#C95C18">
                 Show Returned
               </Checkbox.Label>
             </Checkbox.Root>
@@ -433,6 +497,18 @@ function StockDetails() {
           </Flex>
         }
       >
+        {/* Figma filters: Search · Buyer · Supplier · Outlet, then Sort by. */}
+        <Flex direction="column" gap="16px">
+          <Grid templateColumns={{ base: "1fr", md: "repeat(2, minmax(0,1fr))", lg: "repeat(4, minmax(0,1fr))" }} gap="16px">
+            <DashboardFilterField size="lg" field={{ key: "search", type: "search", label: "Search", placeholder: "Search product name or PR number...", value: filters.search, onChange: setFilter("search") }} />
+            <DashboardFilterField size="lg" field={{ key: "buyer", label: "Buyer", placeholder: "All buyers", value: filters.buyer, onChange: setFilter("buyer"), options: filterOptions.buyers }} />
+            <DashboardFilterField size="lg" field={{ key: "supplier", label: "Supplier", placeholder: "All suppliers", value: filters.supplier, onChange: setFilter("supplier"), options: filterOptions.suppliers }} />
+            <DashboardFilterField size="lg" field={{ key: "outlet", label: "Outlet", placeholder: "All outlets", value: filters.outlet, onChange: setFilter("outlet"), options: filterOptions.outlets }} />
+          </Grid>
+          <Box w={{ base: "100%", md: "260px" }}>
+            <DashboardFilterField size="lg" field={{ key: "sortBy", label: "Sort by", placeholder: false, value: filters.sortBy, onChange: setFilter("sortBy"), options: [{ value: "qty", label: "Qty" }, { value: "amount", label: "Amount" }] }} />
+          </Box>
+        </Flex>
         <Tabs.Root
           value={detailsTab}
           onValueChange={(e) => {
@@ -441,18 +517,37 @@ function StockDetails() {
             setDetailsTab(next ?? "by_buyer");
           }}
         >
-          <Tabs.List mb={4}>
-            <Tabs.Trigger value="by_buyer">Grouped By Buyer</Tabs.Trigger>
-            <Tabs.Trigger value="by_supplier">Grouped By Supplier</Tabs.Trigger>
+          {/* Figma pill toggle: active #F47721 / white, inactive orange text. */}
+          <Tabs.List mb="16px" gap="8px" borderBottom="none" _before={{ display: "none" }}>
+            {[
+              ["by_buyer", "Grouped By Buyer"],
+              ["by_supplier", "Grouped By Supplier"],
+            ].map(([v, label]) => (
+              <Tabs.Trigger
+                key={v}
+                value={v}
+                h="36px"
+                px="16px"
+                borderRadius="8px"
+                fontSize="12px"
+                fontWeight="500"
+                color={detailsTab === v ? "white" : "#C95C18"}
+                bg={detailsTab === v ? "#F47721" : "transparent"}
+                _selected={{ color: "white", bg: "#F47721" }}
+                _before={{ display: "none" }}
+              >
+                {label}
+              </Tabs.Trigger>
+            ))}
           </Tabs.List>
 
           <Tabs.Content value="by_buyer">
             <Box>
-              {groupedByBuyer.length === 0 ? (
+              {visibleByBuyer.length === 0 ? (
                 <Text color="gray.600">No purchase return data.</Text>
               ) : (
                 <Accordion.Root multiple gap={0}>
-                  {groupedByBuyer.map((buyer, bi) => (
+                  {visibleByBuyer.map((buyer, bi) => (
                     <Accordion.Item
                       key={`buyer-${bi}-${buyer.buyerCode}`}
                       value={`buyer-${bi}`}
@@ -612,11 +707,11 @@ function StockDetails() {
 
           <Tabs.Content value="by_supplier">
             <Box>
-              {groupedBySupplier.length === 0 ? (
+              {visibleBySupplier.length === 0 ? (
                 <Text color="gray.600">No purchase return data.</Text>
               ) : (
                 <Accordion.Root multiple gap={0}>
-                  {groupedBySupplier.map((supplier, si) => (
+                  {visibleBySupplier.map((supplier, si) => (
                     <Accordion.Item
                       key={`sup-${si}-${supplier.supplier_id}`}
                       value={`sup-${si}`}

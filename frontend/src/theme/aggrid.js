@@ -2,8 +2,9 @@ import { themeQuartz } from "ag-grid-community";
 import { DESIGN } from "./index";
 
 /**
- * AG Grid theme matching the Figma table spec: white card, peach header band,
- * soft peach row dividers, orange accent. `colorPalette` is accepted for
+ * AG Grid theme matching the Figma list tables: peach header band (56px,
+ * 12/600 #637188), 48px rows alternating white / #FFFBF8 with a 1px #F1E3D9
+ * divider, 11px #202938 cells, 12px cell padding, orange accent. `colorPalette` is accepted for
  * backwards compatibility with existing callers but every table now shares the
  * same brand look, as in the design.
  */
@@ -11,26 +12,29 @@ const brandGridTheme = themeQuartz.withParams({
   accentColor: DESIGN.primary,
   backgroundColor: "#FFFFFF",
   foregroundColor: DESIGN.text,
-  textColor: "#374151",
+  textColor: DESIGN.text,
   headerBackgroundColor: DESIGN.tableHeader,
-  headerTextColor: "#4B5563",
+  headerTextColor: DESIGN.textMuted,
   headerFontWeight: 600,
-  headerFontSize: "12.5px",
-  fontFamily: "inherit",
-  fontSize: "13px",
+  headerFontSize: "12px",
+  // List-page tables: Plus Jakarta Sans (Figma); dashboard tables override to Inter.
+  fontFamily: "var(--font-jakarta), var(--font-inter), Inter, sans-serif",
+  fontSize: "11px",
   borderColor: DESIGN.borderSubtle,
-  wrapperBorder: { color: DESIGN.border, width: 1 },
-  wrapperBorderRadius: "12px",
+  // The surrounding card draws the frame (see AgGrid `framed`).
+  wrapperBorder: false,
+  wrapperBorderRadius: "0px",
   borderRadius: "8px",
-  rowBorder: { color: DESIGN.borderSubtle, width: 1 },
+  rowBorder: { color: DESIGN.border, width: 1 },
   columnBorder: false,
   headerColumnBorder: false,
-  oddRowBackgroundColor: "#FFFFFF",
-  rowHoverColor: DESIGN.rowAlt,
+  headerColumnResizeHandleColor: "transparent",
+  oddRowBackgroundColor: DESIGN.rowAlt,
+  rowHoverColor: DESIGN.tabActive,
   selectedRowBackgroundColor: "#FEF1E9",
   rowHeight: 48,
-  headerHeight: 46,
-  cellHorizontalPadding: 14,
+  headerHeight: 56,
+  cellHorizontalPadding: 12,
   checkboxCheckedBackgroundColor: DESIGN.primary,
   checkboxCheckedBorderColor: DESIGN.primary,
   inputFocusBorder: { color: DESIGN.primary },
@@ -41,7 +45,21 @@ const brandGridTheme = themeQuartz.withParams({
   pinnedRowFontWeight: 600,
 });
 
+/**
+ * Dashboard variant — table inside a Figma card: no outer frame, 52px header,
+ * 44px rows striped without dividers.
+ */
+const bareGridTheme = brandGridTheme.withParams({
+  wrapperBorder: false,
+  wrapperBorderRadius: "0px",
+  rowBorder: false,
+  rowHeight: 44,
+  headerHeight: 52,
+  fontFamily: "inherit",
+});
+
 // eslint-disable-next-line no-unused-vars
-export const agGridTheme = (_colorPalette = "brand") => brandGridTheme;
+export const agGridTheme = (_colorPalette = "brand", { bare = false } = {}) =>
+  bare ? bareGridTheme : brandGridTheme;
 
 export default agGridTheme;

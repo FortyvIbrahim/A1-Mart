@@ -358,7 +358,7 @@ export default function EmployeeForm({ params }) {
   if (loading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Flex justifyContent="center" p={8}>
             Loading...
           </Flex>
@@ -370,7 +370,7 @@ export default function EmployeeForm({ params }) {
   if (!employee && !loading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Flex flexDirection="column" gap="22px" alignItems="center" p={8}>
             <p>Employee not found</p>
             <Link href="/employees">
@@ -384,7 +384,7 @@ export default function EmployeeForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}
@@ -563,7 +563,7 @@ export default function EmployeeForm({ params }) {
                 </Grid>
 
                 {isDriverDesignation && (
-                  <CustomContainer title="Driver Details" size="sm">
+                  <CustomContainer pageForm title="Driver Details" size="sm">
                     <Grid
                       templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
                       gap="22px"

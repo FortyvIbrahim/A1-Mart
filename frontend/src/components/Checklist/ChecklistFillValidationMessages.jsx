@@ -24,7 +24,6 @@ export default function ChecklistFillValidationMessages({ messages = [] }) {
         fontWeight="semibold"
         color="red.700"
         textTransform="uppercase"
-        letterSpacing="0.04em"
         mb={1}
       >
         Fix to save

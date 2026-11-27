@@ -15,9 +15,9 @@ import {
 import CustomContainer from "@/components/CustomContainer";
 import { formatCurrency, formatShorthandNumber } from "@/utils/string";
 
-const TICK_FILL = "#718096";
+const TICK_FILL = "#637188";
 const TICK_FONT_SIZE = 7;
-const LINE_COLOR = "#3182CE";
+const LINE_COLOR = "#526FA8";
 const GRADIENT_ID = "salesValueAreaGradient";
 const CHART_MARGIN = { top: 12, right: 12, left: 4, bottom: 4 };
 
@@ -135,14 +135,14 @@ export default function SalesLineChartCard({ data = [], title = "Daily Sales" })
               </defs>
               <CartesianGrid
                 strokeDasharray="4 4"
-                stroke="#E2E8F0"
+                stroke="#F1E3D9"
                 vertical={false}
               />
               <XAxis
                 dataKey="date"
                 tick={<SalesXAxisTick />}
                 tickLine={false}
-                axisLine={{ stroke: "#E2E8F0" }}
+                axisLine={false}
                 minTickGap={16}
                 height={28}
               />

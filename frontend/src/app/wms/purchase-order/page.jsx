@@ -7,6 +7,7 @@ import GlobalWrapper from "@/components/GlobalWrapper";
 import CustomContainer from "@/components/CustomContainer";
 import CustomDialog from "@/components/CustomDialog";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import { usePoList } from "@/api/customHooks/usePo";
 import { createPo, deletePo } from "@/api/helpers/po";
 import useMasterList from "@/api/customHooks/useMasterList";
@@ -167,7 +168,7 @@ export default function PurchaseOrderListing() {
 
   const listColumnDefs = useMemo(
     () => [
-      { field: "po_id", headerName: "PO ID", type: "id", sort: "desc" },
+      { field: "po_id", headerName: "POID", type: "id", sort: "desc" },
       {
         field: "supplier.name",
         headerName: "Supplier",
@@ -483,10 +484,28 @@ export default function PurchaseOrderListing() {
     return null;
   }, []);
 
+  // Figma PUR/02: Search · Supplier · Buyer (no labels) above the table.
+  const { filtered: filteredPoList, filterCard } = useListFilters(
+    poList ?? [],
+    [
+      {
+        key: "search",
+        type: "search",
+        placeholder: "Search...",
+        getText: (r) =>
+          [r.po_id, r.supplier?.name, r.buyer?.employee_name].filter(Boolean).join(" "),
+      },
+      { key: "supplier", type: "select", placeholder: "Supplier", getValue: (r) => r.supplier?.name },
+      { key: "buyer", type: "select", placeholder: "Buyer", getValue: (r) => r.buyer?.employee_name },
+    ],
+    { columns: 4 }
+  );
+
   return (
     <GlobalWrapper permissionKey="view_po">
       <DeleteModalComponent />
       <CustomContainer
+        contentCard
         title="Purchase Order"
         rightSection={
           canAdd ? (
@@ -500,12 +519,13 @@ export default function PurchaseOrderListing() {
           ) : null
         }
       >
+        {filterCard}
         {loading ? (
           <Text color="gray.500">Loading...</Text>
         ) : (
           <AgGrid
             tableKey="po-list"
-            rowData={poList ?? []}
+            rowData={filteredPoList}
             columnDefs={listColumnDefs}
             showColumnSettings={true}
           />

@@ -124,6 +124,20 @@ export const WORKSPACE_PRESENTATION = {
 export const INLINE_SUBMENU_WORKSPACES = new Set(["wms"]);
 
 /**
+ * Sections that stay a single sidebar row even inside an inline-submenu
+ * workspace; their pages are reached through the module tabs (Figma warehouse
+ * "Dashboard" → WMS / Stock / Outstanding / Stock Holding tabs).
+ */
+export const TABBED_SECTIONS_IN_INLINE = new Set(["Dashboard"]);
+
+export function usesInlineSubmenu(workspaceId, sectionTitle) {
+  return (
+    INLINE_SUBMENU_WORKSPACES.has(workspaceId) &&
+    !TABBED_SECTIONS_IN_INLINE.has(sectionTitle)
+  );
+}
+
+/**
  * Sections whose pages carry their own in-page switcher in the Figma (e.g. the
  * All Tasks / My Tasks toggle), so the module tab bar is not shown for them.
  */

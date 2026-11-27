@@ -5,10 +5,8 @@ import {
   Box,
   Center,
   Flex,
-  Grid,
   Icon,
   Spinner,
-  Tabs,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -22,10 +20,16 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import GlobalWrapper from "@/components/GlobalWrapper";
-import CustomContainer from "@/components/CustomContainer";
-import DashboardPageTitle, {
-  DashboardTitleSection,
-} from "@/components/dashboard/DashboardPageTitle";
+import DashboardPageTitle from "@/components/dashboard/DashboardPageTitle";
+import {
+  DashboardCard,
+  DashboardFilterPanel,
+  DashboardMetricCard,
+  DashboardMetricRow,
+  DashboardTabs,
+  DashboardTwoColumn,
+} from "@/components/dashboard/DashboardUI";
+import { getPeriod } from "@/app/stock/circle/page";
 import BranchFilter from "@/components/BranchFilter";
 import StockCircleFilter, { circleKey } from "@/components/StockCircleFilter";
 import useStockCircles from "@/api/customHooks/useStockCircles";
@@ -42,7 +46,7 @@ import {
   getProductStockForBranch,
 } from "@/utils/stockChecker";
 import { calculateDaysLeft } from "@/utils/stockCirclePeriod";
-import { capitalizeWords, formatCurrency } from "@/utils/string";
+import { formatCurrency } from "@/utils/string";
 import DashboardBarChart from "@/components/dashboard/DashboardBarChart";
 import DashboardChartLegend from "@/components/dashboard/DashboardChartLegend";
 import { DASHBOARD_ROUTES } from "@/constants/routes/index";
@@ -52,16 +56,17 @@ import StockCircleDashboardCheckersTab from "@/components/dashboard/stock-circle
 import StockCircleDashboardDeadlinesTab from "@/components/dashboard/stock-circle/StockCircleDashboardDeadlinesTab";
 import StockCircleDashboardProducts from "@/components/dashboard/stock-circle/StockCircleDashboardProducts";
 
-const PIE_COLORS = { Completed: "#38A169", Pending: "#A0AEC0" };
+/** Figma "Completion" donut: completed green, pending grey-blue. */
+const PIE_COLORS = { Completed: "#11976A", Pending: "#9AAAC1" };
 
-/** Bar colors for Completion by branch (matches DashboardBarChart default palette) */
+/** Figma "Completion by branch" bar colours, in order. */
 const BRANCH_BAR_COLORS = [
-  "#3182CE",
-  "#38A169",
-  "#ECC94B",
-  "#ED8936",
-  "#9F7AEA",
-  "#4A5568",
+  "#526FA8",
+  "#11976A",
+  "#F47721",
+  "#E3B63E",
+  "#9AAAC1",
+  "#E7474D",
 ];
 
 const DUE_SOON_DAYS = 14;
@@ -88,6 +93,9 @@ export default function StockCircleDashboardPage() {
   const [productsStatusPreset, setProductsStatusPreset] = useState("total");
   const [productsScrollTrigger, setProductsScrollTrigger] = useState(0);
   const [checkerDetailsRow, setCheckerDetailsRow] = useState(null);
+  const [circleSearch, setCircleSearch] = useState("");
+  const [periodFilter, setPeriodFilter] = useState("");
+  const [sortBy, setSortBy] = useState("completion");
 
   useEffect(() => {
     let cancelled = false;
@@ -120,11 +128,25 @@ export default function StockCircleDashboardPage() {
     );
   }, [stockCircles, selectedBranch]);
 
+  const periodOptions = useMemo(() => {
+    const seen = new Set();
+    for (const c of branchFilteredCircles) {
+      const p = getPeriod(c);
+      if (p) seen.add(String(p));
+    }
+    return [...seen].map((p) => ({ value: p, label: p }));
+  }, [branchFilteredCircles]);
+
   const filteredCircles = useMemo(() => {
     const idSet = new Set(selectedCircleIds.map(String));
-    if (idSet.size === 0) return branchFilteredCircles;
-    return branchFilteredCircles.filter((c) => idSet.has(String(circleKey(c))));
-  }, [branchFilteredCircles, selectedCircleIds]);
+    const q = circleSearch.trim().toLowerCase();
+    return branchFilteredCircles.filter((c) => {
+      if (idSet.size && !idSet.has(String(circleKey(c)))) return false;
+      if (periodFilter && String(getPeriod(c) ?? "") !== periodFilter) return false;
+      if (q && !String(circleKey(c)).toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [branchFilteredCircles, selectedCircleIds, circleSearch, periodFilter]);
 
   useEffect(() => {
     setSelectedCircleIds([]);
@@ -141,7 +163,6 @@ export default function StockCircleDashboardPage() {
   }, [branchFilteredCircles]);
 
   const isCircleFilterActive = selectedCircleIds.length > 0;
-  const showSummaryDaysLeftCard = selectedCircleIds.length === 1;
 
   useEffect(() => {
     if (isCircleFilterActive && mainTab === "deadlines") {
@@ -192,6 +213,18 @@ export default function StockCircleDashboardPage() {
       };
     });
   }, [products, filteredCircles, allChecked]);
+
+  const sortedCircleSummaries = useMemo(() => {
+    const rows = [...circleSummaries];
+    if (sortBy === "days_left") {
+      rows.sort((a, b) => (a.daysLeft ?? Infinity) - (b.daysLeft ?? Infinity));
+    } else if (sortBy === "id") {
+      rows.sort((a, b) => Number(b.id) - Number(a.id));
+    } else {
+      rows.sort((a, b) => (b.percentCompleted ?? 0) - (a.percentCompleted ?? 0));
+    }
+    return rows;
+  }, [circleSummaries, sortBy]);
 
   const completionTabStats = useMemo(() => {
     /** Same (circle × product) instance count as the Products table base rows — one SKU can appear in multiple circles. */
@@ -281,12 +314,6 @@ export default function StockCircleDashboardPage() {
     };
   }, [allChecked, filteredCircles, products]);
 
-  /** Days left for the single selected circle (hidden when multiple circles are selected). */
-  const summaryDaysLeft = useMemo(() => {
-    if (!showSummaryDaysLeftCard || !circleSummaries.length) return null;
-    const d = circleSummaries[0]?.daysLeft;
-    return d !== null && d !== undefined ? d : null;
-  }, [showSummaryDaysLeftCard, circleSummaries]);
 
   const pieData = useMemo(() => {
     const { completedInStockCount, pendingProductCount, inStockProductCount } =
@@ -296,12 +323,12 @@ export default function StockCircleDashboardPage() {
       {
         name: "Completed",
         value: completedInStockCount,
-        color: "#38A169",
+        color: PIE_COLORS.Completed,
       },
       {
         name: "Pending",
         value: pendingProductCount,
-        color: "#A0AEC0",
+        color: PIE_COLORS.Pending,
       },
     ].filter((d) => d.value > 0);
   }, [completionTabStats]);
@@ -329,10 +356,11 @@ export default function StockCircleDashboardPage() {
       const ins = g.inStockProductCount;
       const completion =
         ins > 0 ? Math.round((g.completedInStockCount / ins) * 100) : 0;
+      const fullName = String(g.branch_name || `Branch ${g.branch_id ?? ""}`);
       return {
-        name: capitalizeWords(
-          g.branch_name || `Branch ${g.branch_id ?? ""}`
-        ).slice(0, 48),
+        name: fullName.toUpperCase().slice(0, 48),
+        // Figma bar labels drop the "AIMART-" store prefix.
+        short: fullName.replace(/^\s*a1?\s*-?\s*mart\s*-\s*/i, "").toUpperCase(),
         completion,
       };
     });
@@ -469,34 +497,144 @@ export default function StockCircleDashboardPage() {
     );
   }
 
+  const completionPercent = completionTabStats.percentCompleted;
+
+  const metricRows = [
+    [
+      { label: "Total products", value: completionTabStats.totalProducts, status: "total" },
+      { label: "Out of stock", value: completionTabStats.outOfStockProductCount, status: "out_of_stock" },
+      { label: "Checked", value: completionTabStats.completedProductCount, status: "checked" },
+      { label: "Pending", value: completionTabStats.pendingProductCount, status: "pending" },
+    ],
+    [
+      { label: "Checked value", value: formatCurrency(summaryValueStats.checkedValue) },
+      { label: "Pending value", value: formatCurrency(summaryValueStats.pendingValue) },
+      {
+        label: "Checked today",
+        value: (
+          <>
+            {summaryValueStats.checkedToday}
+            <Box as="span" mx="8px" color="fg">
+              |
+            </Box>
+            {formatCurrency(summaryValueStats.checkedTodayValue)}
+          </>
+        ),
+        caption: "Today",
+      },
+      { label: "Completion", value: `${completionPercent}%` },
+    ],
+  ];
+
+  const tabs = [
+    { value: "circles", label: "Circle completion" },
+    { value: "checkers", label: "Who checked" },
+    { value: "products", label: "Products" },
+    ...(!isCircleFilterActive ? [{ value: "deadlines", label: "Deadlines" }] : []),
+  ];
+
+  let completionBody;
+  if (!circleSummaries.length) {
+    completionBody = (
+      <Text fontSize="12px" color="fg.muted">
+        No stock circles match the current filters.
+      </Text>
+    );
+  } else if (completionTabStats.totalProducts === 0) {
+    completionBody = (
+      <Center py={10} px={4}>
+        <VStack gap={4} maxW="md" textAlign="center">
+          <Icon as={FaBoxOpen} boxSize={12} color="fg.muted" aria-hidden />
+          <Text fontSize="12px" color="fg.muted">
+            No products in scope for the selected circles (check branch /
+            department filters on the circles).
+          </Text>
+        </VStack>
+      </Center>
+    );
+  } else if (completionTabStats.inStockProductCount === 0) {
+    completionBody = (
+      <Text fontSize="12px" color="fg.muted">
+        No in-stock products in scope for the selected circles (all are out of
+        stock at their branch).
+      </Text>
+    );
+  } else {
+    const donutData = pieData.length
+      ? pieData
+      : [{ name: "Pending", value: 1, color: PIE_COLORS.Pending }];
+    completionBody = (
+      <Flex align="center" gap="40px" direction={{ base: "column", sm: "row" }}>
+        <Box position="relative" w="220px" h="220px" flexShrink={0}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={donutData}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={80}
+                outerRadius={110}
+                startAngle={90}
+                endAngle={-270}
+                stroke="none"
+                isAnimationActive={false}
+              >
+                {donutData.map((entry, index) => (
+                  <Cell key={`cell-${entry.name}-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              {pieData.length > 0 && (
+                <RechartsTooltip formatter={(value, name) => [`${value}`, name]} />
+              )}
+            </PieChart>
+          </ResponsiveContainer>
+          <Flex
+            position="absolute"
+            inset="0"
+            direction="column"
+            align="center"
+            justify="center"
+            gap="4px"
+            pointerEvents="none"
+          >
+            <Text fontSize="25px" fontWeight="600" lineHeight="30px" color="fg">
+              {completionPercent}%
+            </Text>
+            <Text fontSize="10px" lineHeight="12px" color="fg.muted">
+              total
+            </Text>
+          </Flex>
+        </Box>
+        <Box flex="1" minW={0} w="100%" mt="-16px">
+          <DashboardChartLegend
+            columns={1}
+            items={[
+              {
+                name: "Completed",
+                value: completionTabStats.completedInStockCount,
+                fill: "#147D52",
+                labelColor: "#147D52",
+              },
+              {
+                name: "Pending",
+                value: completionTabStats.pendingProductCount,
+                fill: "#946200",
+                labelColor: "#946200",
+              },
+            ]}
+          />
+        </Box>
+      </Flex>
+    );
+  }
+
   return (
     <GlobalWrapper permissionKey={DASHBOARD_ROUTES.stockCircle.permissionKey}>
-      <Flex
-        flexDirection="column"
-        gap="22px"
-        w="100%"
-        maxW="100%"
-        overflow="hidden"
-      >
-        <DashboardTitleSection>
-          <Flex
-            justify="space-between"
-            w="100%"
-            gap={3}
-            flexWrap="wrap"
-            alignItems={{ base: "stretch", md: "center" }}
-            rowGap={3}
-          >
-            <DashboardPageTitle title="Stock Circle Dashboard" />
-            <Flex
-              gap={4}
-              flexWrap="wrap"
-              alignItems="flex-end"
-              justify="flex-end"
-              w={{ base: "100%", md: "auto" }}
-              flex={{ md: 1 }}
-              minW={0}
-            >
+      <Flex direction="column" gap="24px" w="100%" maxW="100%" overflow="hidden">
+        <DashboardPageTitle
+          title="Stock Circle Dashboard"
+          rightSection={
+            <>
               {canAccessAllBranches && (
                 <BranchFilter
                   value={selectedBranch}
@@ -510,403 +648,121 @@ export default function StockCircleDashboardPage() {
                 value={selectedCircleIds}
                 onChange={setSelectedCircleIds}
                 label="Circle"
-                width={{ base: "100%", md: "min(100%, 320px)" }}
               />
-            </Flex>
-          </Flex>
-        </DashboardTitleSection>
+            </>
+          }
+        />
 
-        <Grid
-          templateColumns={{
-            base: "1fr",
-            lg: "minmax(0, 1fr) minmax(0, 2fr)",
-          }}
-          gap={6}
-          alignItems="stretch"
-        >
-          <CustomContainer title="Completion" color="brand" size="sm" fullWidth>
-            {!circleSummaries.length && (
-              <Text fontSize="sm" color="gray.500">
-                No stock circles match the current filters.
-              </Text>
-            )}
-            {circleSummaries.length > 0 &&
-              completionTabStats.totalProducts === 0 && (
-                <Center py={10} px={4}>
-                  <VStack gap={4} maxW="md" textAlign="center">
-                    <Icon
-                      as={FaBoxOpen}
-                      boxSize={12}
-                      color="gray.400"
-                      aria-hidden
-                    />
-                    <Text fontSize="sm" color="gray.600" lineHeight="tall">
-                      No products in scope for the selected circles (check
-                      branch / department filters on the circles).
-                    </Text>
-                  </VStack>
-                </Center>
-              )}
-            {circleSummaries.length > 0 &&
-              completionTabStats.totalProducts > 0 &&
-              (completionTabStats.inStockProductCount === 0 ? (
-                <Text fontSize="sm" color="gray.600">
-                  No in-stock products in scope for the selected circles (all
-                  are out of stock at their branch).
-                </Text>
-              ) : pieData.length ? (
-                <Box w="100%">
-                  <Box height="250px" w="100%">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={48}
-                          outerRadius={78}
-                          paddingAngle={2}
-                        >
-                          {pieData.map((entry, index) => (
-                            <Cell
-                              key={`cell-${entry.name}-${index}`}
-                              fill={
-                                PIE_COLORS[entry.name] ||
-                                (index === 0 ? "#3182CE" : "#CBD5E0")
-                              }
-                            />
-                          ))}
-                        </Pie>
-                        <RechartsTooltip
-                          formatter={(value, name) => [`${value}`, name]}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </Box>
-                  <DashboardChartLegend
-                    items={pieData.map((d) => ({
-                      name: d.name,
-                      value: d.value,
-                      fill:
-                        PIE_COLORS[d.name] ||
-                        (d.name === "Completed" ? "#38A169" : "#A0AEC0"),
-                    }))}
-                    columns={2}
-                  />
-                </Box>
-              ) : (
-                <Text fontSize="sm" color="gray.600">
-                  No checks recorded yet on in-stock SKUs — 100% pending.
-                </Text>
-              ))}
-          </CustomContainer>
+        <DashboardFilterPanel
+          columns={3}
+          fields={[
+            {
+              key: "search",
+              type: "search",
+              label: "Search",
+              placeholder: "Search circle id…",
+              value: circleSearch,
+              onChange: setCircleSearch,
+            },
+            {
+              key: "period",
+              label: "Period",
+              placeholder: "All periods",
+              value: periodFilter,
+              onChange: setPeriodFilter,
+              options: periodOptions,
+            },
+            {
+              key: "sortBy",
+              label: "Sort by",
+              placeholder: false,
+              value: sortBy,
+              onChange: setSortBy,
+              options: [
+                { value: "completion", label: "Completion %" },
+                { value: "days_left", label: "Days left" },
+                { value: "id", label: "Newest" },
+              ],
+            },
+          ]}
+        />
 
-          <CustomContainer
-            title="Completion by branch"
-            color="secondary"
-            size="sm"
-            fullWidth
-          >
+        <DashboardTwoColumn>
+          <DashboardCard title="Completion">{completionBody}</DashboardCard>
+
+          <DashboardCard title="Completion by branch">
             <Box w="100%" minW={0}>
               <DashboardBarChart
                 data={completionBarData}
-                xDataKey="name"
-                bars={[
-                  {
-                    dataKey: "completion",
-                    perBarColor: true,
-                    labelOnTop: true,
-                  },
-                ]}
+                xDataKey="short"
+                bars={[{ dataKey: "completion", perBarColor: true }]}
+                yTickFormatter={(v) => `${v}%`}
                 showLegend={false}
-                height="250px"
+                height="206px"
                 emptyMessage="No branch data to chart"
-                // xAxisAngle={-35}
-                xAxisDy={12}
-                valueFormatter={(v) => (v === 0 ? "" : `${v}%`)}
+                valueFormatter={(v) => `${v}%`}
               />
               {completionBarData.length > 0 && (
-                <DashboardChartLegend
-                  items={completionBarData.map((d) => ({
-                    name: d.name,
-                    value: `${d.completion}%`,
-                    fill: d.fill,
-                  }))}
-                  columns={5}
-                />
+                <Text mt="16px" fontSize="10px" lineHeight="12px" color="fg.muted">
+                  {completionBarData
+                    .map((d) => `${d.name} · ${d.completion}%`)
+                    .join("     ")}
+                </Text>
               )}
             </Box>
-          </CustomContainer>
-        </Grid>
+          </DashboardCard>
+        </DashboardTwoColumn>
 
-        <CustomContainer title="Summary" size="sm" color="secondary">
-          <Grid
-            templateColumns={{
-              base: "repeat(2, 1fr)",
-              md: "repeat(3, 1fr)",
-              xl: "repeat(4, 1fr)",
-            }}
-            gap="22px"
-          >
-            <Flex
-              direction="column"
-              p={4}
-              bg="brand.50"
-              borderRadius="md"
-              borderWidth="1px"
-              borderColor="brand.200"
-              cursor="pointer"
-              onClick={() => openProductsTabWithStatus("total")}
-            >
-              <Text fontSize="xs" color="brand.600" fontWeight="medium" mb={1}>
-                Total products
-              </Text>
-              <Text fontSize="2xl" fontWeight="bold" color="brand.700">
-                {completionTabStats.totalProducts}
-              </Text>
-            </Flex>
-            <Flex
-              direction="column"
-              p={4}
-              bg="red.50"
-              borderRadius="md"
-              borderWidth="1px"
-              borderColor="red.200"
-              cursor="pointer"
-              onClick={() => openProductsTabWithStatus("out_of_stock")}
-            >
-              <Text fontSize="xs" color="red.600" fontWeight="medium" mb={1}>
-                Out of stock
-              </Text>
-              <Text fontSize="2xl" fontWeight="bold" color="red.700">
-                {completionTabStats.outOfStockProductCount}
-              </Text>
-            </Flex>
-            <Flex
-              direction="column"
-              p={4}
-              bg="green.50"
-              borderRadius="md"
-              borderWidth="1px"
-              borderColor="green.200"
-              cursor="pointer"
-              onClick={() => openProductsTabWithStatus("checked")}
-            >
-              <Text fontSize="xs" color="green.600" fontWeight="medium" mb={1}>
-                Checked
-              </Text>
-              <Text fontSize="2xl" fontWeight="bold" color="green.700">
-                {completionTabStats.completedProductCount}
-              </Text>
-            </Flex>
-            <Flex
-              direction="column"
-              p={4}
-              bg="orange.50"
-              borderRadius="md"
-              borderWidth="1px"
-              borderColor="orange.200"
-              cursor="pointer"
-              onClick={() => openProductsTabWithStatus("pending")}
-            >
-              <Text fontSize="xs" color="orange.600" fontWeight="medium" mb={1}>
-                Pending
-              </Text>
-              <Text fontSize="2xl" fontWeight="bold" color="orange.700">
-                {completionTabStats.pendingProductCount}
-              </Text>
-            </Flex>
-            <Flex
-              direction="column"
-              p={4}
-              bg="green.50"
-              borderRadius="md"
-              borderWidth="1px"
-              borderColor="green.200"
-            >
-              <Text fontSize="xs" color="green.600" fontWeight="medium" mb={1}>
-                Checked value
-              </Text>
-              <Text
-                fontSize="xl"
-                fontWeight="bold"
-                color="green.700"
-                lineHeight="short"
-              >
-                {formatCurrency(summaryValueStats.checkedValue)}
-              </Text>
-            </Flex>
-            <Flex
-              direction="column"
-              p={4}
-              bg="orange.50"
-              borderRadius="md"
-              borderWidth="1px"
-              borderColor="orange.200"
-            >
-              <Text fontSize="xs" color="orange.600" fontWeight="medium" mb={1}>
-                Pending value
-              </Text>
-              <Text
-                fontSize="xl"
-                fontWeight="bold"
-                color="orange.700"
-                lineHeight="short"
-              >
-                {formatCurrency(summaryValueStats.pendingValue)}
-              </Text>
-            </Flex>
-            <Flex
-              direction="column"
-              p={4}
-              bg="blue.50"
-              borderRadius="md"
-              borderWidth="1px"
-              borderColor="blue.200"
-            >
-              <Text fontSize="xs" color="blue.600" fontWeight="medium" mb={1}>
-                Checked today
-              </Text>
-              <Text
-                fontSize="xl"
-                fontWeight="bold"
-                color="blue.700"
-                lineHeight="short"
-              >
-                {summaryValueStats.checkedToday}
-                <Text
-                  as="span"
-                  mx={2}
-                  fontWeight="normal"
-                  color="blue.300"
-                >
-                  |
-                </Text>
-                {formatCurrency(summaryValueStats.checkedTodayValue)}
-              </Text>
-            </Flex>
-            <Flex
-              direction="column"
-              p={4}
-              bg="purple.50"
-              borderRadius="md"
-              borderWidth="1px"
-              borderColor="purple.200"
-            >
-              <Text fontSize="xs" color="purple.600" fontWeight="medium" mb={1}>
-                Completion
-              </Text>
-              <Text fontSize="2xl" fontWeight="bold" color="purple.700">
-                {completionTabStats.percentCompleted}%
-              </Text>
-            </Flex>
-            {showSummaryDaysLeftCard && (
-              <Flex
-                direction="column"
-                p={4}
-                borderRadius="md"
-                borderWidth="1px"
-                bg={
-                  summaryDaysLeft === null
-                    ? "gray.50"
-                    : summaryDaysLeft < 0
-                    ? "red.50"
-                    : "green.50"
-                }
-                borderColor={
-                  summaryDaysLeft === null
-                    ? "gray.200"
-                    : summaryDaysLeft < 0
-                    ? "red.200"
-                    : "green.200"
-                }
-              >
-                <Text
-                  fontSize="xs"
-                  fontWeight="medium"
-                  mb={1}
-                  color={
-                    summaryDaysLeft === null
-                      ? "gray.600"
-                      : summaryDaysLeft < 0
-                      ? "red.700"
-                      : "green.700"
-                  }
-                >
-                  Days left
-                </Text>
-                {summaryDaysLeft === null ? (
-                  <Text fontSize="xl" fontWeight="bold" color="gray.500">
-                    -
-                  </Text>
-                ) : (
-                  <Text
-                    fontSize="2xl"
-                    fontWeight="bold"
-                    color={summaryDaysLeft < 0 ? "red.600" : "green.700"}
-                  >
-                    {Math.abs(summaryDaysLeft)} days{" "}
-                    {summaryDaysLeft > 0 ? "left" : "overdue"}
-                  </Text>
-                )}
-              </Flex>
-            )}
-          </Grid>
-        </CustomContainer>
-
-        <Tabs.Root
-          value={mainTab}
-          onValueChange={(details) => setMainTab(details.value)}
-          variant="line"
-        >
-          <Tabs.List flexWrap="wrap" gap={1}>
-            <Tabs.Trigger value="circles">Circle completion</Tabs.Trigger>
-            <Tabs.Trigger value="checkers">Who checked</Tabs.Trigger>
-            <Tabs.Trigger value="products">Products</Tabs.Trigger>
-            {!isCircleFilterActive && (
-              <Tabs.Trigger value="deadlines">Deadlines</Tabs.Trigger>
-            )}
-          </Tabs.List>
-
-          <Tabs.Content value="circles" pt={4}>
-            <StockCircleDashboardCirclesTab rowData={circleSummaries} />
-          </Tabs.Content>
-
-          <Tabs.Content value="checkers" pt={4}>
-            <StockCircleDashboardCheckersTab
-              checkerEmployeeOptions={checkerEmployeeOptions}
-              selectedCheckerRowKeys={selectedCheckerRowKeys}
-              onSelectedCheckerRowKeysChange={setSelectedCheckerRowKeys}
-              displayedCheckerRows={displayedCheckerRows}
-              onViewCheckerDetails={setCheckerDetailsRow}
-            />
-          </Tabs.Content>
-
-          <Tabs.Content value="products" pt={4}>
-            <StockCircleDashboardProducts
-              filteredCircles={filteredCircles}
-              selectedCircleIds={selectedCircleIds}
-              products={products}
-              productsLoading={loadingProducts}
-              allChecked={allChecked}
-              statusPreset={productsStatusPreset}
-              scrollToTableTrigger={productsScrollTrigger}
-              onRefetchChecked={refetchAllChecked}
-            />
-          </Tabs.Content>
-
-          {!isCircleFilterActive && (
-            <Tabs.Content value="deadlines" pt={4}>
-              <StockCircleDashboardDeadlinesTab
-                dueSoonRows={dueSoonRows}
-                overdueRows={overdueRows}
-                dueSoonDays={DUE_SOON_DAYS}
+        {metricRows.map((row, idx) => (
+          <DashboardMetricRow key={idx}>
+            {row.map((m) => (
+              <DashboardMetricCard
+                key={m.label}
+                label={m.label}
+                value={m.value}
+                caption={m.caption ?? "All selected circles"}
+                onClick={m.status ? () => openProductsTabWithStatus(m.status) : undefined}
               />
-            </Tabs.Content>
-          )}
-        </Tabs.Root>
+            ))}
+          </DashboardMetricRow>
+        ))}
+
+        <DashboardTabs tabs={tabs} value={mainTab} onChange={setMainTab} />
+
+        {mainTab === "circles" && (
+          <StockCircleDashboardCirclesTab rowData={sortedCircleSummaries} />
+        )}
+
+        {mainTab === "checkers" && (
+          <StockCircleDashboardCheckersTab
+            checkerEmployeeOptions={checkerEmployeeOptions}
+            selectedCheckerRowKeys={selectedCheckerRowKeys}
+            onSelectedCheckerRowKeysChange={setSelectedCheckerRowKeys}
+            displayedCheckerRows={displayedCheckerRows}
+            onViewCheckerDetails={setCheckerDetailsRow}
+          />
+        )}
+
+        {mainTab === "products" && (
+          <StockCircleDashboardProducts
+            filteredCircles={filteredCircles}
+            selectedCircleIds={selectedCircleIds}
+            products={products}
+            productsLoading={loadingProducts}
+            allChecked={allChecked}
+            statusPreset={productsStatusPreset}
+            scrollToTableTrigger={productsScrollTrigger}
+            onRefetchChecked={refetchAllChecked}
+          />
+        )}
+
+        {mainTab === "deadlines" && !isCircleFilterActive && (
+          <StockCircleDashboardDeadlinesTab
+            dueSoonRows={dueSoonRows}
+            overdueRows={overdueRows}
+            dueSoonDays={DUE_SOON_DAYS}
+          />
+        )}
 
         <StockCircleCheckerDetailsModal
           open={!!checkerDetailsRow}

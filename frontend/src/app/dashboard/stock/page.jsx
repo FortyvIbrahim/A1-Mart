@@ -21,11 +21,7 @@ import {
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
 } from "recharts";
-import {
-  FaBox,
-  FaBoxesStacked,
-  FaIndianRupeeSign,
-} from "react-icons/fa6";
+import { LuBox, LuIndianRupee, LuPackage } from "react-icons/lu";
 import moment from "moment";
 import toast from "react-hot-toast";
 import GlobalWrapper from "@/components/GlobalWrapper";
@@ -41,6 +37,11 @@ import { DASHBOARD_ROUTES } from "@/constants/routes/index";
 import { getLatestDeadStockReportByDate } from "@/api/helpers/dead_stock_report";
 import DashboardChartLegend from "@/components/dashboard/DashboardChartLegend";
 import {
+  DashboardCard,
+  DashboardMetricCard,
+  DashboardStripTabs,
+} from "@/components/dashboard/DashboardUI";
+import {
   matchesMultiFilter,
   pruneMultiFilter,
   stringOptionsFromValues,
@@ -54,14 +55,16 @@ import {
   formatShorthandNumber,
 } from "@/utils/string";
 
+// Figma chart palette.
 const PIE_COLORS = [
-  "#3182CE",
-  "#38A169",
-  "#ECC94B",
-  "#ED8936",
-  "#9F7AEA",
-  "#DD6B20",
-  "#4A5568",
+  "#F47721",
+  "#11976A",
+  "#526FA8",
+  "#E3B63E",
+  "#9AAAC1",
+  "#E7474D",
+  "#C95C18",
+  "#637188",
 ];
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -214,97 +217,59 @@ const buildSupplierGroupedTableRows = (rows) => {
   );
 };
 
-function DonutCard({ title, data, color = "secondary", onSliceClick }) {
+/** Figma "Department – Qty" etc.: 150px donut, two-column legend below. */
+function DonutCard({ title, data, onSliceClick }) {
   return (
-    <CustomContainer title={title} size="sm" color={color} fullWidth>
+    <DashboardCard title={title}>
       {data.length === 0 ? (
-        <Center minH="240px">
-          <Text color="gray.500" fontSize="sm">
+        <Center minH="150px">
+          <Text color="fg.muted" fontSize="12px">
             No data available
           </Text>
         </Center>
       ) : (
-        <Box h="240px">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={48}
-                outerRadius={78}
-                paddingAngle={2}
-              >
-                {data.map((entry, idx) => (
-                  <Cell
-                    key={`${entry.name}-${idx}`}
-                    fill={PIE_COLORS[idx % PIE_COLORS.length]}
-                    onClick={() => onSliceClick?.(entry)}
-                    style={onSliceClick ? { cursor: "pointer" } : undefined}
-                  />
-                ))}
-              </Pie>
-              <RechartsTooltip
-                formatter={(value, name) => [
-                  formatShorthandNumber(value),
-                  name,
-                ]}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </Box>
+        <>
+          <Box h="150px" w="150px" mx="auto">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={data}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={52}
+                  outerRadius={72}
+                  startAngle={90}
+                  endAngle={-270}
+                  stroke="none"
+                  isAnimationActive={false}
+                >
+                  {data.map((entry, idx) => (
+                    <Cell
+                      key={`${entry.name}-${idx}`}
+                      fill={PIE_COLORS[idx % PIE_COLORS.length]}
+                      onClick={() => onSliceClick?.(entry)}
+                      style={onSliceClick ? { cursor: "pointer" } : undefined}
+                    />
+                  ))}
+                </Pie>
+                <RechartsTooltip
+                  formatter={(value, name) => [formatShorthandNumber(value), name]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </Box>
+          <DashboardChartLegend
+            items={data.map((d, idx) => ({
+              name: `${d.name} · ${formatShorthandNumber(d.value)}`,
+              fill: PIE_COLORS[idx % PIE_COLORS.length],
+              onClick: onSliceClick ? () => onSliceClick(d) : undefined,
+            }))}
+            columns={2}
+            truncateLabelOnly={true}
+          />
+        </>
       )}
-      {data.length > 0 && (
-        <DashboardChartLegend
-          items={data.map((d, idx) => ({
-            name: d.name,
-            value: formatShorthandNumber(d.value),
-            fill: PIE_COLORS[idx % PIE_COLORS.length],
-          }))}
-          columns={2}
-          truncateLabelOnly={true}
-        />
-      )}
-    </CustomContainer>
-  );
-}
-
-function StockStatCard({ title, value, color = "brand", icon }) {
-  return (
-    <Flex
-      direction="column"
-      align="flex-start"
-      justify="flex-start"
-      p={8}
-      borderWidth="0.5px"
-      borderColor={`${color}.100`}
-      borderRadius="10px"
-      h="100%"
-      minH="0"
-      gap={2}
-      justifyContent="center"
-    >
-      <Center
-        color={`${color}.100`}
-        flexShrink={0}
-        fontSize="52px"
-        lineHeight="1"
-      >
-        {icon}
-      </Center>
-      <Text fontSize="xs" fontWeight="semibold" color={`${color}.700`}>
-        {title}
-      </Text>
-      <Text
-        fontSize="2xl"
-        fontWeight="bold"
-        color={`${color}.800`}
-        lineHeight="1"
-        textAlign="left"
-      >
-        {value}
-      </Text>
-    </Flex>
+    </DashboardCard>
   );
 }
 
@@ -918,7 +883,7 @@ export default function StockDashboardPage() {
     <GlobalWrapper permissionKey={DASHBOARD_ROUTES.stock.permissionKey}>
       <Flex
         direction="column"
-        gap="22px"
+        gap="24px"
         w="100%"
         maxW="100%"
         overflow="hidden"
@@ -931,43 +896,30 @@ export default function StockDashboardPage() {
             flexWrap="wrap"
             alignItems="flex-end"
           >
-            <DashboardPageTitle title="Stock Dashboard" />
-            <Flex align="flex-end" gap={3} flexWrap="wrap">
-              <Box w={{ base: "100%", md: "220px" }}>
-                <Text fontSize="sm" mb={1} color="gray.600">
-                  Date
-                </Text>
-                <Input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                />
-              </Box>
-              <Box>
-                <Text fontSize="xs" mb={1} color="gray.500">
-                  Last sync
-                </Text>
-                <Text fontSize="sm" color="gray.700">
-                  {loading
-                    ? "Loading..."
-                    : lastSyncFormatted || "No sync data"}
-                </Text>
-              </Box>
+            {/* Figma: 22px title, no subtitle; last sync + date on the right. */}
+            <DashboardPageTitle title="Stock Dashboard" subtitle="" size="sm" />
+            <Flex align="center" gap="12px" flexWrap="wrap">
+              <Text fontSize="11px" color="fg.muted">
+                Last sync:{" "}
+                {loading ? "Loading..." : lastSyncFormatted || "No sync data"}
+              </Text>
+              <Input
+                type="date"
+                aria-label="Date"
+                w={{ base: "100%", md: "160px" }}
+                h="40px"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
             </Flex>
           </Flex>
         </DashboardTitleSection>
 
-        <CustomContainer
-          title="Filters"
-          size="sm"
-          color="secondary"
-          rightSection={
-            <Button size="xs" variant="outline" onClick={clearFilters}>
-              Clear Filters
-            </Button>
-          }
-        >
-          <Grid templateColumns={{ base: "1fr", md: "repeat(6, 1fr)" }} gap={3}>
+        <DashboardCard title="Filters" gap="12px">
+          <Grid
+            templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }}
+            gap="16px"
+          >
             <CustomInput
               label="Branch"
               placeholder="All branches"
@@ -1010,6 +962,7 @@ export default function StockDashboardPage() {
                 setDepartmentFilter(Array.isArray(val) ? val : [])
               }
             />
+            <Box gridColumn={{ lg: "span 2" }}>
             <CustomInput
               label="Category"
               placeholder="All categories"
@@ -1020,6 +973,8 @@ export default function StockDashboardPage() {
                 setCategoryFilter(Array.isArray(val) ? val : [])
               }
             />
+            </Box>
+            <Box gridColumn={{ lg: "span 2" }}>
             <CustomInput
               label="Subcategory"
               placeholder="All subcategories"
@@ -1030,130 +985,95 @@ export default function StockDashboardPage() {
                 setSubcategoryFilter(Array.isArray(val) ? val : [])
               }
             />
+            </Box>
           </Grid>
-        </CustomContainer>
+        </DashboardCard>
 
-        <Grid templateColumns={{ base: "1fr" }} gap={4}>
-          <Grid
-            templateColumns={{ base: "1fr", lg: "repeat(3, 1fr)" }}
-            gap={4}
-          >
-            <StockStatCard
-              title="Total Products"
-              color="gray"
-              icon={<FaBox />}
-              value={
-                <FormatNumber
-                  value={totalProducts}
-                  maximumFractionDigits={0}
-                  minimumFractionDigits={0}
-                />
-              }
-            />
-            <StockStatCard
-              title="Total Stock Qty"
-              color="brand"
-              icon={<FaBoxesStacked />}
-              value={
-                <FormatNumber
-                  value={totalStockQty}
-                  maximumFractionDigits={2}
-                  minimumFractionDigits={2}
-                />
-              }
-            />
-            <StockStatCard
-              title="Total Stock Value"
-              color="secondary"
-              icon={<FaIndianRupeeSign />}
-              value={formatCurrency(totalStockValue)}
-            />
-          </Grid>
-
-          <Grid templateColumns={{ base: "1fr", lg: "repeat(4, 1fr)" }} gap={4}>
-            <DonutCard
-              title="Department - Qty"
-              data={deptQtyData}
-              color="secondary"
-              onSliceClick={applyDepartmentFilterAndOpenTab}
-            />
-            <DonutCard
-              title="Department - Value"
-              data={deptValueData}
-              color="secondary"
-              onSliceClick={applyDepartmentFilterAndOpenTab}
-            />
-            <DonutCard
-              title="Buyer - Qty"
-              data={buyerQtyData}
-              color="red"
-              onSliceClick={applyBuyerFilterAndOpenTab}
-            />
-            <DonutCard
-              title="Buyer - Value"
-              data={buyerValueData}
-              color="red"
-              onSliceClick={applyBuyerFilterAndOpenTab}
-            />
-          </Grid>
+        <Grid templateColumns={{ base: "1fr", lg: "repeat(3, 1fr)" }} gap="16px">
+          <DashboardMetricCard
+            tone="orange"
+            icon={<LuPackage />}
+            label="Total Products"
+            caption="Selected period"
+            value={formatNum(totalProducts)}
+          />
+          <DashboardMetricCard
+            tone="blue"
+            icon={<LuBox />}
+            label="Total Stock Qty"
+            caption="Selected period"
+            value={Number(round2(totalStockQty)).toLocaleString("en-IN", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          />
+          <DashboardMetricCard
+            tone="purple"
+            icon={<LuIndianRupee />}
+            label="Total Stock Value"
+            caption="Selected period"
+            value={formatCurrency(totalStockValue)}
+          />
         </Grid>
 
-        <Box ref={groupedTableRef}>
-          <CustomContainer title="Grouped Totals" size="sm" color="secondary">
-            <Tabs.Root
-              value={groupedTab}
-              onValueChange={(details) => setGroupedTab(details.value)}
-              variant="line"
-            >
-              <Tabs.List>
-                <Tabs.Trigger value="supplier">
-                  Grouped by Supplier
-                </Tabs.Trigger>
-                <Tabs.Trigger value="buyer">Grouped by Buyer</Tabs.Trigger>
-                <Tabs.Trigger value="department">
-                  Grouped by Department
-                </Tabs.Trigger>
-                <Tabs.Trigger value="branch">Grouped by Branch</Tabs.Trigger>
-              </Tabs.List>
-              <Tabs.Content value="supplier" pt={4}>
-                <AgGrid
-                  tableKey="stock-dashboard-grouped-supplier"
-                  rowData={supplierTableRows}
-                  columnDefs={groupedTableColDefs}
-                  pagination={true}
-                  paginationPageSize={10}
-                />
-              </Tabs.Content>
-              <Tabs.Content value="buyer" pt={4}>
-                <AgGrid
-                  tableKey="stock-dashboard-grouped-buyer"
-                  rowData={buyerTableRows}
-                  columnDefs={groupedTableColDefs}
-                  pagination={true}
-                  paginationPageSize={10}
-                />
-              </Tabs.Content>
-              <Tabs.Content value="department" pt={4}>
-                <AgGrid
-                  tableKey="stock-dashboard-grouped-department"
-                  rowData={departmentTableRows}
-                  columnDefs={groupedTableColDefs}
-                  pagination={true}
-                  paginationPageSize={10}
-                />
-              </Tabs.Content>
-              <Tabs.Content value="branch" pt={4}>
-                <AgGrid
-                  tableKey="stock-dashboard-grouped-branch"
-                  rowData={branchTableRows}
-                  columnDefs={groupedBranchTableColDefs}
-                  pagination={true}
-                  paginationPageSize={10}
-                />
-              </Tabs.Content>
-            </Tabs.Root>
-          </CustomContainer>
-        </Box>
+        <Grid templateColumns={{ base: "1fr", lg: "repeat(2, minmax(0, 1fr))" }} gap="16px">
+          <DonutCard
+            title="Department – Qty"
+            data={deptQtyData}
+            onSliceClick={applyDepartmentFilterAndOpenTab}
+          />
+          <DonutCard
+            title="Department – Value"
+            data={deptValueData}
+            onSliceClick={applyDepartmentFilterAndOpenTab}
+          />
+          <DonutCard
+            title="Buyer – Qty"
+            data={buyerQtyData}
+            onSliceClick={applyBuyerFilterAndOpenTab}
+          />
+          <DonutCard
+            title="Buyer – Value"
+            data={buyerValueData}
+            onSliceClick={applyBuyerFilterAndOpenTab}
+          />
+        </Grid>
+
+        {/* Figma: strip tabs, then a "Grouped totals" table card. */}
+        <Flex ref={groupedTableRef} direction="column" gap="16px">
+          <DashboardStripTabs
+            value={groupedTab}
+            onChange={setGroupedTab}
+            tabs={[
+              { value: "supplier", label: "By Supplier" },
+              { value: "buyer", label: "By Buyer" },
+              { value: "department", label: "By Department" },
+              { value: "branch", label: "By Branch" },
+            ]}
+          />
+          <DashboardCard title="Grouped totals">
+            <AgGrid
+              bare
+              key={groupedTab}
+              tableKey={`stock-dashboard-grouped-${groupedTab}`}
+              rowData={
+                {
+                  supplier: supplierTableRows,
+                  buyer: buyerTableRows,
+                  department: departmentTableRows,
+                  branch: branchTableRows,
+                }[groupedTab]
+              }
+              columnDefs={
+                groupedTab === "branch"
+                  ? groupedBranchTableColDefs
+                  : groupedTableColDefs
+              }
+              pagination={true}
+              paginationPageSize={10}
+            />
+          </DashboardCard>
+        </Flex>
 
         <CustomDialog
           open={productModalOpen}

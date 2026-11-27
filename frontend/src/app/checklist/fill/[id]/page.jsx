@@ -330,7 +330,6 @@ export default function FillChecklistFormPage({ params }) {
                     fontSize="xs"
                     fontWeight="semibold"
                     color="brand.700"
-                    letterSpacing="0.06em"
                     textTransform="uppercase"
                     mb={2}
                   >
@@ -342,7 +341,6 @@ export default function FillChecklistFormPage({ params }) {
                     fontWeight="semibold"
                     color="gray.800"
                     lineHeight="1.2"
-                    letterSpacing="-0.03em"
                   >
                     {formTitle}
                   </Heading>

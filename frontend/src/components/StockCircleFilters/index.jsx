@@ -32,10 +32,14 @@ function Select({ value, onChange, placeholder, options }) {
   return (
     <NativeSelect.Root>
       <NativeSelect.Field
-        h="40px"
-        fontSize="13px"
+        h="44px"
+        ps="12px"
+        fontSize="12px"
+        fontWeight="500"
+        borderRadius="8px"
+        borderColor="border"
         value={value}
-        color={value ? "gray.800" : "gray.500"}
+        color={value ? "fg" : "fg.muted"}
         onChange={(e) => onChange(e.target.value)}
         aria-label={placeholder}
       >
@@ -46,7 +50,7 @@ function Select({ value, onChange, placeholder, options }) {
           </option>
         ))}
       </NativeSelect.Field>
-      <NativeSelect.Indicator />
+      <NativeSelect.Indicator color="#C95C18" />
     </NativeSelect.Root>
   );
 }
@@ -120,13 +124,14 @@ export function useStockCircleFilters(circles, { searchPlaceholder = "Search..."
   }, [list, search, branch, type, status, department, category, subcategory]);
 
   const filterCard = (
+    // Figma "Search and filters": radius 12, 1px #E9E3DF, padding 20,
+    // 16px between rows and 12px between fields, 44px controls.
     <Box
       bg="white"
       borderWidth="1px"
-      borderColor="border"
-      borderRadius="14px"
-      px={{ base: "14px", md: "18px" }}
-      py="16px"
+      borderColor="#E9E3DF"
+      borderRadius="12px"
+      p={{ base: "14px", md: "20px" }}
     >
       <Grid
         templateColumns={{
@@ -134,11 +139,15 @@ export function useStockCircleFilters(circles, { searchPlaceholder = "Search..."
           sm: "repeat(2, minmax(0, 1fr))",
           lg: "repeat(4, minmax(0, 1fr))",
         }}
-        gap="12px"
+        columnGap="12px"
+        rowGap="16px"
       >
         <Input
-          h="40px"
-          fontSize="13px"
+          h="44px"
+          px="12px"
+          fontSize="12px"
+          fontWeight="500"
+          borderRadius="8px"
           placeholder={searchPlaceholder}
           value={search}
           onChange={(e) => setSearch(e.target.value)}

@@ -45,19 +45,19 @@ export function getRestDayBadgeValue(restDay) {
 }
 
 /**
- * Hex fills for Recharts (aligned with `REST_DAY_BADGE_COLOR_BY_NAME` hues).
+ * Hex fills for Recharts — Figma "Rest Day Stats" donut palette.
  */
 export const REST_DAY_PIE_FILL_BY_NAME = {
-  Sunday: "#E53E3E",
-  Monday: "#DD6B20",
-  Tuesday: "#D69E2E",
-  Wednesday: "#38A169",
-  Thursday: "#319795",
-  Friday: "#3182CE",
-  Saturday: "#805AD5",
+  Sunday: "#E7474D",
+  Monday: "#F47721",
+  Tuesday: "#E3B63E",
+  Wednesday: "#11976A",
+  Thursday: "#526FA8",
+  Friday: "#9AAAC1",
+  Saturday: "#C95C18",
 };
 
-export const REST_DAY_PIE_FILL_NOT_SET = "#718096";
+export const REST_DAY_PIE_FILL_NOT_SET = "#637188";
 
 /** Pie slice order: 1 = Sunday … 7 = Saturday, then unset. */
 const REST_DAY_PIE_KEY_ORDER = [1, 2, 3, 4, 5, 6, 7, "unset"];

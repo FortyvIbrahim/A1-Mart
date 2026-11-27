@@ -82,11 +82,11 @@ function Branches() {
     },
   ];
 
-  const { filtered: filteredRows, filterCard } = useListFilters(branches, LIST_FILTERS);
+  const { filtered: filteredRows } = useListFilters(branches, LIST_FILTERS);
 
   return (
     <GlobalWrapper permissionKey="view_branches">
-      <CustomContainer
+      <CustomContainer mainCard
         title="Branches"
         // rightSection={
         //   <Link href="/branches/create">
@@ -94,7 +94,6 @@ function Branches() {
         //   </Link>
         // }
       >
-        <div style={{ marginBottom: 16 }}>{filterCard}</div>
         <AgGrid rowData={filteredRows} columnDefs={colDefs} tableKey="branches" />
       </CustomContainer>
     </GlobalWrapper>

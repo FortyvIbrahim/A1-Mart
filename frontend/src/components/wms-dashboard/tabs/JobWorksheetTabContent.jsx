@@ -129,7 +129,6 @@ function JobWorksheetTabContent({
               fontWeight="semibold"
               color="brand.500"
               lineHeight="1.35"
-              letterSpacing="0.02em"
               flex="1"
               minW={0}
             >
@@ -154,7 +153,6 @@ function JobWorksheetTabContent({
           <Text
             fontSize="2xl"
             fontWeight="bold"
-            letterSpacing="-0.02em"
             lineHeight="1.2"
             color="brand.500"
           >
@@ -189,7 +187,6 @@ function JobWorksheetTabContent({
               fontWeight="semibold"
               color="blue.500"
               lineHeight="1.35"
-              letterSpacing="0.02em"
               flex="1"
               minW={0}
             >
@@ -199,7 +196,6 @@ function JobWorksheetTabContent({
           <Text
             fontSize="2xl"
             fontWeight="bold"
-            letterSpacing="-0.02em"
             lineHeight="1.2"
             color="blue.500"
           >
@@ -234,7 +230,6 @@ function JobWorksheetTabContent({
               fontWeight="semibold"
               color="purple.500"
               lineHeight="1.35"
-              letterSpacing="0.02em"
               flex="1"
               minW={0}
             >
@@ -259,7 +254,6 @@ function JobWorksheetTabContent({
           <Text
             fontSize="2xl"
             fontWeight="bold"
-            letterSpacing="-0.02em"
             lineHeight="1.2"
             color="purple.500"
           >
@@ -292,7 +286,6 @@ function JobWorksheetTabContent({
               fontWeight="semibold"
               color="secondary.500"
               lineHeight="1.35"
-              letterSpacing="0.02em"
               flex="1"
               minW={0}
             >
@@ -303,7 +296,6 @@ function JobWorksheetTabContent({
           <Text
             fontSize="2xl"
             fontWeight="bold"
-            letterSpacing="-0.02em"
             lineHeight="1.2"
             color="secondary.500"
           >

@@ -284,7 +284,7 @@ function TransportForm({ params }) {
   if ((isEditMode || isViewMode) && transportLoading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Flex justifyContent="center" p={8}>
             Loading...
           </Flex>
@@ -296,7 +296,7 @@ function TransportForm({ params }) {
   if ((isEditMode || isViewMode) && !transport && !transportLoading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Flex flexDirection="column" gap="22px" alignItems="center" p={8}>
             <Text>Transport not found</Text>
             <Button
@@ -313,7 +313,7 @@ function TransportForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}
@@ -322,7 +322,7 @@ function TransportForm({ params }) {
         >
           {({ handleSubmit }) => (
             <Flex flexDirection="column" gap="22px">
-              <CustomContainer title="Basic info" size="sm" fullWidth>
+              <CustomContainer pageForm title="Basic info" size="sm" fullWidth>
                 <Flex flexDirection="column" gap="22px">
                   <Grid
                     templateColumns={{
@@ -410,7 +410,7 @@ function TransportForm({ params }) {
                 </Flex>
               </CustomContainer>
 
-              <CustomContainer title="Additional details" size="sm" fullWidth>
+              <CustomContainer pageForm title="Additional details" size="sm" fullWidth>
                 <Grid
                   templateColumns={{
                     base: "1fr",
@@ -469,7 +469,7 @@ function TransportForm({ params }) {
                 </Grid>
               </CustomContainer>
 
-              <CustomContainer title="Financial & dates" size="sm" fullWidth>
+              <CustomContainer pageForm title="Financial & dates" size="sm" fullWidth>
                 <Grid
                   templateColumns={{
                     base: "1fr",
@@ -549,7 +549,7 @@ function TransportForm({ params }) {
                 </Grid>
               </CustomContainer>
 
-              <CustomContainer title="Image" size="sm" fullWidth>
+              <CustomContainer pageForm title="Image" size="sm" fullWidth>
                 <CustomInput
                   label="Transport Image"
                   name="image_url"

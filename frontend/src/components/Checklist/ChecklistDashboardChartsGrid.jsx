@@ -1,8 +1,7 @@
 "use client";
 
-import CustomContainer from "@/components/CustomContainer";
 import DashboardBarChart from "@/components/dashboard/DashboardBarChart";
-import DashboardChartLegend from "@/components/dashboard/DashboardChartLegend";
+import { DashboardCard } from "@/components/dashboard/DashboardUI";
 import { isCalendarFutureDate } from "@/utils/checklistSubmissionStatsCalendar";
 import {
   Box,
@@ -21,15 +20,71 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+/** Figma checklist colours: on time green, late red, pending amber. */
 const PIE_COLORS = {
-  "On time": "#38A169",
-  Late: "#E53E3E",
-  Pending: "#ECC94B",
+  "On time": "#11976A",
+  Late: "#E7474D",
+  Pending: "#E3B63E",
 };
 
-const CONTRIBUTOR_ON_TIME = "#38A169";
-const CONTRIBUTOR_LATE = "#E53E3E";
+const CONTRIBUTOR_ON_TIME = PIE_COLORS["On time"];
+const CONTRIBUTOR_LATE = PIE_COLORS.Late;
 const BRANCH_PENDING = PIE_COLORS.Pending;
+
+/** Figma status pill text colours ("On time · 0", "Late · 0", "Pending · 0"). */
+const PILL = {
+  "On time": { bg: "#FFF5ED", color: "#11976A" },
+  Late: { bg: "#FFF5ED", color: "#E7474D" },
+  Pending: { bg: "#FFF4DB", color: "#946200" },
+};
+
+function StatusPills({ items = [] }) {
+  return (
+    <Flex gap="8px" wrap="wrap">
+      {items.map((it) => (
+        <Text
+          key={it.name}
+          as="span"
+          px="8px"
+          py="5px"
+          borderRadius="8px"
+          bg={PILL[it.name]?.bg ?? "#FFF5ED"}
+          color={PILL[it.name]?.color ?? "#C95C18"}
+          fontSize="10px"
+          fontWeight="500"
+          lineHeight="12px"
+        >
+          {it.name} · {it.value ?? 0}
+        </Text>
+      ))}
+    </Flex>
+  );
+}
+
+/** Figma empty chart: 120px #F1E3D9 ring with "0" and the message beside it. */
+function EmptyRing({ message }) {
+  return (
+    <Flex align="center" gap="16px" minH="120px">
+      <Flex
+        w="120px"
+        h="120px"
+        flexShrink={0}
+        borderRadius="full"
+        borderWidth="14px"
+        borderColor="#F1E3D9"
+        align="center"
+        justify="center"
+      >
+        <Text fontSize="25px" fontWeight="600" color="fg">
+          0
+        </Text>
+      </Flex>
+      <Text fontSize="12px" lineHeight="18px" color="fg.muted">
+        {message}
+      </Text>
+    </Flex>
+  );
+}
 
 export default function ChecklistDashboardChartsGrid({
   loading,
@@ -52,36 +107,43 @@ export default function ChecklistDashboardChartsGrid({
     <Grid
       templateColumns={{
         base: "1fr",
-        lg: "minmax(0, 1.5fr) minmax(0, 2fr) minmax(0, 2fr)",
+        lg: "minmax(0, 330fr) minmax(0, 378fr) minmax(0, 378fr)",
       }}
-      gap={6}
+      gap="16px"
       alignItems="stretch"
     >
       <GridItem minW={0}>
-        <CustomContainer title="Stats" color="brand" size="sm" fullWidth>
+        <DashboardCard
+          title="Stats"
+          h="100%"
+          rightSection={
+            pendingTotal > 0 ? <StatusPills items={[{ name: "Pending", value: pendingTotal }]} /> : null
+          }
+        >
           {loading ? (
             <Center minH="220px">
               <Spinner color="brand.500" />
             </Center>
           ) : pieData.length === 0 ? (
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize="12px" color="fg.muted">
               No question slots in range (only future days, or no eligible
               forms).
             </Text>
           ) : (
-            <Box w="100%">
-              <Box height="250px" w="100%">
+            <Flex direction="column" gap="16px">
+              <Box position="relative" h="150px" w="150px" mx="auto">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={pieData}
                       dataKey="value"
                       nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={48}
-                      outerRadius={78}
-                      paddingAngle={2}
+                      innerRadius={61}
+                      outerRadius={75}
+                      startAngle={90}
+                      endAngle={-270}
+                      stroke="none"
+                      isAnimationActive={false}
                       onClick={(entry) => {
                         const name = entry?.name ?? entry?.payload?.name;
                         if (name === "Pending" && pendingTotal > 0) {
@@ -92,9 +154,7 @@ export default function ChecklistDashboardChartsGrid({
                       {pieData.map((entry, index) => (
                         <Cell
                           key={`cell-${entry.name}-${index}`}
-                          fill={
-                            entry.color ?? PIE_COLORS[entry.name] ?? "#CBD5E0"
-                          }
+                          fill={PIE_COLORS[entry.name] ?? entry.color ?? "#9AAAC1"}
                           style={{
                             cursor:
                               entry.name === "Pending" && pendingTotal > 0
@@ -104,43 +164,70 @@ export default function ChecklistDashboardChartsGrid({
                         />
                       ))}
                     </Pie>
-                    <RechartsTooltip
-                      formatter={(value, name) => [`${value}`, name]}
-                    />
+                    <RechartsTooltip formatter={(value, name) => [`${value}`, name]} />
                   </PieChart>
                 </ResponsiveContainer>
+                <Flex
+                  position="absolute"
+                  inset="0"
+                  direction="column"
+                  align="center"
+                  justify="center"
+                  gap="4px"
+                  pointerEvents="none"
+                >
+                  <Text fontSize="32px" fontWeight="600" lineHeight="38px" color="fg">
+                    {pieData.reduce((sum, d) => sum + (Number(d.value) || 0), 0)}
+                  </Text>
+                  <Text fontSize="10px" lineHeight="12px" color="fg.muted">
+                    total
+                  </Text>
+                </Flex>
               </Box>
-              <DashboardChartLegend
-                items={pieData.map((d) => ({
-                  name: d.name,
-                  value: d.value,
-                  fill: d.color ?? PIE_COLORS[d.name] ?? "#CBD5E0",
-                }))}
-                columns={3}
-              />
-            </Box>
+              {pieData.map((d) => (
+                <Flex
+                  key={d.name}
+                  as={d.name === "Pending" && pendingTotal > 0 ? "button" : "div"}
+                  onClick={
+                    d.name === "Pending" && pendingTotal > 0 ? () => void onPendingPieClick?.() : undefined
+                  }
+                  align="center"
+                  justify="space-between"
+                  gap="12px"
+                  px="16px"
+                  minH="60px"
+                  borderRadius="10px"
+                  bg="#FFF5ED"
+                >
+                  <Flex align="center" gap="10px">
+                    <Box w="7px" h="7px" borderRadius="full" bg={PIE_COLORS[d.name] ?? d.color} />
+                    <Text fontSize="12px" color={PILL[d.name]?.color ?? "fg"}>
+                      {d.name}
+                    </Text>
+                  </Flex>
+                  <Text fontSize="20px" fontWeight="600" color="fg">
+                    {d.value} forms
+                  </Text>
+                </Flex>
+              ))}
+            </Flex>
           )}
-        </CustomContainer>
+        </DashboardCard>
       </GridItem>
 
       <GridItem minW={0}>
-        <CustomContainer
-          title="Contributors"
-          color="secondary"
-          size="sm"
-          fullWidth
-          rightSection={formSelectControl}
-        >
+        <DashboardCard title="Contributors" h="100%">
+          {formSelectControl}
           {!toYmdStr || !fromYmd ? (
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize="12px" color="fg.muted">
               Select From and To dates.
             </Text>
           ) : isCalendarFutureDate(toYmdStr) ? (
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize="12px" color="fg.muted">
               Pick a &quot;To&quot; date that is today or in the past.
             </Text>
           ) : !formsForBarSelect.length ? (
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize="12px" color="fg.muted">
               No forms exist for the selected &quot;To&quot; date.
             </Text>
           ) : barLoading ? (
@@ -148,6 +235,12 @@ export default function ChecklistDashboardChartsGrid({
               <Spinner color="secondary.500" />
             </Center>
           ) : (
+            contributorBarRows.length === 0 ? (
+            <Flex direction="column" gap="16px">
+              <EmptyRing message="No answered questions for this form in the selected range" />
+              <StatusPills items={contributorLegendItems} />
+            </Flex>
+            ) : (
             <Box w="100%" minW={0}>
               <DashboardBarChart
                 data={contributorBarRows}
@@ -232,33 +325,28 @@ export default function ChecklistDashboardChartsGrid({
                   );
                 }}
               />
-              <DashboardChartLegend
-                items={contributorLegendItems}
-                columns={2}
-              />
+              <Box mt="16px">
+                <StatusPills items={contributorLegendItems} />
+              </Box>
             </Box>
+            )
           )}
-        </CustomContainer>
+        </DashboardCard>
       </GridItem>
 
       <GridItem minW={0}>
-        <CustomContainer
-          title="Contributors (Branch)"
-          color="secondary"
-          size="sm"
-          fullWidth
-          rightSection={formSelectControl}
-        >
+        <DashboardCard title="Contributors (Branch)" h="100%">
+          {formSelectControl}
           {!toYmdStr || !fromYmd ? (
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize="12px" color="fg.muted">
               Select From and To dates.
             </Text>
           ) : isCalendarFutureDate(toYmdStr) ? (
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize="12px" color="fg.muted">
               Pick a &quot;To&quot; date that is today or in the past.
             </Text>
           ) : !formsForBarSelect.length ? (
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize="12px" color="fg.muted">
               No forms exist for the selected &quot;To&quot; date.
             </Text>
           ) : loading ? (
@@ -266,6 +354,12 @@ export default function ChecklistDashboardChartsGrid({
               <Spinner color="secondary.500" />
             </Center>
           ) : (
+            branchBarRows.length === 0 ? (
+            <Flex direction="column" gap="16px">
+              <EmptyRing message="No branch submission stats for this form in the selected range" />
+              <StatusPills items={branchLegendItems} />
+            </Flex>
+            ) : (
             <Box w="100%" minW={0}>
               <DashboardBarChart
                 data={branchBarRows}
@@ -375,10 +469,13 @@ export default function ChecklistDashboardChartsGrid({
                   );
                 }}
               />
-              <DashboardChartLegend items={branchLegendItems} columns={3} />
+              <Box mt="16px">
+                <StatusPills items={branchLegendItems} />
+              </Box>
             </Box>
+            )
           )}
-        </CustomContainer>
+        </DashboardCard>
       </GridItem>
     </Grid>
   );

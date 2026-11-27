@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import { Box } from "@chakra-ui/react";
-import CustomContainer from "@/components/CustomContainer";
+import { DashboardCard } from "@/components/dashboard/DashboardUI";
 import AgGrid from "@/components/AgGrid";
 import StockCircleDaysLeftCell, {
   stockCircleDaysLeftValueGetter,
@@ -22,7 +22,7 @@ export default function StockCircleDashboardCirclesTab({ rowData }) {
         type: "capitalized",
       },
       {
-        headerName: "Departments",
+        headerName: "Department",
         flex: 1.2,
         valueGetter: (p) => formatStockCircleDepartments(p.data),
       },
@@ -68,14 +68,15 @@ export default function StockCircleDashboardCirclesTab({ rowData }) {
   );
 
   return (
-    <CustomContainer title="All circles" size="sm" color="brand">
+    <DashboardCard title="All circles" subtitle="Use search, filters and sorting to narrow records.">
       <Box minH="200px">
         <AgGrid
+          bare
           rowData={rowData}
           colDefs={completionColDefs}
           tableKey="stock-circle-dashboard-completion"
         />
       </Box>
-    </CustomContainer>
+    </DashboardCard>
   );
 }

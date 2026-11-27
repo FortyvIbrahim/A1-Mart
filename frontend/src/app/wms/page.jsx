@@ -6,7 +6,7 @@ import usePurchaseAcknowledgments from "@/api/customHooks/usePurchaseAcknowledgm
 import { transformPurchaseAckData } from "@/utils/purchaseAck";
 import CustomDrawer from "@/components/CustomDrawer";
 import CustomContainer from "@/components/CustomContainer";
-import { capitalizeWordsLatest } from "@/utils/string";
+import { capitalizeWordsLatest, purchaseAckStatusBadgeLabel } from "@/utils/string";
 import moment from "moment";
 import DashboardPageTitle, {
   DashboardTitleSection,
@@ -17,8 +17,7 @@ import StatusTimelineContent from "@/components/wms-dashboard/StatusTimelineCont
 import PurchasesTabContent from "@/components/wms-dashboard/tabs/PurchasesTabContent";
 import PurchaseReturnTabContent from "@/components/wms-dashboard/tabs/PurchaseReturnTabContent";
 import PurchaseReturnByBuyersTabContent from "@/components/wms-dashboard/tabs/PurchaseReturnByBuyersTabContent";
-import JobWorksheetTabContent from "@/components/wms-dashboard/tabs/JobWorksheetTabContent";
-import RepackEntryTabContent from "@/components/wms-dashboard/tabs/RepackEntryTabContent";
+import WorksheetTableCard from "@/components/wms-dashboard/tabs/WorksheetTableCard";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import useStickering from "@/api/customHooks/useStickering";
 import usePurchaseReturns from "@/api/customHooks/usePurchaseReturns";
@@ -29,15 +28,16 @@ import { SKU_TYPES } from "@/constants/sku_mode";
 import { DIST_WAREHOUSE_ID, PROD_WAREHOUSE_ID } from "@/constants/branches";
 import useBranchFilterAccess from "@/customHooks/useBranchFilterAccess";
 
+/** Figma "By Status" palette (Concept C). */
 const COLORS_MAP = {
-  grn_pending: "#3182CE", // Blue - awaiting action
-  pe_created: "#63B3ED", // Light blue - created
-  po_linked: "#4299E1", // Medium blue - linked
-  job_entry_in_progress: "#9F7AEA", // Purple - active work
-  repack_entry_in_progress: "#805AD5",
-  grn_done: "#ECC94B", // Yellow - completed but not final
-  job_entry_done: "#ED8936", // Orange - completed step
-  done: "#38A169", // Green - fully done
+  grn_pending: "#F47721",
+  pe_created: "#9AAAC1",
+  po_linked: "#C95C18",
+  job_entry_in_progress: "#E3B63E",
+  repack_entry_in_progress: "#E7474D",
+  grn_done: "#11976A",
+  job_entry_done: "#E3B63E",
+  done: "#526FA8",
 };
 
 const COLORS_MAP_CHAKRA = {
@@ -1275,6 +1275,54 @@ function Dashboard() {
     [setSelectedAck]
   );
 
+  // Figma "Job Worksheet" / "Repack Entry" tables: ID · Invoice · Supplier ·
+  // Supervisor · Status · Pending · Done · Pending qty.
+  const worksheetStatusCol = useMemo(
+    () => ({
+      headerName: "Status",
+      field: "status",
+      type: "badge-column",
+      valueGetter: (params) => {
+        const statusCode = params.data.status;
+        const statusLabel =
+          statusCode === "pe_created"
+            ? "Purchase Entry Done"
+            : capitalizeWordsLatest(statusCode).replaceAll("_", " ");
+        return {
+          label: statusLabel,
+          colorScheme: statusCode === "done" ? "green" : "orange",
+        };
+      },
+    }),
+    []
+  );
+  const jobWorksheetFigmaColDefs = useMemo(
+    () => [
+      { headerName: "ID", field: "purchase_acknowledgment_id", type: "id" },
+      { headerName: "Invoice", field: "invoice_no" },
+      { headerName: "Supplier", field: "supplier.name", valueGetter: (p) => p.data?.supplier?.name ?? "-" },
+      { headerName: "Supervisor", field: "job_worksheet_supervisors", valueGetter: (p) => p.data?.job_worksheet_supervisors ?? "—" },
+      worksheetStatusCol,
+      { headerName: "Pending", field: "total_jobs_pending" },
+      { headerName: "Done", field: "total_jobs_done" },
+      { headerName: "Pending qty", field: "pending_qty", type: "number" },
+    ],
+    [worksheetStatusCol]
+  );
+  const repackEntryFigmaColDefs = useMemo(
+    () => [
+      { headerName: "ID", field: "purchase_acknowledgment_id", type: "id" },
+      { headerName: "Invoice", field: "invoice_no" },
+      { headerName: "Supplier", field: "supplier.name", valueGetter: (p) => p.data?.supplier?.name ?? "-" },
+      { headerName: "Supervisor", field: "repack_supervisors", valueGetter: (p) => p.data?.repack_supervisors ?? "—" },
+      worksheetStatusCol,
+      { headerName: "Pending", field: "total_jobs_pending" },
+      { headerName: "Done", field: "total_jobs_done" },
+      { headerName: "Pending qty", field: "repack_pending_qty", type: "number" },
+    ],
+    [worksheetStatusCol]
+  );
+
   // Helper function to transform row data for PDF export based on colDefs
   const transformDataForPDF = (rows, colDefs) => {
     return rows.map((row, index) => {
@@ -1581,64 +1629,16 @@ function Dashboard() {
     }
   };
 
+  // Figma "WMS Dashboard / Purchases": ID · Supplier · Branch · Invoice date ·
+  // Invoice no. · Amount · Status. Clicking a row opens the progress drawer.
   const columnDefs = useMemo(
     () => [
-      {
-        headerName: "ID",
-        field: "purchase_acknowledgment_id",
-        type: "id",
-      },
-      {
-        headerName: "Supplier",
-        field: "supplier.name",
-      },
-      {
-        headerName: "Branch",
-        field: "branch_name",
-      },
-      {
-        headerName: "Invoice Date",
-        field: "invoice_date",
-        type: "date",
-      },
-      {
-        headerName: "Invoice No",
-        field: "invoice_no",
-      },
-      {
-        headerName: "Invoice Amount",
-        field: "amount",
-        type: "currency",
-      },
-      {
-        headerName: "Total Qty",
-        field: "products",
-        type: "number",
-        valueGetter: (params) => {
-          const products = params.data?.products || [];
-          if (products.length === 0) return null;
-
-          return products.reduce((acc, product) => acc + product.quantity, 0);
-        },
-      },
-      {
-        headerName: "SKU Count",
-        field: "repln_mode_counts",
-        autoHeight: true,
-        cellRenderer: (params) => {
-          const replnModeCounts = params.data?.repln_mode_counts || {};
-          return (
-            <Flex gap="4px" flexWrap="wrap" p="4px" alignItems="center">
-              {Object.entries(replnModeCounts).map(([replnMode, count]) => (
-                <Badge
-                  key={replnMode}
-                  colorPalette={SKU_TYPES[replnMode].colorPalette}
-                >{`${SKU_TYPES[replnMode].label}: ${count}`}</Badge>
-              ))}
-            </Flex>
-          );
-        },
-      },
+      { headerName: "ID", field: "purchase_acknowledgment_id", type: "id" },
+      { headerName: "Supplier", field: "supplier.name" },
+      { headerName: "Branch", field: "branch_name" },
+      { headerName: "Invoice date", field: "invoice_date", type: "date" },
+      { headerName: "Invoice no.", field: "invoice_no" },
+      { headerName: "Amount", field: "amount", type: "currency" },
       {
         headerName: "Status",
         field: "status",
@@ -1646,34 +1646,17 @@ function Dashboard() {
         valueGetter: (params) => {
           const statusCode = params.data.status;
           const statusLabel =
-            params.data.status === "pe_created"
+            statusCode === "pe_created"
               ? "Purchase Entry Done"
-              : capitalizeWordsLatest(params.data.status).replaceAll("_", " ");
+              : capitalizeWordsLatest(statusCode).replaceAll("_", " ");
           return {
             label: statusLabel,
-            colorScheme: COLORS_MAP_CHAKRA[statusCode],
+            colorScheme: statusCode === "done" ? "green" : "orange",
           };
         },
       },
-      {
-        headerName: "Created At",
-        field: "created_at",
-        type: "datetime",
-      },
-      {
-        headerName: "Actions",
-        field: "actions",
-        type: "action-column",
-        valueGetter: (params) => [
-          {
-            label: "View Progress",
-            value: "view-progress",
-            onClick: () => setSelectedAck(params.data),
-          },
-        ],
-      },
     ],
-    [setSelectedAck]
+    []
   );
 
   const purchaseReturnItemsColDefs = useMemo(
@@ -1715,46 +1698,16 @@ function Dashboard() {
 
   const purchaseReturnColDefs = useMemo(
     () => [
-      {
-        headerName: "Buyer Name",
-        field: "buyer_name",
-        type: "capitalized",
-      },
-      {
-        headerName: "Supplier Name",
-        field: "supplier_name",
-        type: "capitalized",
-      },
-      {
-        headerName: "Total Bills",
-        field: "total_bills",
-        type: "number",
-      },
-      {
-        headerName: "Total Value",
-        field: "total_value",
-        type: "currency",
-      },
+      // Figma: Buyer · Supplier · Total bills · Total value · Status.
+      { headerName: "Buyer", field: "buyer_name", type: "capitalized" },
+      { headerName: "Supplier", field: "supplier_name", type: "capitalized" },
+      { headerName: "Total bills", field: "total_bills", type: "number" },
+      { headerName: "Total value", field: "total_value", type: "currency" },
       {
         headerName: "Status",
         field: "status",
         type: "badge-column",
-        valueGetter: () => ({
-          label: "Not Returned",
-          colorScheme: "gray",
-        }),
-      },
-      {
-        headerName: "Actions",
-        field: "actions",
-        type: "action-column",
-        valueGetter: (params) => [
-          {
-            label: "View",
-            value: "view",
-            onClick: () => setSelectedPurchaseReturnSupplier(params.data),
-          },
-        ],
+        valueGetter: () => ({ label: "Not Returned", colorScheme: "red" }),
       },
     ],
     []
@@ -1794,7 +1747,7 @@ function Dashboard() {
   return (
     <GlobalWrapper permissionKey="view_wms_dashboard">
       <Box minH="100vh">
-        <Stack gap="22px">
+        <Stack gap="24px">
           <DashboardTitleSection>
             <Flex
               w="100%"
@@ -1804,7 +1757,8 @@ function Dashboard() {
               gap={3}
               rowGap={3}
             >
-              <DashboardPageTitle title="WMS Dashboard" />
+              {/* Figma: 22px title, no subtitle, filters on the right. */}
+              <DashboardPageTitle title="WMS Dashboard" subtitle="" size="sm" />
               <FiltersBar
                 dateRange={dateRange}
                 setDateRange={setDateRange}
@@ -1847,7 +1801,7 @@ function Dashboard() {
           />
 
           <Box ref={tablesSectionRef} scrollMarginTop="96px">
-            <CustomContainer title="Tables" fullWidth>
+            <Box>
               <Tabs.Root
                 value={tableTab}
                 onValueChange={(e) =>
@@ -1856,24 +1810,50 @@ function Dashboard() {
                   )
                 }
               >
-                <Tabs.List mb={4} flexWrap="wrap">
-                  <Tabs.Trigger value="purchases">Purchases</Tabs.Trigger>
-                  <Tabs.Trigger value="purchase_return">
-                    Purchase Return
-                  </Tabs.Trigger>
-                  <Tabs.Trigger value="purchase_return_by_buyers">
-                    Purchase Return - By Buyers
-                  </Tabs.Trigger>
-                  <Tabs.Trigger value="job_worksheet">
-                    Job Worksheet
-                  </Tabs.Trigger>
-                  <Tabs.Trigger value="repack_entry">Repack Entry</Tabs.Trigger>
+                {/* Figma: tabs spread evenly in a white strip (r8, #F1E3D9);
+                    37px pills, 11/600, active #FFF5ED / #C95C18. */}
+                <Tabs.List
+                  mb="16px"
+                  flexWrap={{ base: "wrap", md: "nowrap" }}
+                  gap="8px"
+                  p="8px"
+                  bg="white"
+                  borderWidth="1px"
+                  borderColor="app.border"
+                  borderRadius="8px"
+                  _before={{ display: "none" }}
+                >
+                  {[
+                    ["purchases", "Purchases"],
+                    ["purchase_return", "Purchase Return"],
+                    ["purchase_return_by_buyers", "Purchase Return by Buyers"],
+                    ["job_worksheet", "Job Worksheet"],
+                    ["repack_entry", "Repack Entry"],
+                  ].map(([v, label]) => (
+                    <Tabs.Trigger
+                      key={v}
+                      value={v}
+                      flex={{ md: "1" }}
+                      justifyContent="center"
+                      h="37px"
+                      px="16px"
+                      borderRadius="8px"
+                      fontSize="11px"
+                      fontWeight="600"
+                      color="fg.muted"
+                      _selected={{ bg: "#FFF5ED", color: "#C95C18" }}
+                      _before={{ display: "none" }}
+                    >
+                      {label}
+                    </Tabs.Trigger>
+                  ))}
                 </Tabs.List>
 
                 <Tabs.Content value="purchases">
                   <PurchasesTabContent
                     rowData={filteredPurchaseAcknowledgments}
                     columnDefs={columnDefs}
+                    onRowClick={setSelectedAck}
                   />
                 </Tabs.Content>
 
@@ -1886,6 +1866,7 @@ function Dashboard() {
                       filteredPurchaseReturnSupplierRows
                     }
                     purchaseReturnColDefs={purchaseReturnColDefs}
+                    onRowClick={setSelectedPurchaseReturnSupplier}
                   />
                 </Tabs.Content>
 
@@ -1904,61 +1885,40 @@ function Dashboard() {
                 </Tabs.Content>
 
                 <Tabs.Content value="job_worksheet">
-                  <JobWorksheetTabContent
+                  <WorksheetTableCard
+                    title="Job Worksheet"
                     isActive={tableTab === "job_worksheet"}
-                    selectedJobSupervisor={selectedJobSupervisor}
-                    setSelectedJobSupervisor={setSelectedJobSupervisor}
-                    jobSummary={jobSummary}
-                    handleExportJobWorksheetPurchases={
-                      handleExportJobWorksheetPurchases
-                    }
-                    handleExportJobWorksheetData={handleExportJobWorksheetData}
-                    jobWorksheetStickeringStats={jobWorksheetStickeringStats}
-                    isJobDoneByDayModalOpen={isJobDoneByDayModalOpen}
-                    setIsJobDoneByDayModalOpen={setIsJobDoneByDayModalOpen}
-                    isJobDayEmployeesModalOpen={isJobDayEmployeesModalOpen}
-                    setIsJobDayEmployeesModalOpen={
-                      setIsJobDayEmployeesModalOpen
-                    }
-                    setJobDayEmployeesContext={setJobDayEmployeesContext}
-                    isJobEmployeeJobsModalOpen={isJobEmployeeJobsModalOpen}
-                    setIsJobEmployeeJobsModalOpen={
-                      setIsJobEmployeeJobsModalOpen
-                    }
-                    setJobEmployeeJobsContext={setJobEmployeeJobsContext}
-                    formatJobStatsModalRangeSubtitle={
-                      formatJobStatsModalRangeSubtitle
-                    }
-                    dateRange={dateRange}
-                    jobWorksheetStickeringDailyRows={
-                      jobWorksheetStickeringDailyRows
-                    }
-                    jobDoneByDayModalColDefs={jobDoneByDayModalColDefs}
-                    jobDayEmployeesContext={jobDayEmployeesContext}
-                    jobDayEmployeeStickerRows={jobDayEmployeeStickerRows}
-                    jobDayEmployeesModalColDefs={jobDayEmployeesModalColDefs}
-                    jobEmployeeJobsContext={jobEmployeeJobsContext}
-                    jobEmployeeCompletedJobsRows={jobEmployeeCompletedJobsRows}
-                    jobEmployeeJobsModalColDefs={jobEmployeeJobsModalColDefs}
-                    jobWorksheetTableRows={jobWorksheetTableRows}
-                    jobWorksheetDrawerColDefs={jobWorksheetDrawerColDefs}
+                    rows={jobWorksheetTableRows}
+                    columnDefs={jobWorksheetFigmaColDefs}
+                    tableKey="job-worksheet-details"
+                    statusFilterModel={{
+                      filterType: "badge",
+                      values: [purchaseAckStatusBadgeLabel("job_entry_in_progress")],
+                    }}
+                    supervisor={selectedJobSupervisor}
+                    onClearSupervisor={() => setSelectedJobSupervisor(null)}
+                    onRowClick={setSelectedAck}
                   />
                 </Tabs.Content>
 
                 <Tabs.Content value="repack_entry">
-                  <RepackEntryTabContent
+                  <WorksheetTableCard
+                    title="Repack Entry"
                     isActive={tableTab === "repack_entry"}
-                    selectedRepackSupervisor={selectedRepackSupervisor}
-                    setSelectedRepackSupervisor={setSelectedRepackSupervisor}
-                    repackSummary={repackSummary}
-                    handleExportRepackPurchases={handleExportRepackPurchases}
-                    handleExportRepackData={handleExportRepackData}
-                    repackEntryTableRows={repackEntryTableRows}
-                    repackEntryDrawerColDefs={repackEntryDrawerColDefs}
+                    rows={repackEntryTableRows}
+                    columnDefs={repackEntryFigmaColDefs}
+                    tableKey="repack-entry-details"
+                    statusFilterModel={{
+                      filterType: "badge",
+                      values: [purchaseAckStatusBadgeLabel("repack_entry_in_progress")],
+                    }}
+                    supervisor={selectedRepackSupervisor}
+                    onClearSupervisor={() => setSelectedRepackSupervisor(null)}
+                    onRowClick={setSelectedAck}
                   />
                 </Tabs.Content>
               </Tabs.Root>
-            </CustomContainer>
+            </Box>
           </Box>
         </Stack>
 

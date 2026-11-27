@@ -116,7 +116,7 @@ function LedgersForm({ params }) {
   if ((isEditMode || isViewMode) && loading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Flex justifyContent="center" p={8}>
             Loading...
           </Flex>
@@ -128,7 +128,7 @@ function LedgersForm({ params }) {
   if ((isEditMode || isViewMode) && !ledger && !loading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Flex flexDirection="column" gap="22px" alignItems="center" p={8}>
             <Text>Master not found</Text>
             <Button
@@ -145,7 +145,7 @@ function LedgersForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}

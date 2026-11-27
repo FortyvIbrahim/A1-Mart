@@ -112,13 +112,12 @@ export default function Designations() {
       : []),
   ];
 
-  const { filtered: filteredRows, filterCard } = useListFilters(designations, LIST_FILTERS);
+  const { filtered: filteredRows } = useListFilters(designations, LIST_FILTERS);
 
   return (
     // <GlobalWrapper permissionKey="view_designations">
     <GlobalWrapper>
-      <CustomContainer title="Designations">
-        <div style={{ marginBottom: 16 }}>{filterCard}</div>
+      <CustomContainer mainCard title="Designations">
         <AgGrid
           rowData={filteredRows}
           columnDefs={colDefs}

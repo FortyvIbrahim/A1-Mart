@@ -9,8 +9,10 @@ import {
   DialogBody,
   DialogFooter,
   Flex,
+  IconButton,
   Text,
 } from "@chakra-ui/react";
+import { LuX } from "react-icons/lu";
 
 /**
  * A centered modal dialog. Renders a full-screen overlay with the dialog content
@@ -58,38 +60,60 @@ function CustomDialog({
           maxW={maxW}
           maxH={maxH}
           borderRadius="14px"
+          borderWidth="1px"
+          borderColor="#E4E7F2"
           overflow="hidden"
           bg="white"
           boxShadow="0 24px 60px rgba(31, 41, 55, 0.18)"
           {...contentProps}
         >
+          {/* Figma "Modal header": 20/24 padding, title 21/600 #30384B, 32px close. */}
           <DialogHeader
             flexShrink={0}
-            px={6}
-            pt={5}
-            pb={3}
+            px="24px"
+            py="20px"
+            gap="12px"
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
             borderBottomWidth="1px"
-            borderColor="border.muted"
+            borderColor="#F0E9E5"
           >
             {typeof title === "string" || typeof title === "number" ? (
-              <Text fontSize="17px" fontWeight="700" color="gray.800">
+              <Text fontSize="21px" lineHeight="26px" fontWeight="600" color="#30384B">
                 {title}
               </Text>
             ) : (
               title
             )}
+            {onOpenChange && (
+              <IconButton
+                aria-label="Close"
+                size="sm"
+                w="32px"
+                h="32px"
+                minW="32px"
+                bg="app.tableHeader"
+                color="#C95C18"
+                borderRadius="8px"
+                _hover={{ bg: "brand.100" }}
+                onClick={() => onOpenChange({ open: false })}
+              >
+                <LuX size={16} />
+              </IconButton>
+            )}
           </DialogHeader>
-          <DialogBody overflowY="auto" px={6} py={5} {...bodyProps}>
+          <DialogBody overflowY="auto" px="28px" pt="24px" pb="22px" {...bodyProps}>
             {children}
           </DialogBody>
           {footer != null && (
             <DialogFooter
               flexShrink={0}
-              gap={3}
-              px={6}
-              py={4}
+              gap="12px"
+              px="24px"
+              py="16px"
               borderTopWidth="1px"
-              borderColor="border.muted"
+              borderColor="#F0E9E5"
             >
               {footer}
             </DialogFooter>

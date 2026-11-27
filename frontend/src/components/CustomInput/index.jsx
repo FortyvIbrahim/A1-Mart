@@ -1,4 +1,6 @@
 "use client";
+
+import { LuChevronDown } from "react-icons/lu";
 import { getNestedValue } from "@/utils/object";
 import {
   Box,
@@ -79,20 +81,37 @@ export const CustomDateTimeInput = forwardRef(
       return "DD/MM/YYYY";
     };
 
+    // Figma date field: placeholder in #637188 with an orange chevron.
     return (
-      <Input
-        value={value ? moment(value, format).format(getFormat()) : ""}
-        onChange={onChange}
-        autoComplete="off"
-        ref={ref}
-        onClick={onClick}
-        variant={variant}
-        style={style}
-        flex={1}
-        disabled={disabled}
-        placeholder={placeholder}
-        _placeholder={{ color: "gray.400" }}
-      />
+      <Box position="relative" w="100%">
+        <Input
+          value={value ? moment(value, format).format(getFormat()) : ""}
+          onChange={onChange}
+          autoComplete="off"
+          ref={ref}
+          onClick={onClick}
+          variant={variant}
+          style={style}
+          flex={1}
+          pr="36px"
+          disabled={disabled}
+          placeholder={placeholder}
+          _placeholder={{ color: "fg.muted" }}
+        />
+        {!value && (
+          <Box
+            position="absolute"
+            right="12px"
+            top="50%"
+            transform="translateY(-50%)"
+            color="#C95C18"
+            pointerEvents="none"
+            display="flex"
+          >
+            <LuChevronDown size={16} />
+          </Box>
+        )}
+      </Box>
     );
   }
 );
@@ -168,10 +187,23 @@ function CustomInput({
     width: 0,
   });
 
+  // Inside a modal dialog the menu must render in the dialog itself: a modal
+  // blocks pointer events and focus outside its content, so a menu portalled
+  // to <body> opens but cannot be clicked or typed into ("stuck" dropdown).
+  const dialogContainerRef = useRef(null);
+  const portalRef = menuPortalRef?.current
+    ? menuPortalRef
+    : dialogContainerRef.current
+      ? dialogContainerRef
+      : null;
+
   const updateMenuPosition = () => {
     if (inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
-      if (menuPortalRef?.current) {
+      dialogContainerRef.current = menuPortalRef?.current
+        ? null
+        : inputRef.current.closest('[role="dialog"], [role="alertdialog"]');
+      if (menuPortalRef?.current || dialogContainerRef.current) {
         setMenuPosition({
           top: rect.bottom,
           left: rect.left,
@@ -440,7 +472,7 @@ function CustomInput({
               name={name}
               placeholder={placeholder}
               value={fieldValue || ""}
-              color={fieldValue === "" ? "gray.400" : "black"}
+              color={fieldValue == null || fieldValue === "" ? "fg.muted" : "fg"}
               {...props}
               disabled={props.disabled || viewOnly}
               onChange={(e) => {
@@ -506,12 +538,12 @@ function CustomInput({
         };
 
         const dropdownPanelSx = {
-          position: menuPortalRef ? "fixed" : "absolute",
+          position: portalRef ? "fixed" : "absolute",
           top: menuPosition.top,
           left: menuPosition.left,
           width: menuPosition.width,
           maxH: "240px",
-          mt: menuPortalRef ? 0 : "6px",
+          mt: portalRef ? "4px" : "6px",
           bg: "white",
           _dark: { bg: "gray.800", borderColor: "gray.600" },
           borderWidth: "1px",
@@ -520,7 +552,7 @@ function CustomInput({
           boxShadow:
             "0 10px 40px -10px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04)",
           overflow: "hidden",
-          zIndex: menuPortalRef ? 9999 : 1400,
+          zIndex: portalRef ? 9999 : 1400,
           pointerEvents: "auto",
         };
 
@@ -561,7 +593,12 @@ function CustomInput({
                   >
                     <FaTimes />
                   </IconButton>
-                ) : undefined
+                ) : (
+                  // Figma select: orange chevron while empty.
+                  <Box color="#C95C18" pointerEvents="none" display="flex">
+                    <LuChevronDown size={16} />
+                  </Box>
+                )
               }
             >
               <Input
@@ -582,7 +619,7 @@ function CustomInput({
               />
             </InputGroup>
             {isSearchOpen && !props.disabled && !viewOnly && (
-              <Portal {...(menuPortalRef ? { container: menuPortalRef } : {})}>
+              <Portal {...(portalRef ? { container: portalRef } : {})}>
                 <Box
                   ref={menuRef}
                   data-searchable-dropdown-panel
@@ -688,13 +725,13 @@ function CustomInput({
               .join(", ");
 
         const multiDropdownPanelSx = {
-          position: menuPortalRef ? "fixed" : "absolute",
+          position: portalRef ? "fixed" : "absolute",
           top: menuPosition.top,
           left: menuPosition.left,
           width: "max(min(100%, 320px), 280px)",
           maxW: menuPosition.width,
           maxH: "320px",
-          mt: menuPortalRef ? 0 : "6px",
+          mt: portalRef ? "4px" : "6px",
           bg: "white",
           _dark: { bg: "gray.800", borderColor: "gray.600" },
           borderWidth: "1px",
@@ -703,7 +740,8 @@ function CustomInput({
           boxShadow:
             "0 10px 40px -10px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04)",
           overflow: "hidden",
-          zIndex: menuPortalRef ? 9999 : 1400,
+          zIndex: portalRef ? 9999 : 1400,
+          pointerEvents: "auto",
         };
 
         const multiDropdownItemSx = {
@@ -723,7 +761,13 @@ function CustomInput({
 
         return (
           <>
-            <InputGroup>
+            <InputGroup
+              endElement={
+                <Box color="#C95C18" pointerEvents="none" display="flex">
+                  <LuChevronDown size={16} />
+                </Box>
+              }
+            >
               <Input
                 {...props}
                 ref={inputRef}
@@ -741,7 +785,7 @@ function CustomInput({
               />
             </InputGroup>
             {isSearchOpen && !viewOnly && !props.disabled && (
-              <Portal {...(menuPortalRef ? { container: menuPortalRef } : {})}>
+              <Portal {...(portalRef ? { container: portalRef } : {})}>
                 <Box
                   ref={menuRef}
                   data-multiple-dropdown-panel
@@ -1504,12 +1548,13 @@ function CustomInput({
   ) : null;
 
   return (
-    <Field.Root orientation={labelOrientation}>
-      <Field.Label color={viewOnly ? "brand.600" : "gray.600"} w="100%">
+    <Field.Root orientation={labelOrientation} gap="7px">
+      <Field.Label color={viewOnly ? "brand.600" : "#30384B"} w="100%">
         <Flex justifyContent="space-between" w="100%" alignItems="center">
           <Text
             lineClamp={1}
-            fontSize={viewOnly ? "xs" : "12.5px"}
+            fontSize="12px"
+            lineHeight="15px"
             fontWeight="500"
             {...labelStyle}
           >

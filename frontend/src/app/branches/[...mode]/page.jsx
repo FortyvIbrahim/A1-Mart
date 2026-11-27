@@ -163,7 +163,7 @@ function BatchForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer
+      <CustomContainer pageForm
         title={isViewMode ? "Branch Details" : isEditMode ? "Edit Branch" : "Add Branch"}
       >
         <Formik

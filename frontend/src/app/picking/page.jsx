@@ -245,15 +245,12 @@ function page() {
   return (
     <GlobalWrapper permissionKey="view_picking_list">
       <CustomContainer
+        contentCard
         title="Picking List"
-        color="brand"
         rightSection={
-          <Button
-            onClick={handleExportToPdf}
-            disabled={!filteredData || filteredData.length === 0}
-          >
-            Export
-          </Button>
+          filteredData && filteredData.length > 0 ? (
+            <Button onClick={handleExportToPdf}>Export</Button>
+          ) : null
         }
       >
         <Flex gap="22px" flexDirection="column">
@@ -261,8 +258,7 @@ function page() {
             onFileUpload={handleFileUpload}
             uploadedFile={uploadedFile}
             fileData={fileData}
-            color="secondary"
-            size="sm"
+            title="Upload Excel or CSV"
             placeholder="Drag & drop an Excel or CSV file here, or click to select"
             acceptedFileTypes="Only .xlsx, .xls, and .csv files are accepted"
           />

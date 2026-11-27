@@ -302,7 +302,7 @@ function PurchaseAcknowledgmentForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={PURCHASE_ACKNOWLEDGMENT_VALIDATION_SCHEMA}
@@ -342,7 +342,7 @@ function PurchaseAcknowledgmentForm({ params }) {
                   <Grid templateColumns="repeat(2, 1fr)" gap="22px">
                     <CustomInput
                       label="Invoice Date"
-                      placeholder="DD/MM/YYYY"
+                      placeholder="Select date"
                       name="invoice_date"
                       method="date-picker"
                       type="date"
@@ -401,7 +401,7 @@ function PurchaseAcknowledgmentForm({ params }) {
                 {values.supplier_id != null &&
                   values.supplier_id !== "" &&
                   undeliveredByPR.length > 0 && (
-                    <CustomContainer
+                    <CustomContainer pageForm
                       title="Products still awaiting return for the selected supplier"
                       size="sm"
                       containerStyle={{ mt: "22px" }}
@@ -478,9 +478,12 @@ function PurchaseAcknowledgmentForm({ params }) {
                       </VStack>
                     </CustomContainer>
                   )}
-                <Flex gap="22px" justifyContent="flex-end" mt="22px">
+                {/* Figma: outlined Cancel + primary action, 12px apart. */}
+                <Flex gap="12px" justifyContent="flex-end" mt="24px">
                   <Link href="/purchase-acknowledgment">
-                    <Button variant="subtle">Back</Button>
+                    <Button variant="outline">
+                      {isCreateMode || isEditMode ? "Cancel" : "Back"}
+                    </Button>
                   </Link>
                   {(isCreateMode || isEditMode) && (
                     <Button onClick={handleSubmit}>

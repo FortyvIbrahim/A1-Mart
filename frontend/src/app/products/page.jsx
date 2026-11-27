@@ -156,7 +156,7 @@ function Products() {
 
   return (
     <GlobalWrapper permissionKey="view_products">
-      <CustomContainer
+      <CustomContainer mainCard
         title="Products"
         rightSection={
           (canSyncProducts || canImportImages) && (

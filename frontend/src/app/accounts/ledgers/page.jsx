@@ -18,8 +18,8 @@ const LEDGER_CATEGORIES = {
 
 
 const LIST_FILTERS = [
-  { key: "q", type: "search", placeholder: "Search ledger...", getText: (r) => `${r.ledger_id} ${r.label ?? ""}` },
-  { key: "category", type: "select", placeholder: "All categories", getValue: (r) => r.category },
+  { key: "q", type: "search", label: "Search", placeholder: "Search label", getText: (r) => `${r.ledger_id} ${r.label ?? ""}` },
+  { key: "category", type: "select", label: "Category", placeholder: "All categories", getValue: (r) => r.category },
 ];
 
 function LedgersList() {
@@ -90,7 +90,7 @@ function LedgersList() {
 
   return (
     <GlobalWrapper permissionKey="view_ledgers">
-      <CustomContainer
+      <CustomContainer contentCard
         title="Master"
         rightSection={
           canAdd && (
@@ -100,7 +100,7 @@ function LedgersList() {
           )
         }
       >
-        <div style={{ marginBottom: 16 }}>{filterCard}</div>
+        {filterCard}
         <AgGrid
           rowData={filteredRows}
           columnDefs={colDefs}

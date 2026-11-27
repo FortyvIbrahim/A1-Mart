@@ -127,6 +127,7 @@ function WMSPurchaseEntry() {
     <GlobalWrapper permissionKey="view_wms_purchase_entry">
       <DeleteModalComponent />
       <CustomContainer
+        contentCard
         title="WMS Purchase Entry"
         rightSection={
           allowAdd && (

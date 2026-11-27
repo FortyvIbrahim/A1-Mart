@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import { Box, Flex } from "@chakra-ui/react";
-import CustomContainer from "@/components/CustomContainer";
+import { DashboardCard } from "@/components/dashboard/DashboardUI";
 import AgGrid from "@/components/AgGrid";
 import StockCircleDaysLeftCell, {
   stockCircleDaysLeftValueGetter,
@@ -49,25 +49,27 @@ export default function StockCircleDashboardDeadlinesTab({
   );
 
   return (
-    <Flex flexDirection="column" gap={6}>
-      <CustomContainer title={`Due within ${dueSoonDays} days`} size="sm" color="brand">
+    <Flex flexDirection="column" gap="20px">
+      <DashboardCard title={`Due within ${dueSoonDays} days`} subtitle="Use search, filters and sorting to narrow records.">
         <Box minH="160px">
           <AgGrid
+            bare
             rowData={dueSoonRows}
             colDefs={deadlineColDefs}
             tableKey="stock-circle-dashboard-due-soon"
           />
         </Box>
-      </CustomContainer>
-      <CustomContainer title="Past deadline" size="sm" color="secondary">
+      </DashboardCard>
+      <DashboardCard title="Past deadline" subtitle="Use search, filters and sorting to narrow records.">
         <Box minH="160px">
           <AgGrid
+            bare
             rowData={overdueRows}
             colDefs={deadlineColDefs}
             tableKey="stock-circle-dashboard-overdue"
           />
         </Box>
-      </CustomContainer>
+      </DashboardCard>
     </Flex>
   );
 }

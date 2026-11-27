@@ -11,10 +11,10 @@ import {
   colDefsPacking,
 } from "@/utils/colDefs/cleaning_packing";
 import exportCSVFile, { exportToExcel } from "@/utils/exportCSVFile";
-import { Button, Flex, Text } from "@chakra-ui/react";
+import { Button, Flex, Tabs, Text } from "@chakra-ui/react";
 import moment from "moment";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useState } from "react";
 import toast from "react-hot-toast";
 
 const TABLE_HEADER_BULK_ITEMS_FOR_CLEANING = {
@@ -47,6 +47,7 @@ const TABLE_HEADER_BULK_ITEMS_FOR_PACKING = {
 
 function Repack() {
   const router = useRouter();
+  const [tab, setTab] = useState("cleaning");
   const { items: cleaningItems, sync } = useCleaningPacking({
     cleaning: "true",
   });
@@ -206,9 +207,50 @@ function Repack() {
     );
   };
 
+  const CP_TABS = [
+    {
+      value: "cleaning",
+      label: "Bulk Items for Cleaning",
+      tableKey: "cleaning-packing-bulk-items-for-cleaning",
+      rows: cleaningItems,
+      colDefs: colDefsCleaning,
+      onExport: () =>
+        handleExportToPdf(cleaningItems, "bulk-items-for-cleaning", "Bulk Items for Cleaning", TABLE_HEADER_BULK_ITEMS_FOR_CLEANING),
+    },
+    {
+      value: "no_cleaning",
+      label: "Bulk Items Without Cleaning",
+      tableKey: "cleaning-packing-bulk-items-for-without-cleaning",
+      rows: nonCleaningItems,
+      colDefs: colDefsCleaning,
+      onExport: () =>
+        handleExportToPdf(nonCleaningItems, "bulk-items-for-cleaning", "Bulk Items for Cleaning", TABLE_HEADER_BULK_ITEMS_FOR_CLEANING),
+    },
+    {
+      value: "hand",
+      label: "Hand Packing Items",
+      tableKey: "cleaning-packing-hand-packing-items",
+      rows: handpackedItems,
+      colDefs: colDefsPacking,
+      onExport: () =>
+        handleExportToPdf(handpackedItems, "hand-packed", "Hand Packed", TABLE_HEADER_BULK_ITEMS_FOR_PACKING),
+    },
+    {
+      value: "machine",
+      label: "Machine Packing Items",
+      tableKey: "cleaning-packing-machine-packing-items",
+      rows: machinePackedItems,
+      colDefs: colDefsPacking,
+      onExport: () =>
+        handleExportToPdf(machinePackedItems, "machine-packed", "Machine Packed", TABLE_HEADER_BULK_ITEMS_FOR_PACKING),
+    },
+  ];
+  const current = CP_TABS.find((t) => t.value === tab) ?? CP_TABS[0];
+
   return (
     <GlobalWrapper permissionKey="view_cleaning_packing">
       <CustomContainer
+        contentCard
         title="Cleaning and Packing"
         rightSection={
           <Flex gap={4} alignItems="center">
@@ -219,123 +261,37 @@ function Repack() {
           </Flex>
         }
       >
-        <Flex gap="22px" flexDirection="column">
-          <CustomContainer
-            title="Bulk Items for Cleaning"
-            size="sm"
-            rightSection={
-              <Button
-                size="xs"
-                colorScheme="purple"
-                onClick={() =>
-                  // handleExportBulkItems(handpackedItems, "cleaning")
-                  handleExportToPdf(
-                    cleaningItems,
-                    "bulk-items-for-cleaning",
-                    "Bulk Items for Cleaning",
-                    TABLE_HEADER_BULK_ITEMS_FOR_CLEANING
-                  )
-                }
-              >
-                Export
-              </Button>
-            }
-          >
-            <AgGrid
-              tableKey="cleaning-packing-bulk-items-for-cleaning"
-              rowData={cleaningItems}
-              columnDefs={colDefsCleaning}
-              defaultRows={5}
-            />
-          </CustomContainer>
-
-          <CustomContainer
-            title="Bulk Items for Without Cleaning"
-            size="sm"
-            rightSection={
-              <Button
-                size="xs"
-                colorScheme="purple"
-                onClick={() =>
-                  // handleExportBulkItems(handpackedItems, "no-cleaning")
-                  handleExportToPdf(
-                    nonCleaningItems,
-                    "bulk-items-for-cleaning",
-                    "Bulk Items for Cleaning",
-                    TABLE_HEADER_BULK_ITEMS_FOR_CLEANING
-                  )
-                }
-              >
-                Export
-              </Button>
-            }
-          >
-            <AgGrid
-              tableKey="cleaning-packing-bulk-items-for-without-cleaning"
-              rowData={nonCleaningItems}
-              columnDefs={colDefsCleaning}
-              defaultRows={5}
-            />
-          </CustomContainer>
-
-          <CustomContainer
-            title="Hand Packing Items"
-            size="sm"
-            rightSection={
-              <Button
-                size="xs"
-                colorScheme="purple"
-                // onClick={() => handleExport(handpackedItems, "hand-packed")}
-                onClick={() =>
-                  handleExportToPdf(
-                    handpackedItems,
-                    "hand-packed",
-                    "Hand Packed",
-                    TABLE_HEADER_BULK_ITEMS_FOR_PACKING
-                  )
-                }
-              >
-                Export
-              </Button>
-            }
-          >
-            <AgGrid
-              tableKey="cleaning-packing-hand-packing-items"
-              rowData={handpackedItems}
-              columnDefs={colDefsPacking}
-              defaultRows={5}
-            />
-          </CustomContainer>
-
-          <CustomContainer
-            title="Machine Packing Items"
-            size="sm"
-            rightSection={
-              <Button
-                size="xs"
-                colorScheme="purple"
-                onClick={() =>
-                  // handleExport(machinePackedItems, "machine-packed")
-                  handleExportToPdf(
-                    machinePackedItems,
-                    "machine-packed",
-                    "Machine Packed",
-                    TABLE_HEADER_BULK_ITEMS_FOR_PACKING
-                  )
-                }
-              >
-                Export
-              </Button>
-            }
-          >
-            <AgGrid
-              tableKey="cleaning-packing-machine-packing-items"
-              rowData={machinePackedItems}
-              columnDefs={colDefsPacking}
-              defaultRows={5}
-            />
-          </CustomContainer>
-        </Flex>
+        {/* Figma PUR/08: the four lists as underline tabs in one card, with
+            Export beside the tabs. */}
+        <Tabs.Root value={tab} onValueChange={(d) => setTab(d.value)} colorPalette="brand">
+          <Flex align="center" justify="space-between" gap="12px" mb="16px" wrap="wrap">
+            <Tabs.List borderColor="border" flex="1">
+              {CP_TABS.map((t) => (
+                <Tabs.Trigger
+                  key={t.value}
+                  value={t.value}
+                  fontSize="12px"
+                  color="fg.muted"
+                  _selected={{ color: "#C95C18" }}
+                >
+                  {t.label}
+                </Tabs.Trigger>
+              ))}
+            </Tabs.List>
+            <Button size="sm" variant="subtle" onClick={() => current.onExport()}>
+              Export
+            </Button>
+          </Flex>
+          {CP_TABS.map((t) => (
+            <Tabs.Content key={t.value} value={t.value} pt={0}>
+              <AgGrid
+                tableKey={t.tableKey}
+                rowData={t.rows}
+                columnDefs={t.colDefs}
+              />
+            </Tabs.Content>
+          ))}
+        </Tabs.Root>
       </CustomContainer>
     </GlobalWrapper>
   );

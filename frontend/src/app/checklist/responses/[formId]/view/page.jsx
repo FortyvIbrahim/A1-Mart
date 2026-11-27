@@ -225,7 +225,6 @@ function ChecklistResponseViewInner({ params }) {
                     fontSize="xs"
                     fontWeight="semibold"
                     color="brand.700"
-                    letterSpacing="0.06em"
                     textTransform="uppercase"
                     mb={2}
                   >

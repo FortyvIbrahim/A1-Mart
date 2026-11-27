@@ -165,49 +165,35 @@ export function buildChecklistDashboardFormsColumnDefs(router) {
       type: "number",
     },
     {
+      // Figma "Forms" table: Progress = % answered, Completed = answered count.
       headerName: "Progress",
       valueGetter: (p) => {
         const form = p.data;
         const ymd = form?._responseYmd;
-        if (!ymd) return "-";
-        const statsKey = submissionStatsKeyForYmd(ymd);
-        if (!statsKey) return "-";
+        if (!ymd || !submissionStatsKeyForYmd(ymd)) return "-";
         const stat = p.data?._branchStat;
-        if (!stat || stat._noSubmission) return "-";
+        if (!stat || stat._noSubmission) return "0%";
         const answered = stat.answered ?? 0;
         const total = stat.total_questions ?? form?.questions_count ?? 0;
-        if (total > 0) return `${answered}/${total}`;
-        return `${answered}`;
+        return total > 0 ? `${Math.round((answered / total) * 100)}%` : "0%";
       },
     },
     {
-      headerName: "Completion",
+      headerName: "Completed",
+      type: "number",
       valueGetter: (p) => {
-        const form = p.data;
-        const ymd = form?._responseYmd;
-        if (!ymd) return "-";
-        const statsKey = submissionStatsKeyForYmd(ymd);
-        if (!statsKey) return "-";
         const stat = p.data?._branchStat;
-        if (!stat || stat._noSubmission) return "-";
-        const answered = stat.answered ?? 0;
-        const total = stat.total_questions ?? form?.questions_count ?? 0;
-        if (total <= 0) return "-";
-        return `${Math.round((answered / total) * 100)}%`;
+        if (!stat || stat._noSubmission) return 0;
+        return stat.answered ?? 0;
       },
     },
     {
       headerName: "Late",
-      type: "number",
+      // Figma shows "No" / "Yes".
       valueGetter: (p) => {
-        const form = p.data;
-        const ymd = form?._responseYmd;
-        if (!ymd) return "-";
-        const statsKey = submissionStatsKeyForYmd(ymd);
-        if (!statsKey) return "-";
         const stat = p.data?._branchStat;
-        if (!stat || stat._noSubmission) return "-";
-        return String(stat.late ?? 0);
+        if (!stat || stat._noSubmission) return "No";
+        return Number(stat.late) > 0 ? "Yes" : "No";
       },
     },
     {

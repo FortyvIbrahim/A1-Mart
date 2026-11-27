@@ -18,6 +18,7 @@ import {
 } from "@chakra-ui/react";
 import { Virtuoso } from "react-virtuoso";
 import CustomContainer from "@/components/CustomContainer";
+import { DashboardCard } from "@/components/dashboard/DashboardUI";
 import CustomInput from "@/components/CustomInput";
 import FilterDropdown from "@/components/StockChecker/FilterDropdown";
 import ProductCard from "@/components/StockChecker/ProductCard";
@@ -342,13 +343,13 @@ export default function StockCircleDashboardProducts({
   if (!filteredCircles?.length) {
     return (
       <Box ref={productsSectionRef}>
-        <CustomContainer title="Products" size="sm" color="brand">
+        <DashboardCard title="Products">
           <VStack align="stretch" gap={2} py={4}>
             <Text fontSize="sm" color="gray.600">
               No stock circles match the current branch / circle filters.
             </Text>
           </VStack>
-        </CustomContainer>
+        </DashboardCard>
       </Box>
     );
   }
@@ -356,20 +357,19 @@ export default function StockCircleDashboardProducts({
   if (dataLoading) {
     return (
       <Box ref={productsSectionRef}>
-        <CustomContainer title="Products" size="sm" color="brand">
+        <DashboardCard title="Products">
           <Flex justify="center" align="center" minH="280px" py={10}>
             <Spinner size="lg" color="brand.500" />
           </Flex>
-        </CustomContainer>
+        </DashboardCard>
       </Box>
     );
   }
 
   return (
     <Box ref={productsSectionRef}>
-      <CustomContainer title="Products" size="sm" color="brand">
-        <Flex flexDirection="column" gap="22px">
-        <CustomContainer title="Filters" size="sm" color="secondary">
+      <Flex flexDirection="column" gap="20px">
+        <CustomContainer title="Product filters" size="sm">
           <Flex flexDirection="column" gap="22px">
             <Grid
               templateColumns={{
@@ -468,7 +468,10 @@ export default function StockCircleDashboardProducts({
           </Flex>
         </CustomContainer>
 
-        <Box>
+        <DashboardCard
+          title="Products"
+          subtitle="Use search, filters and sorting to narrow records."
+        >
           {isMobile ? (
             <Box>
             {filteredProducts.length === 0 ? (
@@ -513,6 +516,7 @@ export default function StockCircleDashboardProducts({
             </Box>
           ) : (
             <AgGrid
+              bare
               rowData={filteredProducts}
               colDefs={colDefs}
               tableKey="stock-circle-dashboard-products"
@@ -522,9 +526,8 @@ export default function StockCircleDashboardProducts({
               }}
             />
           )}
-        </Box>
-        </Flex>
-      </CustomContainer>
+        </DashboardCard>
+      </Flex>
     </Box>
   );
 }

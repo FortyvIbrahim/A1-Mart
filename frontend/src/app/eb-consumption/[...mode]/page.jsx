@@ -184,7 +184,7 @@ export default function EBConsumptionForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm breadcrumb="Checklist Management  /  EB Consumption" title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={CONSUMPTION_VALIDATION_SCHEMA}

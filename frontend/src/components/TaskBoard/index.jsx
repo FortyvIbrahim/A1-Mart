@@ -90,24 +90,35 @@ function MetricCard({ icon: Icon, value, label }) {
       bg="white"
       borderWidth="1px"
       borderColor="border"
-      borderRadius="14px"
-      px="20px"
-      py="16px"
-      gap="16px"
+      borderRadius="12px"
+      minH="80px"
+      px="18px"
+      py="14px"
+      gap="14px"
       alignItems="center"
       minW={0}
     >
-      <Box color="brand.500" flexShrink={0}>
+      {/* Figma "Metric icon tile": 42px, radius 10, peach. */}
+      <Flex
+        w="42px"
+        h="42px"
+        borderRadius="10px"
+        bg="#FFF5ED"
+        color="#C95C18"
+        align="center"
+        justify="center"
+        flexShrink={0}
+      >
         <Icon size={22} />
-      </Box>
-      <Box minW={0}>
-        <Text fontSize="24px" fontWeight="700" color="gray.800" lineHeight="1.1">
+      </Flex>
+      <Flex direction="column" gap="5px" minW={0}>
+        <Text fontSize="24px" fontWeight="600" color="fg" lineHeight="29px">
           {value}
         </Text>
-        <Text fontSize="13px" color="gray.500" mt="2px">
+        <Text fontSize="12px" color="fg.muted" lineHeight="15px">
           {label}
         </Text>
-      </Box>
+      </Flex>
     </Flex>
   );
 }
@@ -115,7 +126,7 @@ function MetricCard({ icon: Icon, value, label }) {
 function FilterField({ label, children }) {
   return (
     <Box minW={0}>
-      <Text fontSize="12.5px" fontWeight="500" color="gray.600" mb="6px">
+      <Text fontSize="12px" fontWeight="500" lineHeight="18px" color="fg.muted" mb="6px">
         {label}
       </Text>
       {children}
@@ -170,17 +181,18 @@ function TaskCard({ task, actions }) {
       bg="white"
       borderWidth="1px"
       borderColor="border"
-      borderRadius="12px"
+      borderRadius="10px"
       px="14px"
-      py="12px"
-      w={{ base: "260px", md: "232px" }}
+      py="10px"
+      minH="152px"
+      w={{ base: "260px", md: "284px" }}
       minH="120px"
       flexShrink={0}
       transition="box-shadow 0.15s ease, border-color 0.15s ease"
       _hover={{ boxShadow: "0 6px 18px rgba(244,119,33,0.10)", borderColor: "brand.200" }}
     >
       <Flex alignItems="center" gap="6px">
-        <Text fontSize="11px" color="gray.500" flex={1} letterSpacing="0.02em">
+        <Text fontSize="10px" color="fg.muted" flex={1}>
           {taskCode(task)}
         </Text>
         <StatusBadge status={task.status} />
@@ -457,7 +469,7 @@ export default function TaskBoard({ mode = "all" }) {
   const subtitle =
     mode === "mine"
       ? "Tasks assigned to you, grouped by priority."
-      : "Manage tasks assigned across the team.";
+      : "View and manage tasks assigned across the team.";
 
   const lanes = PRIORITIES.map((p) => ({
     priority: p,
@@ -472,22 +484,22 @@ export default function TaskBoard({ mode = "all" }) {
   }
 
   return (
-    <Flex direction="column" gap="18px">
+    <Flex direction="column" gap="16px">
       <DeleteModalComponent />
 
       {/* Title row */}
       <Flex alignItems="flex-start" justifyContent="space-between" gap="12px" flexWrap="wrap">
         <Box>
-          <Text as="h1" fontSize={{ base: "22px", md: "30px" }} fontWeight="600" color="gray.800" letterSpacing="-0.02em">
+          <Text as="h1" fontSize="24px" lineHeight="28px" fontWeight="600" color="fg">
             {title}
           </Text>
-          <Text mt="4px" fontSize="13.5px" color="gray.500">
+          <Text mt="4px" fontSize="12px" lineHeight="14px" color="fg.muted">
             {subtitle}
           </Text>
         </Box>
         {canAdd && (
           <Link href="/tasks/create">
-            <Button h="40px" px="20px" fontSize="13.5px" bg="brand.500" color="white" _hover={{ bg: "brand.600" }}>
+            <Button h="36px" px="16px" fontSize="12px" fontWeight="500" borderRadius="8px" bg="brand.500" color="white" _hover={{ bg: "brand.600" }}>
               <LuPlus /> Add Task
             </Button>
           </Link>
@@ -508,14 +520,15 @@ export default function TaskBoard({ mode = "all" }) {
           {canViewAll && (
             <Link href="/tasks">
               <Box
+                h="36px"
+                display="flex"
+                alignItems="center"
                 px="16px"
-                py="9px"
-                borderRadius="10px"
-                fontSize="13px"
-                fontWeight="600"
+                borderRadius="8px"
+                fontSize="12px"
+                fontWeight="500"
                 bg={mode === "all" ? "brand.500" : "white"}
-                color={mode === "all" ? "white" : "gray.700"}
-                boxShadow={mode === "all" ? "0 4px 12px rgba(244,119,33,0.25)" : "0 1px 2px rgba(31,41,55,0.05)"}
+                color={mode === "all" ? "white" : "fg"}
               >
                 All Tasks ({allTasks.length})
               </Box>
@@ -524,14 +537,15 @@ export default function TaskBoard({ mode = "all" }) {
           {canViewMine && (
             <Link href="/tasks/mine">
               <Box
+                h="36px"
+                display="flex"
+                alignItems="center"
                 px="16px"
-                py="9px"
-                borderRadius="10px"
-                fontSize="13px"
-                fontWeight="600"
+                borderRadius="8px"
+                fontSize="12px"
+                fontWeight="500"
                 bg={mode === "mine" ? "brand.500" : "white"}
-                color={mode === "mine" ? "white" : "gray.700"}
-                boxShadow={mode === "mine" ? "0 4px 12px rgba(244,119,33,0.25)" : "0 1px 2px rgba(31,41,55,0.05)"}
+                color={mode === "mine" ? "white" : "fg"}
               >
                 My Tasks ({myTasks.length})
               </Box>
@@ -540,12 +554,15 @@ export default function TaskBoard({ mode = "all" }) {
         </Flex>
         <Button
           size="sm"
-          h="38px"
+          h="36px"
           px="16px"
+          fontSize="12px"
+          fontWeight="500"
+          borderRadius="8px"
           variant="outline"
-          bg={thisMonth ? "brand.50" : "white"}
+          bg={thisMonth ? "#FFF5ED" : "white"}
           borderColor={thisMonth ? "brand.300" : "border"}
-          color={thisMonth ? "brand.600" : "gray.700"}
+          color={thisMonth ? "#C95C18" : "fg"}
           onClick={() => setThisMonth((v) => !v)}
           aria-pressed={thisMonth}
         >
@@ -554,8 +571,8 @@ export default function TaskBoard({ mode = "all" }) {
       </Flex>
 
       {/* Filters */}
-      <Box bg="white" borderRadius="14px" borderWidth="1px" borderColor="border" px="18px" py="16px">
-        <Grid templateColumns={{ base: "1fr", sm: "repeat(2, minmax(0,1fr))", lg: "repeat(4, minmax(0,1fr))" }} gap="14px">
+      <Box bg="white" borderRadius="10px" p="16px">
+        <Grid templateColumns={{ base: "1fr", sm: "repeat(2, minmax(0,1fr))", lg: "repeat(4, minmax(0,1fr))" }} gap="16px">
           <FilterField label="Search">
             <Input
               h="40px"

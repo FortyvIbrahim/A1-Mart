@@ -92,7 +92,7 @@ function DesignationsForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()} fullWidth>
+      <CustomContainer pageForm title={getTitle()} fullWidth>
         <Flex flexDirection="column" gap="22px" w="100%">
           <Formik
             initialValues={{
@@ -117,7 +117,7 @@ function DesignationsForm({ params }) {
             }}
           >
             {({ handleSubmit }) => (
-              <CustomContainer title="Details" size="sm" color="secondary">
+              <CustomContainer pageForm title="Details" size="sm" color="secondary">
                 <Flex flexDirection="column" gap="22px">
                   <CustomInput
                     label="Incentive Type"
@@ -153,7 +153,7 @@ function DesignationsForm({ params }) {
             )}
           </Formik>
 
-          <CustomContainer title="Permissions" size="sm" color="secondary">
+          <CustomContainer pageForm title="Permissions" size="sm" color="secondary">
             {!isViewMode && (
               <Flex justifyContent="flex-end" mb="12px" gap="12px">
                 <Button

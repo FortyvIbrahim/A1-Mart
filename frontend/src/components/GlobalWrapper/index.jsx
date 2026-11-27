@@ -66,7 +66,7 @@ function GlobalWrapper({ children, permissionKey = null }) {
   return (
     <Box
       px={{ base: "14px", md: "28px" }}
-      pt={{ base: "14px", md: "18px" }}
+      pt={{ base: "14px", md: "24px" }}
       pb={{ base: "24px", md: "32px" }}
     >
       {children}

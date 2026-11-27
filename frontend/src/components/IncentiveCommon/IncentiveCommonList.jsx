@@ -2,6 +2,7 @@
 
 import useIncentiveCommon from "@/api/customHooks/useIncentiveCommon";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import CustomMenu from "@/components/CustomMenu";
 import GlobalWrapper from "@/components/GlobalWrapper";
@@ -171,18 +172,28 @@ export default function IncentiveCommonList({
     },
   ];
 
+  // Figma INC/04 filters: Search · Cluster size · Incentive Type (no labels).
+  const { filtered: filteredIncentives, filterCard } = useListFilters(incentives, [
+    { key: "q", type: "search", placeholder: "Search...", getText: (r) => `${r.incentive_common_id ?? ""} ${r.cluster_size ?? ""}` },
+    ...(showClusterSelection
+      ? [{ key: "kind", type: "select", placeholder: "Cluster size", getValue: (r) => r.cluster_size }]
+      : []),
+    { key: "itype", type: "select", placeholder: "Incentive Type", getValue: (r) => r.incentive_type, getLabel: (v) => formatIncentiveType(v) },
+  ], { columns: showClusterSelection ? 3 : 2 });
+
   return (
     <GlobalWrapper permissionKey={permissionKey}>
-      <CustomContainer
+      <CustomContainer headerBand
         title={title}
         rightSection={
           <Link href={`${basePath}/create`}>
-            <Button>Add</Button>
+            <Button h="39px" px="16px" fontSize="12px">Add</Button>
           </Link>
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={incentives}
+          rowData={filteredIncentives}
           columnDefs={colDefs}
           loading={loading}
           tableKey="incentive-common-list"

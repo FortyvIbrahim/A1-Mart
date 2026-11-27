@@ -11,26 +11,34 @@ import {
   ResponsiveContainer,
   Cell,
   LabelList,
+  CartesianGrid,
 } from "recharts";
 import DashboardChartLegend from "@/components/dashboard/DashboardChartLegend";
 
+/** Figma chart palette (Concept C · Pearl Orange). */
 const DEFAULT_BAR_COLORS = [
-  "#3182CE",
-  "#38A169",
-  "#ECC94B",
-  "#ED8936",
-  "#9F7AEA",
-  "#4A5568",
+  "#F47721",
+  "#11976A",
+  "#526FA8",
+  "#E3B63E",
+  "#9AAAC1",
+  "#E7474D",
+  "#C95C18",
+  "#637188",
 ];
 
-// Shared axis tick styles for dashboard uniformity (align with wms-dashboard/BarChartCard)
-const TICK_FILL = "#4A5568";
+// Figma chart spec: ticks 9–10px #637188, value labels 11/600 #202938,
+// #F1E3D9 horizontal grid lines, 40px bars with 4px corners.
+const TICK_FILL = "#637188";
+const LABEL_FILL = "#202938";
+const GRID_STROKE = "#F1E3D9";
+const BAR_RADIUS = 4;
 const TICK_FONT_SIZE = 10;
 const CHART_MARGIN = { top: 12, right: 8, left: 0, bottom: -20 };
 const BAR_CATEGORY_GAP = 16;
 const Y_AXIS_WIDTH = 28;
 const X_AXIS_HEIGHT = 40;
-const LABEL_FONT_SIZE = 12;
+const LABEL_FONT_SIZE = 11;
 const TICK_LINE_HEIGHT = 11;
 
 /**
@@ -176,7 +184,7 @@ const XAxisTick = (props) => {
 };
 
 const YAxisTick = (props) => {
-  const { x, y, payload } = props;
+  const { x, y, payload, formatter } = props;
   return (
     <text
       x={x}
@@ -185,9 +193,9 @@ const YAxisTick = (props) => {
       dy={3}
       textAnchor="end"
       fill={TICK_FILL}
-      style={{ fontSize: TICK_FONT_SIZE }}
+      style={{ fontSize: 9 }}
     >
-      {payload?.value}
+      {formatter ? formatter(payload?.value) : payload?.value}
     </text>
   );
 };
@@ -249,6 +257,7 @@ function DashboardBarChart({
   scrollable,
   graphHeight,
   legendColumns = 2,
+  yTickFormatter,
 }) {
   const useScrollableLayout =
     graphHeight != null && graphHeight !== "" && scrollable !== false;
@@ -415,6 +424,11 @@ function DashboardBarChart({
                   : CHART_MARGIN.bottom,
             }}
           >
+            <CartesianGrid
+              stroke={GRID_STROKE}
+              vertical={isHorizontal}
+              horizontal={!isHorizontal}
+            />
             {isHorizontal ? (
               <>
                 <XAxis
@@ -422,6 +436,7 @@ function DashboardBarChart({
                   tick={<XAxisTick />}
                   allowDecimals={false}
                   tickLine={false}
+                  axisLine={false}
                   domain={valueDomain}
                 />
                 <YAxis
@@ -434,6 +449,8 @@ function DashboardBarChart({
                     />
                   )}
                   width={yAxisWidth ?? 120}
+                  axisLine={false}
+                  tickLine={false}
                 />
               </>
             ) : (
@@ -454,6 +471,7 @@ function DashboardBarChart({
                   }
                   interval={0}
                   tickLine={false}
+                  axisLine={false}
                   height={
                     xAxisAngle && Math.abs(xAxisAngle) > 0
                       ? X_AXIS_HEIGHT +
@@ -464,10 +482,11 @@ function DashboardBarChart({
                   }
                 />
                 <YAxis
-                  tick={hideYAxisLabels ? false : <YAxisTick />}
+                  tick={hideYAxisLabels ? false : <YAxisTick formatter={yTickFormatter} />}
                   tickLine={false}
                   axisLine={false}
                   allowDecimals={false}
+                  tickCount={3}
                   width={
                     hideYAxisLabels ? 0 : yAxisWidth ?? Y_AXIS_WIDTH
                   }
@@ -498,14 +517,14 @@ function DashboardBarChart({
                   <Bar
                     key={dataKey}
                     dataKey={dataKey}
-                    radius={isHorizontal ? [0, 3, 3, 0] : [3, 3, 0, 0]}
+                    radius={BAR_RADIUS}
                     maxBarSize={40}
                   >
                     <LabelList
                       position={isHorizontal ? "right" : "top"}
                       offset={barLabelOffset}
-                      fill={TICK_FILL}
-                      style={{ fontSize: LABEL_FONT_SIZE }}
+                      fill={LABEL_FILL}
+                      style={{ fontSize: LABEL_FONT_SIZE, fontWeight: 600 }}
                       formatter={(value, _name, entry) => {
                         const displayLabel = entry?.payload?.displayLabel;
                         if (displayLabel != null && displayLabel !== "") {
@@ -540,9 +559,7 @@ function DashboardBarChart({
                   radius={
                     stackId && !labelOnTop
                       ? [0, 0, 0, 0]
-                      : isHorizontal
-                      ? [0, 3, 3, 0]
-                      : [3, 3, 0, 0]
+                      : BAR_RADIUS
                   }
                   maxBarSize={40}
                   onClick={
@@ -560,8 +577,8 @@ function DashboardBarChart({
                     <LabelList
                       dataKey={labelDataKey || dataKey}
                       position={isHorizontal ? "right" : "top"}
-                      fill={TICK_FILL}
-                      style={{ fontSize: LABEL_FONT_SIZE }}
+                      fill={LABEL_FILL}
+                      style={{ fontSize: LABEL_FONT_SIZE, fontWeight: 600 }}
                       formatter={valueFormatter}
                     />
                   )}

@@ -344,7 +344,7 @@ export default function IssueEntryFormPage({ params }) {
   if ((isEditMode || isViewMode) && loadingRecord) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()} fullWidth>
+        <CustomContainer pageForm headerBand title={getTitle()} fullWidth>
           <Flex justifyContent="center" p={8}>
             <Text>Loading...</Text>
           </Flex>
@@ -356,7 +356,7 @@ export default function IssueEntryFormPage({ params }) {
   if ((isEditMode || isViewMode) && !purchaseReturn && !loadingRecord) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()} fullWidth>
+        <CustomContainer pageForm headerBand title={getTitle()} fullWidth>
           <Flex flexDirection="column" gap={4} alignItems="center" p={8}>
             <Text>Purchase return not found</Text>
             <Link href="/purchase-return/issue-entry">
@@ -372,7 +372,7 @@ export default function IssueEntryFormPage({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()} fullWidth>
+      <CustomContainer pageForm headerBand title={getTitle()} fullWidth>
         {!showForm && isCreateMode && (
           <Box px={{ base: 2, md: 0 }}>
             <Text mb="8px" fontSize="sm" fontWeight="semibold">

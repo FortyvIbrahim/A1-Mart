@@ -294,7 +294,6 @@ function SearchBar() {
                     fontWeight="bold"
                     color="brand.700"
                     textTransform="uppercase"
-                    letterSpacing="0.5px"
                   >
                     {topLevel.topLevelModuleName}
                   </Text>

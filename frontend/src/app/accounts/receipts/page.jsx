@@ -96,7 +96,7 @@ function ReceiptsList() {
 
   return (
     <GlobalWrapper permissionKey="view_receipts">
-      <CustomContainer
+      <CustomContainer contentCard
         title="Receipt Entry"
         rightSection={
           canAdd && (
@@ -106,7 +106,7 @@ function ReceiptsList() {
           )
         }
       >
-        <div style={{ marginBottom: 16 }}>{filterCard}</div>
+        {filterCard}
         <AgGrid
           rowData={filteredRows}
           columnDefs={colDefs}

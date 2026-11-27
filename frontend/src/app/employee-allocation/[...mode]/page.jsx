@@ -165,7 +165,7 @@ function EmployeeAllocationForm({ params }) {
   if ((isEditMode || isViewMode) && loading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm headerBand title={getTitle()}>
           <Flex justifyContent="center" p={8}>
             Loading...
           </Flex>
@@ -177,7 +177,7 @@ function EmployeeAllocationForm({ params }) {
   if ((isEditMode || isViewMode) && !allocation && !loading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm headerBand title={getTitle()}>
           <Flex flexDirection="column" gap="22px" alignItems="center" p={8}>
             <Text>Employee allocation not found</Text>
             <Button
@@ -194,7 +194,7 @@ function EmployeeAllocationForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm headerBand title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}

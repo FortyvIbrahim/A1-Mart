@@ -358,6 +358,7 @@ export default function ReorderListing() {
   return (
     <GlobalWrapper permissionKey="view_purchase_reorders">
       <CustomContainer
+        contentCard
         title="Purchase Reorders"
         rightSection={
           canAdd ? (

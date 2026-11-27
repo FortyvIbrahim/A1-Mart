@@ -7,7 +7,7 @@ import AgGrid from "@/components/AgGrid";
 function buildActionsCol(onViewProducts, mode) {
   return {
     field: "actions",
-    headerName: "Actions",
+    headerName: "Action",
     type: "action-column",
     width: 140,
     valueGetter: (params) => [
@@ -123,11 +123,12 @@ export default function ReorderListTabs({
   }
 
   return (
-    <Tabs.Root defaultValue="all">
-      <Tabs.List mb={4}>
-        <Tabs.Trigger value="all">All</Tabs.Trigger>
-        <Tabs.Trigger value="by_supplier">Grouped by Supplier</Tabs.Trigger>
-        <Tabs.Trigger value="by_buyer">Grouped by Buyer</Tabs.Trigger>
+    // Figma: underline tabs, 12/500, active #C95C18 with an orange rule.
+    <Tabs.Root defaultValue="all" colorPalette="brand">
+      <Tabs.List mb={4} borderColor="border">
+        <Tabs.Trigger value="all" fontSize="12px" color="fg.muted" _selected={{ color: "#C95C18" }}>All</Tabs.Trigger>
+        <Tabs.Trigger value="by_supplier" fontSize="12px" color="fg.muted" _selected={{ color: "#C95C18" }}>Grouped by Supplier</Tabs.Trigger>
+        <Tabs.Trigger value="by_buyer" fontSize="12px" color="fg.muted" _selected={{ color: "#C95C18" }}>Grouped by Buyer</Tabs.Trigger>
       </Tabs.List>
 
       <Tabs.Content value="all">

@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import { Box, Flex, Text, VStack } from "@chakra-ui/react";
-import CustomContainer from "@/components/CustomContainer";
+import { DashboardCard } from "@/components/dashboard/DashboardUI";
 import CustomInput from "@/components/CustomInput";
 import AgGrid from "@/components/AgGrid";
 import { capitalizeWords } from "@/utils/string";
@@ -51,10 +51,9 @@ export default function StockCircleDashboardCheckersTab({
   );
 
   return (
-    <CustomContainer
+    <DashboardCard
       title="Products checked by employee"
-      size="sm"
-      color="secondary"
+      subtitle="Employees and the products they checked."
     >
       <VStack align="stretch" gap={4}>
         <Box maxW={{ base: "100%", md: "440px" }} w="100%">
@@ -63,14 +62,11 @@ export default function StockCircleDashboardCheckersTab({
             method="multiple-dropdown"
             label="Filter by employee"
             placeholder="All employees"
+            h="40px"
             options={checkerEmployeeOptions}
             value={selectedCheckerRowKeys}
             onChange={(ids) => onSelectedCheckerRowKeysChange(ids ?? [])}
-            labelStyle={{
-              fontSize: "xs",
-              fontWeight: "medium",
-              color: "gray.600",
-            }}
+            labelStyle={{ color: "#637188" }}
             customRender={(item) => (
               <Flex
                 flex={1}
@@ -99,12 +95,13 @@ export default function StockCircleDashboardCheckersTab({
         </Box>
         <Box minH="200px">
           <AgGrid
+            bare
             rowData={displayedCheckerRows}
             colDefs={checkerColDefs}
             tableKey="stock-circle-dashboard-checkers"
           />
         </Box>
       </VStack>
-    </CustomContainer>
+    </DashboardCard>
   );
 }

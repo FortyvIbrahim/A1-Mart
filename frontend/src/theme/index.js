@@ -9,13 +9,14 @@ export const DESIGN = {
   primaryHover: "#DB6516",
   base: "#FFFBF8",
   sidebar: "#FEF1E9",
-  tabActive: "#FDE9DA",
-  border: "#F2E2D6",
+  tabActive: "#FFF5ED",
+  accentText: "#C95C18",
+  border: "#F1E3D9",
   borderSubtle: "#F7ECE3",
-  tableHeader: "#FDF3EC",
-  rowAlt: "#FFF8F3",
-  text: "#1F2937",
-  textMuted: "#6B7280",
+  tableHeader: "#FFF5ED",
+  rowAlt: "#FFFBF8",
+  text: "#202938",
+  textMuted: "#637188",
   textSubtle: "#9CA3AF",
 };
 
@@ -244,31 +245,40 @@ const config = defineConfig({
       },
     },
     recipes: {
+      // Figma buttons: radius 8, 500 weight; 36px/11.5px (sm) and 40px/12px (md).
       button: {
         base: {
-          fontWeight: "medium",
+          fontWeight: "500",
           borderRadius: "l2",
         },
         variants: {
+          size: {
+            sm: { h: "36px", px: "12px", fontSize: "11.5px", gap: "6px" },
+            md: { h: "40px", px: "16px", fontSize: "12px", gap: "8px" },
+          },
           variant: {
+            // Figma secondary action ("Back", "Cancel", "Reset"): peach fill, orange text.
             subtle: {
-              bg: "colorPalette.subtle",
-              color: "colorPalette.fg",
-              _hover: { bg: "colorPalette.muted" },
+              bg: "#FFF5ED",
+              color: "#C95C18",
+              _hover: { bg: "#FDE9DA" },
             },
             outline: {
-              borderColor: "border",
+              borderColor: "#E4E7F2",
               bg: "white",
-              color: "colorPalette.fg",
+              color: "#30384B",
               _hover: { bg: "colorPalette.subtle" },
             },
           },
         },
       },
+      // Figma form field: 44px, radius 8, 1px #F1E3D9, 12px side padding,
+      // 12px text, #637188 placeholder.
       input: {
         base: {
           bg: "white",
           borderRadius: "l2",
+          _placeholder: { color: "fg.muted" },
         },
         variants: {
           variant: {
@@ -276,6 +286,9 @@ const config = defineConfig({
               borderColor: "border",
               _hover: { borderColor: "border.emphasized" },
             },
+          },
+          size: {
+            md: { h: "44px", px: "12px", textStyle: "xs" },
           },
         },
       },
@@ -298,11 +311,14 @@ const config = defineConfig({
       nativeSelect: {
         base: {
           field: { bg: "white", borderRadius: "l2" },
-          indicator: { color: "brand.500" },
+          indicator: { color: "#C95C18" },
         },
         variants: {
           variant: {
             outline: { field: { borderColor: "border" } },
+          },
+          size: {
+            md: { field: { h: "44px", ps: "12px", textStyle: "xs" } },
           },
         },
       },
@@ -310,7 +326,7 @@ const config = defineConfig({
         base: {
           trigger: { bg: "white", borderRadius: "l2" },
           content: { borderRadius: "l3" },
-          indicator: { color: "brand.500" },
+          indicator: { color: "#C95C18" },
         },
         variants: {
           variant: {

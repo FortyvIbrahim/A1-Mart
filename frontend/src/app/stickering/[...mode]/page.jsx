@@ -764,7 +764,7 @@ export default function StickeringForm({ params }) {
   if (stickeringLoading && (isEditMode || isViewMode)) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Text>Loading...</Text>
         </CustomContainer>
       </GlobalWrapper>
@@ -773,7 +773,7 @@ export default function StickeringForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}
@@ -834,7 +834,7 @@ export default function StickeringForm({ params }) {
 
                 {/* Items */}
                 {values.items && values.items.length > 0 && (
-                  <CustomContainer title="Items" size="sm" color="secondary">
+                  <CustomContainer pageForm title="Items" size="sm" color="secondary">
                     <FieldArray name="items">
                       {(arrayHelpers) => {
                         const getSplitMeta = (gid) => {

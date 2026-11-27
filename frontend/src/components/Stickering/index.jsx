@@ -166,7 +166,7 @@ export default function Stickering({
   }, [router, pathname]);
 
   const invoiceSummaryColDefs = useMemo(() => {
-    const supervisorHeader = is_repack_entry_sheet ? "Rpk supv." : "Supv.";
+    const supervisorHeader = "Supervisor";
     const supervisorField = is_repack_entry_sheet
       ? "repack_supervisors_display"
       : "supervisors_display";
@@ -179,7 +179,7 @@ export default function Stickering({
       },
       {
         field: "invoice_no",
-        headerName: "Inv #",
+        headerName: "Invoice No",
         type: "capitalized",
       },
       {
@@ -194,7 +194,7 @@ export default function Stickering({
       },
       {
         field: "jobs_pending",
-        headerName: "Pend.",
+        headerName: "Pending",
         type: "number",
       },
       {
@@ -617,7 +617,7 @@ export default function Stickering({
 
   return (
     <GlobalWrapper permissionKey={permissionKey}>
-      <CustomContainer title={getTitle()} rightSection={getRightSection()}>
+      <CustomContainer contentCard title={getTitle()} rightSection={getRightSection()}>
         {isInvoiceDetailView && (
           <Flex mb={4} align="center" gap={3} flexWrap="wrap">
             <Button variant="outline" size="sm" onClick={handleBackToInvoiceList}>

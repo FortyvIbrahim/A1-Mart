@@ -3,11 +3,11 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Box, Flex, Text } from "@chakra-ui/react";
+import { Box, Flex } from "@chakra-ui/react";
 import { useUser } from "@/contexts/UserContext";
 import {
-  INLINE_SUBMENU_WORKSPACES,
   SECTIONS_WITHOUT_TABS,
+  usesInlineSubmenu,
   getSectionPresentation,
 } from "@/constants/navigation";
 import { resolveActiveNav } from "@/utils/menuModules";
@@ -33,25 +33,34 @@ function ModuleTabs() {
 
   if (!nav) return null;
 
-  const pages = nav.section.subMenu || [];
+  // Grouped sections (warehouse): tabs list the pages of the active group.
+  const group = nav.item.group;
+  const pages = group
+    ? (nav.section.subMenu || []).filter((p) => p.group === group)
+    : nav.section.subMenu || [];
+  const spread = Boolean(group) || nav.workspaceId === "wms";
   const showTabs =
     pages.length > 1 &&
-    !INLINE_SUBMENU_WORKSPACES.has(nav.workspaceId) &&
+    (Boolean(group) || !usesInlineSubmenu(nav.workspaceId, nav.section.title)) &&
     !SECTIONS_WITHOUT_TABS.has(nav.section.title);
-  const isNested = pathname !== nav.item.location;
   const sectionLabel = getSectionPresentation(nav.section.title).label;
 
-  if (!showTabs && !isNested) return null;
+  // Figma add / edit / view frames show no "Section / Page / Create" trail —
+  // pages carry their own title (and breadcrumb where the design has one).
+  if (!showTabs) return null;
 
   return (
-    <Box px={{ base: "14px", md: "28px" }} pt={{ base: "4px", md: "6px" }}>
+    // Figma "Header / Quick dashboard navigation": 56px row, 28px sides,
+    // 36px items 12px apart, radius 8, 11/500; active #FFF5ED / #C95C18.
+    <Box px={{ base: "14px", md: "28px" }}>
       {showTabs && (
         <Flex
           as="nav"
           aria-label={`${sectionLabel} pages`}
-          gap="4px"
+          gap={{ base: "4px", md: "12px" }}
           overflowX="auto"
-          pb="2px"
+          minH="56px"
+          alignItems="center"
           css={{ scrollbarWidth: "none", "&::-webkit-scrollbar": { display: "none" } }}
         >
           {pages.map((page) => {
@@ -62,23 +71,27 @@ function ModuleTabs() {
                 href={page.location}
                 ref={active ? activeRef : undefined}
                 aria-current={active ? "page" : undefined}
-                style={{ flexShrink: 0 }}
+                style={spread ? { flex: 1, minWidth: 0 } : { flexShrink: 0 }}
               >
                 <Box
-                  px={{ base: "12px", md: "18px" }}
-                  py="9px"
-                  borderRadius="9px"
-                  fontSize="12px"
-                  fontWeight={active ? "600" : "500"}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent={spread ? "center" : undefined}
+                  h="36px"
+                  px={{ base: "12px", md: "26px" }}
+                  borderRadius="8px"
+                  fontSize="11px"
+                  lineHeight="13px"
+                  fontWeight="500"
                   whiteSpace="nowrap"
-                  color={active ? "brand.600" : "gray.600"}
-                  bg={active ? "brand.100" : "transparent"}
+                  color={active ? "#C95C18" : "fg.muted"}
+                  bg={active ? "app.tableHeader" : "transparent"}
                   transition="background-color 0.15s ease, color 0.15s ease"
                   _hover={
-                    active ? undefined : { bg: "brand.50", color: "gray.800" }
+                    active ? undefined : { bg: "app.tableHeader", color: "fg" }
                   }
                 >
-                  {page.title}
+                  {page.sidebarTitle ?? page.title}
                 </Box>
               </Link>
             );
@@ -86,43 +99,8 @@ function ModuleTabs() {
         </Flex>
       )}
 
-      {isNested && (
-        <Flex
-          alignItems="center"
-          gap="6px"
-          mt={showTabs ? "14px" : "4px"}
-          fontSize="12.5px"
-          color="gray.500"
-          flexWrap="wrap"
-        >
-          <Text as="span">{sectionLabel}</Text>
-          <Text as="span" color="gray.300">
-            /
-          </Text>
-          <Link href={nav.item.location}>
-            <Text as="span" _hover={{ color: "brand.600" }}>
-              {nav.item.title}
-            </Text>
-          </Link>
-          <Text as="span" color="gray.300">
-            /
-          </Text>
-          <Text as="span" color="gray.700" fontWeight="500">
-            {describeNested(pathname, nav.item.location)}
-          </Text>
-        </Flex>
-      )}
     </Box>
   );
-}
-
-/** "/employees/edit/12" under "/employees" → "Edit". */
-function describeNested(pathname, base) {
-  const rest = pathname.slice(base.length).split("/").filter(Boolean);
-  const word = rest.find((seg) => !/^\d+$/.test(seg) && seg.length < 40) ?? "Details";
-  return word
-    .replace(/[-_]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export default ModuleTabs;

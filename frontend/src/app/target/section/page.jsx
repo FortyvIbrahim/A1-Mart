@@ -4,6 +4,7 @@ import useTargetBranches from "@/api/customHooks/useTargetBranches";
 import useTargetDepartments from "@/api/customHooks/useTargetDepartments";
 import AgGrid from "@/components/AgGrid";
 import CustomContainer from "@/components/CustomContainer";
+import { useTargetFilters } from "@/components/TargetFilters";
 import CustomMenu from "@/components/CustomMenu";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import usePermission from "@/customHooks/usePermission";
@@ -16,6 +17,7 @@ import React from "react";
 function TargetSection() {
   const router = useRouter();
   const { targets } = useTargetDepartments();
+  const { filtered: filteredTargets, filterCard } = useTargetFilters(targets, ["branch", "department", "month", "status"], { monthField: "target_date", statusField: "has_section_targets" });
   const allowAdd = usePermission("add_target_section");
 
   const getMenuItems = (props) => {
@@ -107,12 +109,15 @@ function TargetSection() {
 
   return (
     <GlobalWrapper permissionKey="view_target_section">
-      <CustomContainer title="Sales Target - Section">
+      <CustomContainer breadcrumb="Sales Target  /  Section" title="Sales Target – Section">
+        <Flex direction="column" gap="16px">
+        {filterCard}
         <AgGrid
-          rowData={targets}
+          rowData={filteredTargets}
           columnDefs={colDefs}
           tableKey="target-section"
         />
+        </Flex>
       </CustomContainer>
     </GlobalWrapper>
   );

@@ -5,6 +5,7 @@ import { Button, Flex } from "@chakra-ui/react";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import CustomContainer from "@/components/CustomContainer";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import useTransports from "@/api/customHooks/useTransports";
 import useBranches from "@/api/customHooks/useBranches";
 import useDeleteModal from "@/customHooks/useDeleteModal";
@@ -194,6 +195,13 @@ const TRANSPORT_IMPORT_TARGET_COLUMNS = [
     suggestedKey: "Asset Life Span",
     type: "number",
   },
+];
+
+
+/** Figma list filters for this page. */
+const LIST_FILTERS = [
+  { key: "q", type: "search", label: "Search  ID", placeholder: "Search...", getText: (r) => `${r.transport_id ?? ""} ${r.asset_code ?? ""} ${r.asset_name ?? ""} ${r.vehicle_number ?? ""}` },
+  { key: "branch", type: "select", label: "Branches", placeholder: "Branches", getValue: (r) => r.branch?.branch_name ?? r.branch_name ?? r.branch },
 ];
 
 function toApiDate(val) {
@@ -424,6 +432,8 @@ function TransportsList() {
     [handleDeleteClick, canDelete]
   );
 
+  const { filtered: filteredRows, filterCard } = useListFilters(transports, LIST_FILTERS, { reset: true });
+
   return (
     <GlobalWrapper permissionKey="view_transports">
       <CustomContainer
@@ -454,8 +464,9 @@ function TransportsList() {
           </Flex>
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={transports}
+          rowData={filteredRows}
           columnDefs={colDefs}
           tableKey="tms-transports"
         />

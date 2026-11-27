@@ -14,6 +14,38 @@ import EmptyImage from "../EmptyImage";
 import CustomMenu from "../CustomMenu";
 import Link from "next/link";
 
+/** Figma badge colours (fill / text) keyed by Chakra palette name. */
+const FIGMA_BADGE = {
+  green: { bg: "#E8F6EF", color: "#147D52" },
+  teal: { bg: "#E8F6EF", color: "#147D52" },
+  red: { bg: "#FDECEE", color: "#BC3745" },
+  pink: { bg: "#FDECEE", color: "#BC3745" },
+  yellow: { bg: "#FFF4DB", color: "#946200" },
+  orange: { bg: "#FFF5ED", color: "#C95C18" },
+  brand: { bg: "#FFF5ED", color: "#C95C18" },
+  blue: { bg: "#EEF3FC", color: "#3E5B94" },
+};
+
+/** Figma "Badge / …": 5px radius, 6/8 padding, 10/500 text. */
+export function FigmaBadge({ colorScheme, children }) {
+  const figma = FIGMA_BADGE[colorScheme];
+  return (
+    <Badge
+      colorPalette={figma ? undefined : colorScheme}
+      bg={figma?.bg}
+      color={figma?.color}
+      borderRadius="5px"
+      px="8px"
+      py="6px"
+      fontSize="10px"
+      lineHeight="12px"
+      fontWeight="500"
+    >
+      {children}
+    </Badge>
+  );
+}
+
 export function getColumnTypes() {
   return {
     id: {
@@ -48,9 +80,33 @@ export function getColumnTypes() {
       width: 100,
       cellRenderer: (props) => {
         if (props.node?.rowPinned === "bottom") return null;
+        const items = props.value ?? [];
+        // One action → plain text link, as in the Figma tables ("View", "Delete").
+        if (items.length === 1 && !items[0].redirectionUrl) {
+          const [item] = items;
+          const danger = item.type === "danger";
+          return (
+            <Flex alignItems="center" height={"100%"}>
+              <Button
+                variant="plain"
+                size="xs"
+                h="auto"
+                p="0"
+                minW="0"
+                fontSize={danger ? "12px" : "11px"}
+                fontWeight={danger ? "500" : "400"}
+                color={danger ? "#C63732" : "fg"}
+                _hover={{ color: danger ? "#A52A26" : "#C95C18" }}
+                onClick={item.onClick}
+              >
+                {item.shortLabel ?? item.label}
+              </Button>
+            </Flex>
+          );
+        }
         return (
           <Flex justifyContent="center" alignItems="center" height={"100%"}>
-            <CustomMenu items={props.value ?? []} />
+            <CustomMenu items={items} />
           </Flex>
         );
       },
@@ -65,9 +121,9 @@ export function getColumnTypes() {
         }
 
         return (
-          <Badge colorPalette={props.value?.colorScheme}>
+          <FigmaBadge colorScheme={props.value?.colorScheme}>
             {capitalizeWordsLatest(props.value?.label)}
-          </Badge>
+          </FigmaBadge>
         );
       },
       filter: {
@@ -204,24 +260,75 @@ export function getColumnTypes() {
       },
       filter: false,
     },
+    /**
+     * Figma person avatar: round photo, or initials on #FFF5ED in #C95C18.
+     * colDef.avatarSize (default 32) · colDef.avatarNameField (default "employee_name").
+     */
+    avatar: {
+      filter: false,
+      sortable: false,
+      resizable: false,
+      flex: 0,
+      width: 76,
+      cellRenderer: (props) => {
+        if (props.node?.rowPinned === "bottom") return null;
+        const size = props.column?.colDef?.avatarSize ?? 32;
+        const nameField = props.column?.colDef?.avatarNameField ?? "employee_name";
+        const name = String(props.data?.[nameField] ?? "").trim();
+        const initials =
+          name
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((w) => w[0])
+            .join("")
+            .toUpperCase() || "—";
+        return (
+          <Flex alignItems="center" height="100%">
+            <Flex
+              alignItems="center"
+              justifyContent="center"
+              w={`${size}px`}
+              h={`${size}px`}
+              borderRadius="full"
+              overflow="hidden"
+              position="relative"
+              bg="#FFF5ED"
+              color="#C95C18"
+              fontSize="10px"
+              fontWeight="600"
+              flexShrink={0}
+            >
+              {props.value ? (
+                <Image src={props.value} alt={name || "Photo"} fill sizes={`${size}px`} style={{ objectFit: "cover" }} />
+              ) : (
+                initials
+              )}
+            </Flex>
+          </Flex>
+        );
+      },
+    },
     image: {
       filter: false,
       resizable: false,
       flex: 0,
-      width: 130,
-      autoHeight: true,
+      width: 96,
       cellRenderer: (props) => {
         const objectFit =
           props.column?.colDef?.imageSettings?.objectFit || "cover";
+        // Figma table thumbnail: 40px, radius 6, fits the 44–48px row.
         return (
           <Flex
             justifyContent="center"
             alignItems="center"
-            height={"100px"}
-            width={"100px"}
-            m="4px"
+            height="40px"
+            width="40px"
+            my="2px"
+            borderRadius="6px"
             overflow="hidden"
             position="relative"
+            bg="#FFFBF8"
           >
             {props.value ? (
               <Image

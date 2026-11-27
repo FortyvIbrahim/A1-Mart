@@ -391,7 +391,7 @@ export default function PurchaseEntryForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm headerBand title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}
@@ -627,7 +627,7 @@ export default function PurchaseEntryForm({ params }) {
 
                 {/* Items Section */}
                 {values.items && values.items.length > 0 && (
-                  <CustomContainer
+                  <CustomContainer pageForm headerBand
                     containerStyle={{ marginTop: "22px" }}
                     title="Items"
                     size="sm"
@@ -856,7 +856,7 @@ export default function PurchaseEntryForm({ params }) {
 
                 {/* Summary Section */}
                 <Flex justifyContent={{ base: "unset", md: "flex-end" }}>
-                  <CustomContainer
+                  <CustomContainer pageForm headerBand
                     containerStyle={{
                       marginTop: "22px",
                       width: { base: "100%", md: "auto" },

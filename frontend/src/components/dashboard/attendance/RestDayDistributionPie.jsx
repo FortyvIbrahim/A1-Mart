@@ -1,14 +1,14 @@
 "use client";
 
-import { Box, Flex, Grid, GridItem, Text } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 import {
   PieChart,
   Pie,
   Cell,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
-  Text as RechartsSvgText,
 } from "recharts";
+import DashboardChartLegend from "@/components/dashboard/DashboardChartLegend";
 
 function PieTooltip(props) {
   const { active, payload } = props;
@@ -17,102 +17,84 @@ function PieTooltip(props) {
   const p = item?.payload ?? item;
   const fullName = p?.fullName ?? p?.name;
   const value = item?.value;
-  const color = p?.color ?? "#718096";
+  const color = p?.color ?? "#637188";
   return (
     <Flex
       bg="white"
-      borderRadius="md"
-      boxShadow="md"
-      px={3}
-      py={2}
+      borderRadius="8px"
+      boxShadow="0 6px 20px rgba(46, 36, 26, 0.08)"
+      px="10px"
+      py="6px"
       borderWidth="1px"
-      borderColor="gray.100"
+      borderColor="border"
       align="center"
-      gap={2}
-      fontSize="sm"
+      gap="6px"
+      fontSize="11px"
     >
-      <Box w="8px" h="8px" borderRadius="2px" bg={color} flexShrink={0} />
-      <Text>
+      <Box w="7px" h="7px" borderRadius="full" bg={color} flexShrink={0} />
+      <Text color="fg">
         {fullName} ({value})
       </Text>
     </Flex>
   );
 }
 
-const RADIAN = Math.PI / 180;
-
-/** Count only, centered inside the donut ring (white, compact). */
-function RestDayPieInsideCount({
-  cx,
-  cy,
-  midAngle,
-  innerRadius,
-  outerRadius,
-  value,
-  percent,
-}) {
-  if (percent < 0.02 || value == null) return null;
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  return (
-    <RechartsSvgText
-      x={x}
-      y={y}
-      textAnchor="middle"
-      verticalAnchor="middle"
-      fill="#FFFFFF"
-      pointerEvents="none"
-      stroke="rgba(0,0,0,0.35)"
-      strokeWidth={0.35}
-      style={{
-        fontSize: "9px",
-        fontWeight: 800,
-        fontFamily:
-          'ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
-        paintOrder: "stroke fill",
-      }}
-    >
-      {value}
-    </RechartsSvgText>
-  );
-}
+/** Figma "Rest Day Stats": 220px donut, total in the centre, legend at the side. */
+const DONUT_SIZE = 220;
 
 /**
- * Donut chart: employee counts per rest day + unset (counts drawn inside slices only).
+ * Donut chart: employee counts per rest day + unset.
  * @param {Array<{ name: string, fullName?: string, value: number, color: string, restDayKey?: number | string }>} data
  * @param {(entry: object) => void} [onSliceClick] — receives the data row for the clicked slice
  */
 export default function RestDayDistributionPie({
   data = [],
-  height = 200,
   emptyMessage = "No employees in scope",
   onSliceClick,
 }) {
   if (!data.length) {
     return (
-      <Flex minH={`${height}px`} align="center" justify="center">
-        <Text fontSize="sm" color="gray.500">
+      <Flex minH={`${DONUT_SIZE}px`} align="center" justify="center">
+        <Text fontSize="12px" color="fg.muted">
           {emptyMessage}
         </Text>
       </Flex>
     );
   }
 
+  const total = data.reduce((s, d) => s + (Number(d.value) || 0), 0);
+  const legendItems = data.map((d) => ({
+    name: d.restDayKey === "unset" ? "Unset" : d.fullName ?? d.name,
+    value: d.value,
+    fill: d.color,
+    onClick: onSliceClick ? () => onSliceClick(d) : undefined,
+  }));
+
   return (
-    <>
-      <Box height={`${height}px`} w="100%">
+    <Flex
+      align="center"
+      gap="36px"
+      direction={{ base: "column", sm: "row" }}
+      minW={0}
+    >
+      <Box
+        position="relative"
+        w={`${DONUT_SIZE}px`}
+        h={`${DONUT_SIZE}px`}
+        flexShrink={0}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               dataKey="value"
               nameKey="name"
-              innerRadius="42%"
-              outerRadius="72%"
-              paddingAngle={1}
-              label={RestDayPieInsideCount}
-              labelLine={false}
+              innerRadius={80}
+              outerRadius={110}
+              startAngle={90}
+              endAngle={-270}
+              stroke="none"
+              isAnimationActive={false}
               cursor={onSliceClick ? "pointer" : "default"}
               onClick={(slice, index) => {
                 if (!onSliceClick) return;
@@ -126,12 +108,7 @@ export default function RestDayDistributionPie({
               }}
             >
               {data.map((entry, index) => (
-                <Cell
-                  key={`${entry.name}-${index}`}
-                  fill={entry.color}
-                  stroke="var(--chakra-colors-white)"
-                  strokeWidth={1}
-                />
+                <Cell key={`${entry.name}-${index}`} fill={entry.color} />
               ))}
             </Pie>
             <RechartsTooltip
@@ -140,46 +117,26 @@ export default function RestDayDistributionPie({
             />
           </PieChart>
         </ResponsiveContainer>
+        <Flex
+          position="absolute"
+          inset="0"
+          direction="column"
+          align="center"
+          justify="center"
+          gap="4px"
+          pointerEvents="none"
+        >
+          <Text fontSize="25px" fontWeight="600" lineHeight="30px" color="fg">
+            {total}
+          </Text>
+          <Text fontSize="10px" lineHeight="12px" color="fg.muted">
+            total
+          </Text>
+        </Flex>
       </Box>
-
-      <Box
-        w="calc(100% + 44px)"
-        h="1px"
-        bgColor="brand100"
-        ml="-22px"
-        mt={3}
-        mb={3}
-      />
-
-      <Grid templateColumns="repeat(2, minmax(0, 1fr))" gap="6px">
-        {data.map((item, index) => (
-          <GridItem key={`${item.name}-${index}`}>
-            <Flex
-              align="center"
-              fontSize="xs"
-              h="22px"
-              minW={0}
-              cursor={onSliceClick ? "pointer" : "default"}
-              onClick={() => onSliceClick?.(item)}
-            >
-              <Box
-                w="10px"
-                h="10px"
-                borderRadius="2px"
-                bg={item.color}
-                mr={2}
-                flexShrink={0}
-              />
-              <Text
-                lineClamp={1}
-                title={`${item.fullName ?? item.name} (${item.value})`}
-              >
-                {item.name} ({item.value})
-              </Text>
-            </Flex>
-          </GridItem>
-        ))}
-      </Grid>
-    </>
+      <Box flex="1" minW={0} w="100%" mt="-16px">
+        <DashboardChartLegend items={legendItems} columns={2} />
+      </Box>
+    </Flex>
   );
 }

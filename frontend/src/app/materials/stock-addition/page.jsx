@@ -2,6 +2,7 @@
 
 import useStockAdditions from "@/api/customHooks/useStockAdditions";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import React from "react";
@@ -11,6 +12,13 @@ import toast from "react-hot-toast";
 import { Button } from "@chakra-ui/react";
 import usePermission from "@/customHooks/usePermission";
 import Link from "next/link";
+
+
+/** Figma list filters for this page. */
+const LIST_FILTERS = [
+  { key: "q", type: "search", label: "Search", placeholder: "Search records...", getText: (r) => `${r.stock_addition_id ?? ""} ${r.creator_employee_name ?? ""}` },
+  { key: "status", type: "select", label: "Status", placeholder: "All statuses", getValue: (r) => (r.is_approved ? "Approved" : "Pending") },
+];
 
 function StockAddition() {
   const router = useRouter();
@@ -98,9 +106,11 @@ function StockAddition() {
     },
   ];
 
+  const { filtered: filteredRows, filterCard } = useListFilters(stockAdditions, LIST_FILTERS, { reset: true });
+
   return (
     <GlobalWrapper permissionKey="view_stock_addition">
-      <CustomContainer
+      <CustomContainer headerBand
         title="Stock Addition"
         rightSection={
           allowAdd && (
@@ -110,8 +120,9 @@ function StockAddition() {
           )
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={stockAdditions}
+          rowData={filteredRows}
           columnDefs={colDefs}
           tableKey="stock-addition"
         />

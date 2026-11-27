@@ -2,6 +2,7 @@
 
 import useMaterials from "@/api/customHooks/useMaterials";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import CustomMenu from "@/components/CustomMenu";
 import GlobalWrapper from "@/components/GlobalWrapper";
@@ -11,6 +12,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
+
+
+/** Figma list filters for this page. */
+const LIST_FILTERS = [
+  { key: "q", type: "search", label: "Search", placeholder: "Search records...", getText: (r) => `${r.material_id ?? ""} ${r.name ?? ""} ${r.supplier_name ?? ""}` },
+  { key: "category", type: "select", label: "Category", placeholder: "All categories", getValue: (r) => r.category?.category_name },
+  { key: "status", type: "select", label: "Status", placeholder: "All statuses", getValue: (r) => (r.is_active ? "Active" : "Inactive") },
+];
 
 function Materials() {
   const router = useRouter();
@@ -142,9 +151,11 @@ function Materials() {
     },
   ];
 
+  const { filtered: filteredRows, filterCard } = useListFilters(materials, LIST_FILTERS, { reset: true });
+
   return (
     <GlobalWrapper permissionKey="view_materials">
-      <CustomContainer
+      <CustomContainer headerBand
         title="Materials"
         rightSection={
           <Flex gap="18px">
@@ -158,8 +169,9 @@ function Materials() {
           </Flex>
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={materials}
+          rowData={filteredRows}
           columnDefs={colDefs}
           gridOptions={{ rowHeight: 80 }}
           tableKey="materials"

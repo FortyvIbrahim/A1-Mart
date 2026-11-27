@@ -104,7 +104,7 @@ function MoneyTransferList() {
 
   return (
     <GlobalWrapper permissionKey="view_money_transfer">
-      <CustomContainer
+      <CustomContainer contentCard
         title="Money Transfers"
         rightSection={
           canAdd && (
@@ -114,7 +114,7 @@ function MoneyTransferList() {
           )
         }
       >
-        <div style={{ marginBottom: 16 }}>{filterCard}</div>
+        {filterCard}
         <AgGrid
           rowData={filteredRows}
           columnDefs={colDefs}

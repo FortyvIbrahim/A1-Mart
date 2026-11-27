@@ -41,17 +41,17 @@ const PayrollMonthCalendar = ({
     if (payroll) {
       return {
         status: "uploaded",
-        color: "green.500",
-        bgColor: "green.100",
-        borderColor: "green.300",
+        color: "#C95C18",
+        bgColor: "#E8F6EF",
+        borderColor: "#F1E3D9",
         label: "Has payroll",
       };
     }
     return {
       status: "pending",
-      color: "gray.500",
-      bgColor: "gray.100",
-      borderColor: "gray.300",
+      color: "#C95C18",
+      bgColor: "#FFFBF8",
+      borderColor: "#F1E3D9",
       label: "No payroll",
     };
   };
@@ -63,14 +63,17 @@ const PayrollMonthCalendar = ({
   };
 
   return (
-    <VStack align="stretch" spacing={4}>
-      <Flex gap={4} align="center" wrap="wrap">
+    <VStack align="stretch" gap="16px">
+      <Flex gap="16px" align="flex-end" wrap="wrap">
         <Box>
-          <Text fontSize="sm" fontWeight="medium" mb="8px">
+          <Text fontSize="12px" fontWeight="500" color="fg.muted" mb="8px">
             Year
           </Text>
           <NativeSelect.Root width="120px">
             <NativeSelect.Field
+              h="44px"
+              ps="12px"
+              fontSize="12px"
               value={String(selectedYear)}
               onChange={(e) => onYearChange(Number(e.target.value))}
             >
@@ -80,14 +83,14 @@ const PayrollMonthCalendar = ({
                 </option>
               ))}
             </NativeSelect.Field>
-            <NativeSelect.Indicator />
+            <NativeSelect.Indicator color="#C95C18" />
           </NativeSelect.Root>
         </Box>
         <Box flex="1" minW="200px">
-          <Text fontSize="sm" fontWeight="medium" mb="8px">
+          <Text fontSize="12px" fontWeight="500" color="fg.muted" mb="8px">
             Month
           </Text>
-          <Flex gap={2} wrap="wrap">
+          <Flex gap="8px" wrap="wrap">
             {MONTH_LABELS.map((label, monthIndex) => {
               const status = getMonthStatus(monthIndex);
               const selected = isSelected(monthIndex);
@@ -99,9 +102,9 @@ const PayrollMonthCalendar = ({
                   placement="top"
                 >
                   <Box
-                    width="36px"
-                    height="36px"
-                    borderRadius="6px"
+                    width="64px"
+                    height="40px"
+                    borderRadius="8px"
                     backgroundColor={status.bgColor}
                     color={status.color}
                     cursor="pointer"
@@ -109,8 +112,9 @@ const PayrollMonthCalendar = ({
                     _hover={{
                       borderColor: status.color,
                     }}
-                    borderWidth={selected ? "2px" : "1px"}
-                    borderColor={selected ? status.color : status.borderColor}
+                    borderWidth="1px"
+                    borderColor={selected ? "#F47721" : status.borderColor}
+                    boxShadow={selected ? "0 0 0 1px #F47721" : undefined}
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
@@ -120,8 +124,8 @@ const PayrollMonthCalendar = ({
                     }}
                   >
                     <Text
-                      fontSize="xs"
-                      fontWeight={selected ? "bold" : "medium"}
+                      fontSize="12px"
+                      fontWeight={selected ? "600" : "500"}
                       textAlign="center"
                       lineHeight="1"
                     >
@@ -135,29 +139,14 @@ const PayrollMonthCalendar = ({
         </Box>
       </Flex>
 
-      <HStack spacing={4} fontSize="sm" mt="8px">
-        <HStack spacing={2}>
-          <Box
-            width="16px"
-            height="16px"
-            borderRadius="4px"
-            backgroundColor="green.100"
-            borderWidth="1px"
-            borderColor="green.300"
-          />
-          <Text fontSize="xs">Has payroll</Text>
-        </HStack>
-        <HStack spacing={2}>
-          <Box
-            width="16px"
-            height="16px"
-            borderRadius="4px"
-            backgroundColor="gray.100"
-            borderWidth="1px"
-            borderColor="gray.300"
-          />
-          <Text fontSize="xs">No payroll</Text>
-        </HStack>
+      {/* Figma legend: plain text, "Has payroll" green 12/500, "No payroll" muted. */}
+      <HStack gap="16px">
+        <Text fontSize="12px" fontWeight="500" color="#147D52">
+          Has payroll
+        </Text>
+        <Text fontSize="12px" color="fg.muted">
+          No payroll
+        </Text>
       </HStack>
     </VStack>
   );

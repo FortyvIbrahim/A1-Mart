@@ -2,7 +2,7 @@
 
 import { LuChevronDown, LuX } from "react-icons/lu";
 import agGridTheme from "@/theme/aggrid";
-import { useRegisterGrid } from "../CustomContainer";
+import { useInsideCard, useInsideMainCard, useRegisterGrid } from "../CustomContainer";
 import TableSkeleton from "../TableSkeleton";
 import usePendingRequests from "@/customHooks/usePendingRequests";
 import { capitalizeWordsLatest } from "@/utils/string";
@@ -111,12 +111,18 @@ const AgGrid = React.forwardRef(function AgGrid(
     paginationPageSize: paginationPageSizeProp,
     paginationPageSizeSelector: paginationPageSizeSelectorProp,
     loading: loadingProp,
+    bare = false,
     ...props
   },
   ref
 ) {
   const isMobile = useBreakpointValue({ base: true, md: false });
   const registerGrid = useRegisterGrid();
+  // Figma list tables sit in their own white card (radius 12, 1px #F1E3D9,
+  // 16px padding) unless the grid is already inside a card.
+  const insideCard = useInsideCard();
+  const insideMainCard = useInsideMainCard();
+  const framed = !bare && !insideCard;
   useEffect(() => registerGrid?.(), [registerGrid]);
 
   // Skeleton while the page's first data load is in flight. Pages may pass
@@ -184,6 +190,12 @@ const AgGrid = React.forwardRef(function AgGrid(
       filter: true,
       flex: 1,
       minWidth: 100,
+      // Figma table headers are plain labels — no ≡ menu / filter buttons.
+      suppressHeaderMenuButton: true,
+      suppressHeaderFilterButton: true,
+      // Long labels wrap onto two lines as in Figma ("Completion %").
+      wrapHeaderText: true,
+      autoHeaderHeight: true,
     };
 
     const baseOptions = {
@@ -789,7 +801,25 @@ const AgGrid = React.forwardRef(function AgGrid(
   const gridContent = showSkeleton ? (
     <TableSkeleton columns={skeletonColumns} />
   ) : (
-    <Box>
+    <Box
+      {...(framed && insideMainCard
+        ? {
+            // Master Data / Workspace "Table card": radius 8, 1px border, no padding.
+            borderWidth: "1px",
+            borderColor: "#E4E7EB",
+            borderRadius: "8px",
+            overflow: "hidden",
+          }
+        : framed
+        ? {
+            bg: "white",
+            borderWidth: "1px",
+            borderColor: "border",
+            borderRadius: "12px",
+            p: { base: "12px", md: "16px" },
+          }
+        : {})}
+    >
       <AgGridReact
         ref={gridRefInternal}
         rowData={rowData}
@@ -799,7 +829,7 @@ const AgGrid = React.forwardRef(function AgGrid(
           effectiveMergedGridOptions.paginationPageSizeSelector
         }
         domLayout="autoHeight"
-        theme={agGridTheme(colorPalette)}
+        theme={agGridTheme(colorPalette, { bare })}
         className={className}
         {...props}
         rowSelection={enhancedRowSelection}
@@ -819,7 +849,7 @@ const AgGrid = React.forwardRef(function AgGrid(
   return (
     <Box position="relative" w="100%" onContextMenu={handleContextMenu}>
       <Box position="relative">
-        <Flex justifyContent="flex-end" mb="10px">
+        <Flex justifyContent="flex-end" mb="8px">
           <Popover.Root
             open={settingsOpen}
             onOpenChange={(e) => setSettingsOpen(e.open)}
@@ -831,21 +861,23 @@ const AgGrid = React.forwardRef(function AgGrid(
               <Button
                 aria-label="Table settings"
                 size="xs"
-                h="32px"
-                px="12px"
+                h="34px"
+                w="122px"
+                px="0"
                 variant="outline"
                 colorPalette="brand"
-                bg={settingsOpen ? "brand.50" : "white"}
+                bg="app.tableHeader"
                 borderColor={settingsOpen ? "brand.200" : "border"}
-                color="brand.600"
-                fontWeight="600"
-                borderRadius="9px"
-                gap="6px"
-                _hover={{ bg: "brand.50", borderColor: "brand.200" }}
+                color="#C95C18"
+                fontSize="12px"
+                fontWeight="500"
+                borderRadius="8px"
+                gap="8px"
+                _hover={{ bg: "brand.100", borderColor: "brand.200" }}
               >
-                <FaCog />
+                <FaCog style={{ width: 16, height: 16 }} />
                 Settings
-                <LuChevronDown />
+                <LuChevronDown style={{ width: 12, height: 12 }} />
               </Button>
             </Popover.Trigger>
             <Portal>

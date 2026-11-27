@@ -9,7 +9,10 @@ import {
 import AgGrid from "@/components/AgGrid";
 import ChecklistDashboardChartsGrid from "@/components/Checklist/ChecklistDashboardChartsGrid";
 import ChecklistPendingQuestionsModal from "@/components/Checklist/ChecklistPendingQuestionsModal";
-import CustomContainer from "@/components/CustomContainer";
+import {
+  DashboardCard,
+  DashboardFilterPanel,
+} from "@/components/dashboard/DashboardUI";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import DashboardPageTitle, {
   DashboardTitleSection,
@@ -39,7 +42,8 @@ import {
   submissionStatsEntriesForFormDate,
   submissionStatsKeyForYmd,
 } from "@/utils/checklistSubmissionStatsCalendar";
-import { Box, Button, Flex, NativeSelect } from "@chakra-ui/react";
+import { Box, Button, Flex, NativeSelect, Text } from "@chakra-ui/react";
+import { LuChevronDown } from "react-icons/lu";
 import moment from "moment";
 import { useRouter } from "next/navigation";
 import React, {
@@ -54,10 +58,19 @@ import "react-datepicker/dist/react-datepicker.css";
 import toast from "react-hot-toast";
 
 const PIE_COLORS = {
-  "On time": "#38A169",
-  Late: "#E53E3E",
-  Pending: "#ECC94B",
+  "On time": "#11976A",
+  Late: "#E7474D",
+  Pending: "#E3B63E",
 };
+
+/** Figma page-heading filter label (10/500, 7px above a 40px control). */
+function HeadLabel({ children }) {
+  return (
+    <Text fontSize="10px" lineHeight="12px" fontWeight="500" color="fg.muted" mb="7px">
+      {children}
+    </Text>
+  );
+}
 
 function toYmd(d) {
   return moment(d).format("YYYY-MM-DD");
@@ -80,6 +93,8 @@ export default function ChecklistDashboardPage() {
   const [pendingModalLoading, setPendingModalLoading] = useState(false);
   const [pendingModalSections, setPendingModalSections] = useState([]);
   const [branchFilterIds, setBranchFilterIds] = useState([]);
+  const [formSearch, setFormSearch] = useState("");
+  const [formSort, setFormSort] = useState("progress");
 
   const { employees } = useEmployee({ allBranches: true });
   const { branches: branchesApi } = useBranches();
@@ -467,33 +482,44 @@ export default function ChecklistDashboardPage() {
     return Math.min(560, Math.max(220, 36 + n * 52));
   }, [contributorBarRows.length]);
 
+  const visibleFormRows = useMemo(() => {
+    const q = formSearch.trim().toLowerCase();
+    const pct = (r) => {
+      const st = r._branchStat;
+      if (!st || st._noSubmission) return 0;
+      const total = st.total_questions ?? r.questions_count ?? 0;
+      return total > 0 ? (st.answered ?? 0) / total : 0;
+    };
+    const rows = formsTableRows.filter(
+      (r) => !q || `${r.id ?? ""} ${r.title ?? ""}`.toLowerCase().includes(q)
+    );
+    if (formSort === "title") {
+      return [...rows].sort((a, b) => String(a.title ?? "").localeCompare(String(b.title ?? "")));
+    }
+    if (formSort === "date") {
+      return [...rows].sort((a, b) => String(b._responseYmd ?? "").localeCompare(String(a._responseYmd ?? "")));
+    }
+    return [...rows].sort((a, b) => pct(a) - pct(b));
+  }, [formsTableRows, formSearch, formSort]);
+
   const formSelectControl =
     formsForBarSelect.length > 0 ? (
-      <NativeSelect.Root
-        width={{ base: "100%", md: "220px" }}
-        size="sm"
-        colorPalette="secondary"
-      >
+      <NativeSelect.Root width="100%">
         <NativeSelect.Field
-          fontSize="xs"
-          minH="32px"
-          h="32px"
-          py={0}
-          pl={2}
-          pr={10}
+          h="40px"
+          ps="12px"
+          pe="34px"
+          fontSize="12px"
+          borderRadius="8px"
+          borderColor="border"
+          bg="white"
+          color={selectedBarFormId != null ? "fg" : "fg.muted"}
           value={selectedBarFormId != null ? String(selectedBarFormId) : ""}
-          color={selectedBarFormId != null ? "secondary.800" : "secondary.500"}
-          borderColor="secondary.200"
-          bg="secondary.50"
-          _hover={{ borderColor: "secondary.300", bg: "secondary.50" }}
-          _focusVisible={{
-            borderColor: "secondary.500",
-            boxShadow: "0 0 0 1px var(--chakra-colors-secondary-500)",
-          }}
           onChange={(e) => {
             const v = e.target.value;
             setSelectedBarFormId(v ? Number(v) : null);
           }}
+          aria-label="Checklist form"
         >
           {formsForBarSelect.map((f) => (
             <option key={f.id} value={f.id}>
@@ -501,7 +527,9 @@ export default function ChecklistDashboardPage() {
             </option>
           ))}
         </NativeSelect.Field>
-        <NativeSelect.Indicator color="secondary.600" />
+        <NativeSelect.Indicator right="12px" color="#C95C18">
+          <LuChevronDown size={14} />
+        </NativeSelect.Indicator>
       </NativeSelect.Root>
     ) : null;
 
@@ -509,7 +537,7 @@ export default function ChecklistDashboardPage() {
     <GlobalWrapper permissionKey={DASHBOARD_ROUTES.checklist.permissionKey}>
       <Flex
         flexDirection="column"
-        gap="22px"
+        gap="24px"
         w="100%"
         maxW="100%"
         overflow="hidden"
@@ -517,16 +545,16 @@ export default function ChecklistDashboardPage() {
         <DashboardTitleSection pb={0}>
           <Flex
             w="100%"
-            align="center"
             justify="space-between"
             gap={3}
             flexWrap={{ base: "wrap", lg: "nowrap" }}
             rowGap={2}
+            alignItems="flex-end"
           >
             <DashboardPageTitle title="Checklist Dashboard" />
             <Flex
-              gap={3}
-              alignItems="center"
+              gap="10px"
+              alignItems="flex-end"
               flexWrap="wrap"
               justifyContent={{ base: "flex-start", lg: "flex-end" }}
               flexShrink={{ lg: 1 }}
@@ -536,6 +564,7 @@ export default function ChecklistDashboardPage() {
             >
               {/* CustomDateTimeInput uses flex={1} on Input — constrain width so it cannot span the page */}
               <Box flex="0 0 auto" w="158px" maxW="calc(50% - 8px)">
+                <HeadLabel>From</HeadLabel>
                 <DatePicker
                   selected={dateRange.startDate}
                   onChange={(date) =>
@@ -555,6 +584,7 @@ export default function ChecklistDashboardPage() {
                 />
               </Box>
               <Box flex="0 0 auto" w="158px" maxW="calc(50% - 8px)">
+                <HeadLabel>To</HeadLabel>
                 <DatePicker
                   selected={dateRange.endDate}
                   onChange={(date) =>
@@ -577,13 +607,15 @@ export default function ChecklistDashboardPage() {
               {canAccessAllBranches ? (
                 <Box
                   flex="0 1 auto"
-                  w={{ base: "min(100%, 280px)", lg: "260px" }}
-                  minW="200px"
+                  w={{ base: "min(100%, 280px)", lg: "190px" }}
+                  minW="180px"
                   maxW="320px"
-                  marginBottom="26px"
                 >
+                  <HeadLabel>Branch</HeadLabel>
                   <CustomInput
-                    label="Branch"
+                    label=" "
+                    labelStyle={{ display: "none" }}
+                    h="40px"
                     name="checklist_dashboard_branch_ids"
                     method="multiple-dropdown"
                     placeholder="All branches"
@@ -594,8 +626,12 @@ export default function ChecklistDashboardPage() {
                 </Box>
               ) : null}
               <Button
-                size="sm"
-                variant="outline"
+                h="40px"
+                px="16px"
+                fontSize="12px"
+                bg="#FFF5ED"
+                color="#C95C18"
+                _hover={{ bg: "#FDE9DA" }}
                 flexShrink={0}
                 onClick={() => {
                   const t = new Date();
@@ -607,6 +643,32 @@ export default function ChecklistDashboardPage() {
             </Flex>
           </Flex>
         </DashboardTitleSection>
+
+        <DashboardFilterPanel
+          columns={2}
+          fields={[
+            {
+              key: "search",
+              type: "search",
+              label: "Search",
+              placeholder: "Search checklist id or title…",
+              value: formSearch,
+              onChange: setFormSearch,
+            },
+            {
+              key: "sort",
+              label: "Sort by",
+              placeholder: false,
+              value: formSort,
+              onChange: setFormSort,
+              options: [
+                { value: "progress", label: "Progress" },
+                { value: "date", label: "Date" },
+                { value: "title", label: "Title" },
+              ],
+            },
+          ]}
+        />
 
         <ChecklistDashboardChartsGrid
           loading={loading}
@@ -626,14 +688,14 @@ export default function ChecklistDashboardPage() {
           formSelectControl={formSelectControl}
         />
 
-        <CustomContainer
-          title={`Forms - ${formsTableTitleSuffix}`}
-          color="secondary"
-          size="sm"
+        <DashboardCard
+          title={`Forms — ${formsTableTitleSuffix}`}
+          subtitle="Use search, filters and sorting to narrow records."
         >
           <AgGrid
+            bare
             ref={gridRef}
-            rowData={loading ? [] : formsTableRows}
+            rowData={loading ? [] : visibleFormRows}
             columnDefs={colDefs}
             tableKey={`checklist-dashboard-forms-${fromYmd ?? "x"}-${
               toYmdStr ?? "x"
@@ -645,7 +707,7 @@ export default function ChecklistDashboardPage() {
                   : String(p.data?.id ?? ""),
             }}
           />
-        </CustomContainer>
+        </DashboardCard>
 
         <ChecklistPendingQuestionsModal
           open={pendingModalOpen}

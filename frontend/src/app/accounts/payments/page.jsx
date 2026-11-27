@@ -96,7 +96,7 @@ function PaymentsList() {
 
   return (
     <GlobalWrapper permissionKey="view_payments">
-      <CustomContainer
+      <CustomContainer contentCard
         title="Payment Entry"
         rightSection={
           canAdd && (
@@ -106,7 +106,7 @@ function PaymentsList() {
           )
         }
       >
-        <div style={{ marginBottom: 16 }}>{filterCard}</div>
+        {filterCard}
         <AgGrid
           rowData={filteredRows}
           columnDefs={colDefs}

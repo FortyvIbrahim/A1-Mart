@@ -175,7 +175,7 @@ function ProductsForm({ params }) {
   if (loading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Text>Loading...</Text>
         </CustomContainer>
       </GlobalWrapper>
@@ -185,7 +185,7 @@ function ProductsForm({ params }) {
   if (!product) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Text>Product not found</Text>
         </CustomContainer>
       </GlobalWrapper>
@@ -194,7 +194,7 @@ function ProductsForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}

@@ -492,7 +492,7 @@ export default function IncentiveCommonForm({
 
   return (
     <GlobalWrapper permissionKey={permissionKey}>
-      <CustomContainer title={getTitleText()}>
+      <CustomContainer pageForm headerBand title={getTitleText()}>
         <Formik
           initialValues={initialValues}
           validationSchema={getValidationSchema(showClusterSelection)}

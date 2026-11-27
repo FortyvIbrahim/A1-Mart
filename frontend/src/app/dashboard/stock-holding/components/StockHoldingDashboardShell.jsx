@@ -17,7 +17,10 @@ import {
 import GlobalWrapper from "@/components/GlobalWrapper";
 import CustomContainer from "@/components/CustomContainer";
 import CustomInput from "@/components/CustomInput";
-import { DashboardTitleSection } from "@/components/dashboard/DashboardPageTitle";
+import DashboardPageTitle, {
+  DashboardTitleSection,
+} from "@/components/dashboard/DashboardPageTitle";
+import { DashboardCard, DashboardTabs } from "@/components/dashboard/DashboardUI";
 import { DASHBOARD_ROUTES } from "@/constants/routes/index";
 import ViewItemsModal from "./ViewItemsModal";
 import { useStockHoldingDashboard } from "../StockHoldingDashboardContext";
@@ -206,76 +209,52 @@ export default function StockHoldingDashboardShell({
 
       <Flex
         direction="column"
-        gap="22px"
+        gap="24px"
         w="100%"
         maxW="100%"
         overflow="hidden"
       >
-        <DashboardTitleSection>
-          <Flex
-            direction="column"
-            gap={3}
-            w="100%"
-            align="stretch"
-          >
+        {/* Figma "Stock Holding": 22px title + date on the right, then the
+            Stock Holding / Stock Availability / Sales Dashboard pills. */}
+        <DashboardTitleSection pb={0}>
+          <Flex direction="column" gap="16px" w="100%">
             <Flex
               justify="space-between"
               w="100%"
               gap={3}
               flexWrap="wrap"
-              alignItems="flex-end"
+              alignItems="center"
             >
-              <Tabs.Root
-                value={activeTab}
-                onValueChange={(details) => onTabChange(details.value)}
-                variant="line"
-                colorPalette="brand"
-                fitted={false}
-              >
-                <Tabs.List borderBottomWidth="0">
-                  {DASHBOARD_TABS.map((tab) => (
-                    <Tabs.Trigger key={tab.value} value={tab.value}>
-                      {tab.label}
-                    </Tabs.Trigger>
-                  ))}
-                </Tabs.List>
-              </Tabs.Root>
-
-              <Flex align="flex-end" gap={3} flexWrap="wrap">
-                <Box w={{ base: "100%", md: "220px" }}>
-                  <Text fontSize="sm" mb={1} color="gray.600">
-                    Date
-                  </Text>
-                  <Input
-                    type="date"
-                    value={datePickerValue}
-                    onChange={(e) => handleDateChange(e.target.value)}
-                  />
-                </Box>
+              <DashboardPageTitle
+                title={
+                  { holding: "Stock Holding", availability: "Stock Availability", sales: "Sales Dashboard" }[
+                    activeTab
+                  ] ?? "Stock Holding"
+                }
+                subtitle=""
+                size="sm"
+              />
+              <Flex align="center" gap="12px" flexWrap="wrap">
                 {!isSalesTab ? (
-                  <Box>
-                    <Text fontSize="xs" mb={1} color="gray.500">
-                      Last sync
-                    </Text>
-                    <Text fontSize="sm" color="gray.700">
-                      {lastSyncFormatted || "No sync data"}
-                    </Text>
-                  </Box>
+                  <Text fontSize="11px" color="fg.muted">
+                    Last sync: {lastSyncFormatted || "No sync data"}
+                  </Text>
                 ) : null}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  colorPalette="brand"
-                  onClick={handleRefresh}
-                  disabled={isSalesTab ? false : loading || refreshing}
-                  loading={isSalesTab ? false : refreshing}
-                  loadingText="Refreshing..."
-                >
-                  <i className="fa fa-refresh" aria-hidden="true" />
-                  Refresh
-                </Button>
+                <Input
+                  type="date"
+                  aria-label="Date"
+                  w={{ base: "100%", md: "160px" }}
+                  h="40px"
+                  value={datePickerValue}
+                  onChange={(e) => handleDateChange(e.target.value)}
+                />
               </Flex>
             </Flex>
+            <DashboardTabs
+              tabs={DASHBOARD_TABS}
+              value={activeTab}
+              onChange={onTabChange}
+            />
           </Flex>
         </DashboardTitleSection>
 
@@ -307,46 +286,14 @@ export default function StockHoldingDashboardShell({
           </CustomContainer>
         ) : (
           <>
-            <CustomContainer
-              title="Filters"
-              size="sm"
-              color="secondary"
-              rightSection={
-                <Flex align="center" gap={4} flexWrap="wrap" justify="flex-end">
-                  {!isSalesTab ? (
-                    <Checkbox.Root
-                      checked={showLowStock}
-                      onCheckedChange={(e) =>
-                        applyFilterUpdate(() =>
-                          setShowLowStock(Boolean(e.checked))
-                        )
-                      }
-                    >
-                      <Checkbox.HiddenInput />
-                      <Checkbox.Control />
-                      <Checkbox.Label fontSize="sm" whiteSpace="nowrap">
-                        Show Low Stock
-                      </Checkbox.Label>
-                    </Checkbox.Root>
-                  ) : null}
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    colorPalette="secondary"
-                    onClick={clearFilters}
-                  >
-                    Clear Filters
-                  </Button>
-                </Flex>
-              }
-            >
+            <DashboardCard title="Filters" gap="12px">
               <Grid
                 templateColumns={{
                   base: "1fr",
                   md: "repeat(2, 1fr)",
                   lg: "repeat(4, 1fr)",
                 }}
-                gap={3}
+                gap="16px"
               >
                 <CustomInput
                   label="Branch"
@@ -452,6 +399,11 @@ export default function StockHoldingDashboardShell({
                     )
                   }
                 />
+              </Grid>
+              <Grid
+                templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
+                gap="16px"
+              >
                 <CustomInput
                   label="Chain Bill Count Level"
                   placeholder="All levels"
@@ -525,7 +477,7 @@ export default function StockHoldingDashboardShell({
                   </Checkbox.Root>
                 </Flex> */}
               </Grid>
-            </CustomContainer>
+            </DashboardCard>
 
             {children}
           </>

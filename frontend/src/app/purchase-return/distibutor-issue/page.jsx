@@ -6,6 +6,7 @@ import { Button } from "@chakra-ui/react";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import CustomContainer from "@/components/CustomContainer";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import usePurchaseReturns from "@/api/customHooks/usePurchaseReturns";
 import useDeleteModal from "@/customHooks/useDeleteModal";
 import { deleteDelivered } from "@/api/helpers/purchaseReturns";
@@ -45,6 +46,21 @@ function getDeliveredListFromPurchaseReturns(purchaseReturns) {
       (a.purchase_returns_items_delivered_id ?? 0)
   );
 }
+
+/** Figma 03 Distributor Issue: Search · Created Date · Sort by. */
+const LIST_FILTERS = [
+  { key: "q", type: "search", label: "Search", placeholder: "Search issue id, pick-up name, phone...", getText: (r) => `${r.purchases_returns_items_delivered_id ?? r.purchase_returns_items_delivered_id ?? ""} ${r.pick_up_name ?? ""} ${r.pick_up_number ?? ""} ${r.supplier_name ?? ""}` },
+  { key: "created", type: "date", label: "Created Date", getValue: (r) => r.created_at },
+  {
+    key: "sort",
+    type: "sort",
+    label: "Sort by",
+    options: [
+      { value: "created", label: "Created Date", compare: (a, b) => moment(b.created_at).valueOf() - moment(a.created_at).valueOf() },
+      { value: "supplier", label: "Supplier", compare: (a, b) => String(a.supplier_name ?? "").localeCompare(String(b.supplier_name ?? "")) },
+    ],
+  },
+];
 
 function DistributorIssueListing() {
   const { purchaseReturns, refresh } = usePurchaseReturns();
@@ -131,18 +147,22 @@ function DistributorIssueListing() {
     []
   );
 
+  const { filtered: filteredRows, filterCard } = useListFilters(rowData, LIST_FILTERS, { columns: 3 });
+
   return (
     <GlobalWrapper permissionKey="view_purchase_return_distibutor_issue">
       <CustomContainer
+        headerBand
         title="Distributor Issue"
         rightSection={
           <Link href="/purchase-return/distibutor-issue/create">
-            <Button size="sm">Add</Button>
+            <Button h="39px" px="16px" fontSize="12px">Add</Button>
           </Link>
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={rowData}
+          rowData={filteredRows}
           columnDefs={colDefs}
           tableKey="distributor-issue-listing"
           defaultRows={20}

@@ -124,6 +124,7 @@ function GRN() {
   return (
     <GlobalWrapper permissionKey="view_grn">
       <CustomContainer
+        contentCard
         title="GRN"
         rightSection={
           canAdd && (

@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Box, Grid, Input, NativeSelect, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Grid, Input, NativeSelect, Text } from "@chakra-ui/react";
 import { capitalizeWordsLatest } from "@/utils/string";
+import { useInsideMainCard } from "@/components/CustomContainer";
+import { DashboardFilterField } from "@/components/dashboard/DashboardUI";
 
 /**
  * Figma list filter card ("Branch · Voucher From · Voucher To · Created By",
@@ -23,8 +25,30 @@ function toDay(v) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 
-export function useListFilters(rows, fields, { columns } = {}) {
+/**
+ * Card chrome for the filters. Inside a Figma header-band / main card page the
+ * filters sit directly on that card, so the border and padding drop away.
+ * Rendered as a component so it reads the container it is placed in.
+ */
+function FilterShell({ children, spaced = true }) {
+  const plain = useInsideMainCard();
+  return (
+    <Box
+      mb={plain || !spaced ? 0 : "16px"}
+      bg="white"
+      borderWidth={plain ? 0 : "1px"}
+      borderColor="#E9E3DF"
+      borderRadius="12px"
+      p={plain ? 0 : { base: "14px", md: "20px" }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+export function useListFilters(rows, fields, { columns, reset = false } = {}) {
   const [values, setValues] = useState({});
+
   const list = Array.isArray(rows) ? rows : [];
   const set = (key, v) => setValues((prev) => ({ ...prev, [key]: v }));
 
@@ -50,8 +74,9 @@ export function useListFilters(rows, fields, { columns } = {}) {
   }, [list, fields]);
 
   const filtered = useMemo(() => {
-    return list.filter((row) =>
+    const rows = list.filter((row) =>
       fields.every((f) => {
+        if (f.type === "sort") return true;
         const v = values[f.key];
         if (v === undefined || v === "" || v === null) return true;
         if (f.type === "search") {
@@ -62,31 +87,65 @@ export function useListFilters(rows, fields, { columns } = {}) {
         if (f.type === "select") return String(f.getValue(row)) === String(v);
         const day = toDay(f.getValue(row));
         if (day === null) return false;
+        if (f.type === "date") return day === toDay(v);
         if (f.type === "dateFrom") return day >= toDay(v);
         if (f.type === "dateTo") return day <= toDay(v);
         return true;
       })
     );
+    // { type: "sort", options: [{ value, label, compare(a, b) }] } — first option is the default.
+    const sortField = fields.find((f) => f.type === "sort");
+    if (sortField?.options?.length) {
+      const chosen =
+        sortField.options.find((o) => o.value === values[sortField.key]) ??
+        sortField.options[0];
+      if (chosen?.compare) return [...rows].sort(chosen.compare);
+    }
+    return rows;
   }, [list, fields, values]);
 
   const field = (f) => {
     const control =
       f.type === "search" ? (
         <Input
-          h="40px"
-          fontSize="13px"
+          h="44px"
+          px="12px"
+          fontSize="12px"
+          fontWeight="500"
           placeholder={f.placeholder ?? "Search..."}
           value={values[f.key] ?? ""}
           onChange={(e) => set(f.key, e.target.value)}
           aria-label={f.label ?? f.placeholder ?? "Search"}
         />
+      ) : f.type === "sort" ? (
+        <NativeSelect.Root>
+          <NativeSelect.Field
+            h="44px"
+            ps="12px"
+            fontSize="12px"
+            fontWeight="500"
+            color="fg"
+            value={values[f.key] ?? f.options?.[0]?.value ?? ""}
+            onChange={(e) => set(f.key, e.target.value)}
+            aria-label={f.label}
+          >
+            {(f.options || []).map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </NativeSelect.Field>
+          <NativeSelect.Indicator color="#C95C18" />
+        </NativeSelect.Root>
       ) : f.type === "select" ? (
         <NativeSelect.Root>
           <NativeSelect.Field
-            h="40px"
-            fontSize="13px"
+            h="44px"
+            ps="12px"
+            fontSize="12px"
+            fontWeight="500"
             value={values[f.key] ?? ""}
-            color={values[f.key] ? "gray.800" : "gray.500"}
+            color={values[f.key] ? "fg" : "fg.muted"}
             onChange={(e) => set(f.key, e.target.value)}
             aria-label={f.label ?? f.placeholder}
           >
@@ -97,24 +156,27 @@ export function useListFilters(rows, fields, { columns } = {}) {
               </option>
             ))}
           </NativeSelect.Field>
-          <NativeSelect.Indicator />
+          <NativeSelect.Indicator color="#C95C18" />
         </NativeSelect.Root>
       ) : (
-        <Input
-          type="date"
-          h="40px"
-          fontSize="13px"
-          value={values[f.key] ?? ""}
-          onChange={(e) => set(f.key, e.target.value)}
-          color={values[f.key] ? "gray.800" : "gray.500"}
-          aria-label={f.label}
+        // Figma date filter: dropdown-style field reading "All dates".
+        <DashboardFilterField
+          size="lg"
+          field={{
+            key: f.key,
+            type: "date",
+            placeholder: f.placeholder ?? "All dates",
+            value: values[f.key] ? new Date(values[f.key]) : null,
+            onChange: (d) => set(f.key, d ? d.toISOString() : ""),
+            clearable: true,
+          }}
         />
       );
 
     return (
       <Box key={f.key} minW={0}>
         {f.label && (
-          <Text fontSize="12.5px" fontWeight="500" color="gray.600" mb="6px">
+          <Text fontSize="12px" fontWeight="500" lineHeight="15px" color="#30384B" mb="7px">
             {f.label}
           </Text>
         )}
@@ -124,30 +186,62 @@ export function useListFilters(rows, fields, { columns } = {}) {
   };
 
   const cols = columns ?? Math.min(Math.max(fields.length, 1), 4);
-  const filterCard = (
-    <Box
-      bg="white"
-      borderWidth="1px"
-      borderColor="border"
-      borderRadius="14px"
-      px={{ base: "14px", md: "18px" }}
-      py="14px"
+  // Figma list filters end with a peach "Reset" button (44px, 12/500 #C95C18).
+  const resetButton = reset ? (
+    <Button
+      h="44px"
+      px="16px"
+      fontSize="12px"
+      bg="#FFF5ED"
+      color="#C95C18"
+      _hover={{ bg: "#FDE9DA" }}
+      onClick={() => setValues({})}
+      flexShrink={0}
     >
+      Reset
+    </Button>
+  ) : null;
+  const filterCard = (
+    <FilterShell spaced={false}>
       <Grid
         templateColumns={{
           base: "1fr",
           sm: `repeat(${Math.min(cols, 2)}, minmax(0, 1fr))`,
           lg: `repeat(${cols}, minmax(0, 1fr))`,
         }}
-        gap="12px"
+        columnGap="12px"
+        rowGap="16px"
         alignItems="end"
       >
         {fields.map(field)}
       </Grid>
-    </Box>
+    </FilterShell>
+  );
+  const card = reset ? (
+    <FilterShell>
+      <Flex gap="12px" align="flex-end" wrap={{ base: "wrap", lg: "nowrap" }}>
+        <Grid
+          flex="1"
+          minW={0}
+          templateColumns={{
+            base: "1fr",
+            sm: `repeat(${Math.min(cols, 2)}, minmax(0, 1fr))`,
+            lg: `repeat(${cols}, minmax(0, 1fr))`,
+          }}
+          columnGap="12px"
+          rowGap="16px"
+          alignItems="end"
+        >
+          {fields.map(field)}
+        </Grid>
+        {resetButton}
+      </Flex>
+    </FilterShell>
+  ) : (
+    filterCard
   );
 
-  return { filtered, filterCard };
+  return { filtered, filterCard: card };
 }
 
 export default useListFilters;

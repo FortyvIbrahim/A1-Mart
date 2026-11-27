@@ -233,7 +233,7 @@ export default function MaterialsRequestForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm headerBand title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}
@@ -284,7 +284,7 @@ export default function MaterialsRequestForm({ params }) {
                   viewOnly={isViewMode}
                 />
 
-                <CustomContainer title="Items" size="sm" color="secondary">
+                <CustomContainer pageForm headerBand title="Items" size="sm" color="secondary">
                   {values.items && values.items.length > 0 ? (
                     <FieldArray name="items">
                       {(arrayHelpers) => (

@@ -1,12 +1,20 @@
 "use client";
 
 import React from "react";
-import { Box, Flex, Grid, Text, NativeSelect } from "@chakra-ui/react";
+import { Box, Grid, NativeSelect, Text } from "@chakra-ui/react";
+import { LuChevronDown } from "react-icons/lu";
 import moment from "moment";
-import CustomContainer from "@/components/CustomContainer";
+import { DashboardCard } from "@/components/dashboard/DashboardUI";
 import { formatCurrency } from "@/utils/string";
 import ComparisonRow from "./ComparisonRow";
 
+const HEAD = { fontSize: "12px", fontWeight: "600", lineHeight: "20px", color: "fg.muted" };
+
+/**
+ * Figma "Card / Payroll Comparison": peach header row "Metric · <current> ·
+ * <compared>", then Employees / Gross Pay / Deductions / Net Pay. The compared
+ * month is picked from its own header cell.
+ */
 function PayrollComparisonCard({
   selectedStats,
   comparisonStats,
@@ -15,28 +23,46 @@ function PayrollComparisonCard({
   onComparisonChange,
 }) {
   const getValue = (stats, label) => {
-    if (!stats) return "-";
+    if (!stats) return "—";
     if (label === "Employees") return stats.employeeCount;
     if (label === "Gross Pay") return formatCurrency(stats.totalGross);
-    if (label === "Total Deductions")
-      return formatCurrency(stats.totalDeductions);
+    if (label === "Deductions") return formatCurrency(stats.totalDeductions);
     return formatCurrency(stats.totalNet);
   };
 
+  const fmt = (stats) => (stats ? moment(stats.payroll_month).format("MMM YYYY") : "—");
+
   return (
-    <CustomContainer
+    <DashboardCard
       title="Payroll Comparison"
-      size="sm"
-      rightSection={
-        months.length > 1 && (
-          <Flex align="center" gap={2}>
-            <Text fontSize="xs" color="brand.600">
-              Compare With
-            </Text>
-            <NativeSelect.Root width="160px" size="xs">
+      subtitle="Use search, filters and sorting to narrow records."
+      h="100%"
+    >
+      <Box>
+        <Grid
+          templateColumns="1.2fr 1fr 1fr"
+          px="12px"
+          minH="52px"
+          bg="app.tableHeader"
+          alignItems="center"
+        >
+          <Text {...HEAD}>Metric</Text>
+          <Text {...HEAD} textAlign="right">
+            {fmt(selectedStats)}
+          </Text>
+          {months.length > 1 ? (
+            <NativeSelect.Root size="xs" justifySelf="end" w="auto">
               <NativeSelect.Field
+                {...HEAD}
+                h="auto"
+                ps="0"
+                pe="18px"
+                border="none"
+                bg="transparent"
+                textAlign="right"
                 value={comparisonPayrollId || ""}
                 onChange={(e) => onComparisonChange(e.target.value || null)}
+                aria-label="Compare with month"
               >
                 {months.map((m) => (
                   <option key={m.payroll_id} value={m.payroll_id}>
@@ -44,58 +70,28 @@ function PayrollComparisonCard({
                   </option>
                 ))}
               </NativeSelect.Field>
+              <NativeSelect.Indicator right="0" color="#C95C18">
+                <LuChevronDown size={12} />
+              </NativeSelect.Indicator>
             </NativeSelect.Root>
-          </Flex>
-        )
-      }
-    >
-      <Box borderWidth="1px" borderRadius="md" overflow="hidden">
-        <Grid
-          templateColumns={{ base: "1.5fr 1fr 1fr", md: "2fr 1fr 1fr" }}
-          bg="gray.50"
-          borderBottomWidth="1px"
-          px={3}
-          py={2}
-          alignItems="center"
-        >
-          <Text fontSize="xs" fontWeight="semibold" color="gray.700">
-            Metric
-          </Text>
-          <Box>
-            <Text fontSize="xs" fontWeight="semibold" color="gray.700">
-              Current Month
+          ) : (
+            <Text {...HEAD} textAlign="right">
+              {fmt(comparisonStats)}
             </Text>
-            <Text fontSize="xs" color="gray.500">
-              {selectedStats
-                ? moment(selectedStats.payroll_month).format("MMM YYYY")
-                : "-"}
-            </Text>
-          </Box>
-          <Box>
-            <Text fontSize="xs" fontWeight="semibold" color="gray.700">
-              Selected Month
-            </Text>
-            <Text fontSize="xs" color="gray.500">
-              {comparisonStats
-                ? moment(comparisonStats.payroll_month).format("MMM YYYY")
-                : "-"}
-            </Text>
-          </Box>
+          )}
         </Grid>
 
-        {["Employees", "Gross Pay", "Total Deductions", "Net Pay"].map(
-          (label, idx) => (
-            <ComparisonRow
-              key={label}
-              label={label}
-              currentValue={getValue(selectedStats, label)}
-              comparisonValue={getValue(comparisonStats, label)}
-              isEven={idx % 2 === 0}
-            />
-          )
-        )}
+        {["Employees", "Gross Pay", "Deductions", "Net Pay"].map((label, idx) => (
+          <ComparisonRow
+            key={label}
+            label={label}
+            currentValue={getValue(selectedStats, label)}
+            comparisonValue={getValue(comparisonStats, label)}
+            isEven={idx % 2 === 0}
+          />
+        ))}
       </Box>
-    </CustomContainer>
+    </DashboardCard>
   );
 }
 

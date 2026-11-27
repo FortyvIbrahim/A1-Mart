@@ -7,6 +7,7 @@ import {
   updateMaterialRequest,
 } from "@/api/helpers/material_requests";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import CustomMenu from "@/components/CustomMenu";
 import GlobalWrapper from "@/components/GlobalWrapper";
@@ -19,6 +20,14 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
 import ApproveMaterialRequestDrawer from "./ApproveMaterialRequestDrawer";
+
+
+/** Figma list filters for this page. */
+const LIST_FILTERS = [
+  { key: "q", type: "search", label: "Search", placeholder: "Search records...", getText: (r) => `${r.material_request_id ?? ""} ${r.creator_employee_name ?? ""}` },
+  { key: "branch", type: "select", label: "Branch", placeholder: "All branches", getValue: (r) => r.outlet?.branch_name },
+  { key: "status", type: "select", label: "Status", placeholder: "All statuses", getValue: (r) => (r.is_approved ? "Approved" : "Pending") },
+];
 
 function MaterialsRequest() {
   const router = useRouter();
@@ -230,6 +239,8 @@ function MaterialsRequest() {
     },
   ];
 
+  const { filtered: filteredRows, filterCard } = useListFilters(requests, LIST_FILTERS, { reset: true });
+
   return (
     <GlobalWrapper permissionKey="view_materials_request">
       <DeleteModalComponent />
@@ -242,7 +253,7 @@ function MaterialsRequest() {
         requestId={selectedRequestId}
         onConfirm={handleApproveConfirm}
       />
-      <CustomContainer
+      <CustomContainer headerBand
         title="Materials Request"
         rightSection={
           <Link href="/materials/request/create">
@@ -250,8 +261,9 @@ function MaterialsRequest() {
           </Link>
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={requests}
+          rowData={filteredRows}
           columnDefs={colDefs}
           tableKey="materials-request"
         />

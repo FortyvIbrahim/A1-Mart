@@ -9,7 +9,7 @@ import GlobalWrapper from "@/components/GlobalWrapper";
 import { capitalizeWords, capitalizeWordsLatest } from "@/utils/string";
 import { Button, Flex, Grid } from "@chakra-ui/react";
 import { Formik } from "formik";
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import moment from "moment";
 import * as Yup from "yup";
 import useStockCircles from "@/api/customHooks/useStockCircles";
@@ -483,207 +483,171 @@ function page() {
         </Flex>
       </CustomContainer>
 
-      <CustomDialog
-        open={createOpen}
-        onOpenChange={(e) => setCreateOpen(e.open)}
-        title="Create Stock Circle"
-        maxW="760px"
+      <Formik
+        initialValues={initialValues}
+        validationSchema={CIRCLE_VALIDATION_SCHEMA}
+        onSubmit={handleSubmit}
+        enableReinitialize
       >
-          <Formik
-            initialValues={initialValues}
-            validationSchema={CIRCLE_VALIDATION_SCHEMA}
-            onSubmit={handleSubmit}
-            enableReinitialize
-          >
-            {({ handleSubmit, setFieldValue, values, resetForm }) => {
-              const periodOptions = useMemo(
-                () => generatePeriods(values.period_type),
-                [values.period_type]
-              );
+        {({ handleSubmit, setFieldValue, values, resetForm }) => {
+          const periodOptions = generatePeriods(values.period_type);
 
-              // Categories belonging to any selected department
-              const filteredCategories = useMemo(() => {
-                const ids = values.department_ids;
-                if (!Array.isArray(ids) || ids.length === 0) {
-                  return [];
-                }
-                const idSet = new Set(ids.map(Number));
-                return categories.filter((category) =>
-                  idSet.has(category.department_id)
-                );
-              }, [categories, values.department_ids]);
+          // Categories belonging to any selected department
+          const selectedDepartmentIds = new Set(
+            (Array.isArray(values.department_ids) ? values.department_ids : []).map(Number)
+          );
+          const filteredCategories = selectedDepartmentIds.size
+            ? categories.filter((category) =>
+                selectedDepartmentIds.has(category.department_id)
+              )
+            : [];
 
-              // Filter subcategories by selected category_id
-              const filteredSubcategories = useMemo(() => {
-                if (!values.category_id) {
-                  return [];
-                }
-                return subcategories.filter(
-                  (subcategory) => subcategory.category_id === values.category_id
-                );
-              }, [subcategories, values.category_id]);
+          // Subcategories of the selected category
+          const filteredSubcategories = values.category_id
+            ? subcategories.filter(
+                (subcategory) => subcategory.category_id === values.category_id
+              )
+            : [];
 
-              const isDateRangePeriod =
-                values.period_type === "daily" ||
-                values.period_type === "monthly";
+          const isDateRangePeriod =
+            values.period_type === "daily" || values.period_type === "monthly";
 
-              return (
-                <Flex flexDirection="column" gap="22px">
-                  <CustomInput
-                    label="Select Branch"
-                    isRequired
-                    placeholder="Click here to select branch..."
-                    name="branch_id"
-                    method="dropdown"
-                    options={filteredBranches}
-                    disabled={isStoreSelected}
-                  />
-                  <CustomContainer title="Period" size="sm" color="secondary">
-                    <Grid
-                      templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
-                      gap="22px"
-                    >
-                      <CustomInput
-                        label="Period Type"
-                        isRequired
-                        placeholder="Select Period Type"
-                        name="period_type"
-                        method="dropdown"
-                        options={periodTypeOptions}
-                        onChange={(e) => {
-                          setFieldValue("period_type", e.target.value);
-                          setFieldValue("period", ""); // Reset period when type changes
-                          setFieldValue("period_start_date", ""); // Reset start date
-                          setFieldValue("period_end_date", ""); // Reset end date
-                        }}
-                      />
-                      {values.period_type && !isDateRangePeriod && (
-                        <CustomInput
-                          label="Period"
-                          isRequired
-                          placeholder="Select Period"
-                          name="period"
-                          method="dropdown"
-                          options={periodOptions}
-                        />
-                      )}
-                    </Grid>
-                    {values.period_type && isDateRangePeriod && (
-                      <Grid
-                        templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
-                        gap="22px"
-                        mt="22px"
-                      >
-                        <CustomInput
-                          label={
-                            values.period_type === "monthly"
-                              ? "Start Month"
-                              : "Start Date"
-                          }
-                          isRequired
-                          placeholder={
-                            values.period_type === "monthly"
-                              ? "Select Start Month"
-                              : "Select Start Date"
-                          }
-                          name="period_start_date"
-                          method="date-picker"
-                          type={
-                            values.period_type === "monthly" ? "month" : "date"
-                          }
-                        />
-                        <CustomInput
-                          label={
-                            values.period_type === "monthly"
-                              ? "End Month"
-                              : "End Date"
-                          }
-                          isRequired
-                          placeholder={
-                            values.period_type === "monthly"
-                              ? "Select End Month"
-                              : "Select End Date"
-                          }
-                          name="period_end_date"
-                          method="date-picker"
-                          type={
-                            values.period_type === "monthly" ? "month" : "date"
-                          }
-                        />
-                      </Grid>
-                    )}
-                  </CustomContainer>
-                  <Grid
-                    templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
-                    gap="22px"
-                  >
+          const close = () => {
+            resetForm();
+            setCreateOpen(false);
+          };
+
+          return (
+            <CustomDialog
+              open={createOpen}
+              onOpenChange={(e) => {
+                if (!e.open) close();
+              }}
+              title="Create Stock Circle"
+              maxW="800px"
+              contentProps={{ w: "100%" }}
+              footer={
+                <>
+                  <Button variant="outline" h="42px" px="20px" fontSize="13px" onClick={close}>
+                    Cancel
+                  </Button>
+                  <Button h="40px" px="20px" fontSize="13px" onClick={handleSubmit}>
+                    Create Circle
+                  </Button>
+                </>
+              }
+            >
+              {/* Figma "Modal / Create Stock Circle": two columns, 16px apart, 18px between rows. */}
+              <Grid
+                templateColumns={{ base: "1fr", md: "repeat(2, minmax(0, 1fr))" }}
+                columnGap="16px"
+                rowGap="18px"
+              >
+                <CustomInput
+                  label="Branch"
+                  isRequired
+                  placeholder="Select branch"
+                  name="branch_id"
+                  method="dropdown"
+                  options={filteredBranches}
+                  disabled={isStoreSelected}
+                />
+                <CustomInput
+                  label="Period type"
+                  isRequired
+                  placeholder="Select period type"
+                  name="period_type"
+                  method="dropdown"
+                  options={periodTypeOptions}
+                  onChange={(e) => {
+                    setFieldValue("period_type", e.target.value);
+                    setFieldValue("period", "");
+                    setFieldValue("period_start_date", "");
+                    setFieldValue("period_end_date", "");
+                  }}
+                />
+                {isDateRangePeriod ? (
+                  <>
                     <CustomInput
-                      label="Departments"
+                      label={values.period_type === "monthly" ? "Start month" : "Start date"}
                       isRequired
-                      placeholder="Select one or more departments"
-                      name="department_ids"
-                      method="multiple-dropdown"
-                      options={departments.map((department) => ({
-                        value: department.department_id,
-                        label: capitalizeWords(department.department_name),
-                      }))}
-                      onChange={() => {
-                        setFieldValue("category_id", "");
-                        setFieldValue("subcategory_id", "");
-                      }}
-                    />
-                    <CustomInput
-                      label="Category"
-                      placeholder="Select Category"
-                      name="category_id"
-                      method="searchable-dropdown"
-                      options={filteredCategories.map((category) => ({
-                        value: category.category_id,
-                        label: capitalizeWords(category.category_name),
-                      }))}
-                      disabled={
-                        !Array.isArray(values.department_ids) ||
-                        values.department_ids.length === 0
+                      placeholder={
+                        values.period_type === "monthly"
+                          ? "Select start month"
+                          : "Select start date"
                       }
-                      onChange={(value) => {
-                        setFieldValue("category_id", value);
-                        // Reset subcategory when category changes
-                        setFieldValue("subcategory_id", "");
-                      }}
+                      name="period_start_date"
+                      method="date-picker"
+                      type={values.period_type === "monthly" ? "month" : "date"}
                     />
                     <CustomInput
-                      label="Subcategory"
-                      placeholder="Select Subcategory"
-                      name="subcategory_id"
-                      method="searchable-dropdown"
-                      options={filteredSubcategories.map((subcategory) => ({
-                        value: subcategory.subcategory_id,
-                        label: capitalizeWords(subcategory.subcategory_name),
-                      }))}
-                      disabled={!values.category_id}
+                      label={values.period_type === "monthly" ? "End month" : "End date"}
+                      isRequired
+                      placeholder={
+                        values.period_type === "monthly" ? "Select end month" : "Select end date"
+                      }
+                      name="period_end_date"
+                      method="date-picker"
+                      type={values.period_type === "monthly" ? "month" : "date"}
                     />
-                  </Grid>
-
-                  <Flex justifyContent="flex-end" gap="12px">
-                    <Button
-                      variant="subtle"
-                      onClick={() => {
-                        resetForm();
-                        setCreateOpen(false);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button variant="outline" onClick={resetForm}>
-                      Reset
-                    </Button>
-                    <Button onClick={handleSubmit}>Create Circle</Button>
-                  </Flex>
-                </Flex>
-              );
-            }}
-          </Formik>
-      </CustomDialog>
+                  </>
+                ) : (
+                  <CustomInput
+                    label="Period"
+                    isRequired
+                    placeholder="Select period"
+                    name="period"
+                    method="dropdown"
+                    options={periodOptions}
+                    disabled={!values.period_type}
+                  />
+                )}
+                <CustomInput
+                  label="Departments"
+                  isRequired
+                  placeholder="Select departments"
+                  name="department_ids"
+                  method="multiple-dropdown"
+                  options={departments.map((department) => ({
+                    value: department.department_id,
+                    label: capitalizeWords(department.department_name),
+                  }))}
+                  onChange={() => {
+                    setFieldValue("category_id", "");
+                    setFieldValue("subcategory_id", "");
+                  }}
+                />
+                <CustomInput
+                  label="Category"
+                  placeholder="All categories"
+                  name="category_id"
+                  method="searchable-dropdown"
+                  options={filteredCategories.map((category) => ({
+                    value: category.category_id,
+                    label: capitalizeWords(category.category_name),
+                  }))}
+                  disabled={selectedDepartmentIds.size === 0}
+                  onChange={(value) => {
+                    setFieldValue("category_id", value);
+                    setFieldValue("subcategory_id", "");
+                  }}
+                />
+                <CustomInput
+                  label="Subcategory"
+                  placeholder="All subcategories"
+                  name="subcategory_id"
+                  method="searchable-dropdown"
+                  options={filteredSubcategories.map((subcategory) => ({
+                    value: subcategory.subcategory_id,
+                    label: capitalizeWords(subcategory.subcategory_name),
+                  }))}
+                  disabled={!values.category_id}
+                />
+              </Grid>
+            </CustomDialog>
+          );
+        }}
+      </Formik>
     </GlobalWrapper>
   );
 }

@@ -92,7 +92,7 @@ function BillingCounter() {
   return (
     <GlobalWrapper permissionKey="view_billing_counter">
       <DeleteModalComponent />
-      <CustomContainer
+      <CustomContainer mainCard
         title="Billing Counters"
         rightSection={
           canEdit && (

@@ -2,7 +2,13 @@
 
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { Box, Flex, Grid, Tabs } from "@chakra-ui/react";
-import { FaBox, FaIndianRupeeSign } from "react-icons/fa6";
+import { LuBox, LuIndianRupee, LuPackage } from "react-icons/lu";
+import {
+  DashboardCard,
+  DashboardMetricCard,
+  DashboardTabs,
+} from "@/components/dashboard/DashboardUI";
+import DonutChartCard from "./DonutChartCard";
 import CustomContainer from "@/components/CustomContainer";
 import AgGrid from "@/components/AgGrid";
 import { formatCurrency } from "@/utils/string";
@@ -143,195 +149,184 @@ export default function HoldingDashboardView() {
 
   const gridKey = (tableKey) => `${tableKey}-${gridResetKey}`;
 
+  const activeCount =
+    (itemStatusPieData || []).find((d) => d.filterValue === "active")?.value ?? 0;
+  const groupedTitle =
+    {
+      products: "Products",
+      branch: "By Branch",
+      distributor: "By Distributor",
+      supplier: "By Supplier",
+      buyer: "By Buyer",
+      department: "By Department",
+      category: "By Category",
+      subcategory: "By Subcategory",
+      purchase_type: "By Purchase Type",
+      chain_bill_count_level: "By Bill Level",
+      status: "By Status",
+    }[groupedTab] ?? "Products";
+
   return (
     <>
-      <Grid
-        templateColumns={{
-          base: "1fr",
-          lg: "minmax(0, 1fr) minmax(220px, 280px)",
-        }}
-        gap={4}
-        alignItems="stretch"
-      >
-        <Grid
-          templateColumns={{
-            base: "1fr",
-            md: "repeat(2, 1fr)",
-            xl: "repeat(3, 1fr)",
-          }}
-          gap={4}
-        >
-          <BarChartCard
-            title="Product Availability"
-            data={itemStatusPieData}
-            onBarClick={handleItemStatusBarClick}
-            valueFormatter={chartNumberFormatter}
-            legendValueFormatter={chartNumberFormatter}
-          />
-          <BarChartCard
-            title="Purchase Type"
-            data={purchaseTypePieData}
-            onBarClick={handlePurchaseTypeBarClick}
-            valueFormatter={chartNumberFormatter}
-            legendValueFormatter={chartNumberFormatter}
-          />
-          <BarChartCard
-            title="Chain Bill Count Level"
-            data={chainBillPieData}
-            onBarClick={handleChainBillBarClick}
-            valueFormatter={chartNumberFormatter}
-            legendValueFormatter={chartNumberFormatter}
-          />
-        </Grid>
-        <Grid
-          templateColumns="1fr"
-          gap={4}
-          w="100%"
-          maxW={{ base: "100%", lg: "280px" }}
-          justifySelf={{ lg: "end" }}
-        >
-          <StatCard
-            title="Total Stock Qty"
-            color="blue"
-            icon={<FaBox />}
-            value={formatFullNumber(totalStockQty)}
-          />
-          <StatCard
-            title="Total Stock Value"
-            color="brand"
-            icon={<FaIndianRupeeSign />}
-            value={formatCurrency(totalStockValue)}
-          />
-        </Grid>
+      {/* Figma "Stock Holding / Products": two donut cards, three tinted
+          metric cards, pill tabs, then the table card. */}
+      <Grid templateColumns={{ base: "1fr", lg: "repeat(2, minmax(0, 1fr))" }} gap="16px">
+        <DonutChartCard
+          title="Purchase Type"
+          data={purchaseTypePieData}
+          onSliceClick={handlePurchaseTypeBarClick}
+          valueFormatter={formatFullNumber}
+        />
+        <DonutChartCard
+          title="Chain Bill Count Level"
+          data={chainBillPieData}
+          onSliceClick={handleChainBillBarClick}
+          valueFormatter={formatFullNumber}
+        />
       </Grid>
 
-      <Box ref={groupedTableRef}>
-        <CustomContainer title="Grouped Totals" size="sm" color="secondary">
-          <Tabs.Root
+      <Grid templateColumns={{ base: "1fr", lg: "repeat(3, 1fr)" }} gap="16px">
+        <DashboardMetricCard
+          tone="orange"
+          icon={<LuPackage />}
+          label="Product Availability"
+          value={formatFullNumber(activeCount)}
+          caption="Active"
+          onClick={() =>
+            handleItemStatusBarClick({ filterValue: "active" })
+          }
+        />
+        <DashboardMetricCard
+          tone="blue"
+          icon={<LuBox />}
+          label="Total Stock Qty"
+          value={formatFullNumber(totalStockQty)}
+          caption="Selected period"
+        />
+        <DashboardMetricCard
+          tone="purple"
+          icon={<LuIndianRupee />}
+          label="Total Stock Value"
+          value={formatCurrency(totalStockValue)}
+          caption="Selected period"
+        />
+      </Grid>
+
+      <Flex ref={groupedTableRef} direction="column" gap="16px">
+        <Box overflowX="auto" css={{ scrollbarWidth: "none" }}>
+          <DashboardTabs
             value={groupedTab}
-            onValueChange={(details) => setGroupedTab(details.value)}
-            variant="line"
-            colorPalette="secondary"
-          >
-            <ScrollableTabsList>
-              <Tabs.List flexWrap="nowrap" w="max-content" minW="100%" gap={1}>
-                <Tabs.Trigger value="products" whiteSpace="nowrap">
-                  Products
-                </Tabs.Trigger>
-                <Tabs.Trigger value="branch" whiteSpace="nowrap">
-                  By Branch
-                </Tabs.Trigger>
-                <Tabs.Trigger value="distributor" whiteSpace="nowrap">
-                  By Distributor
-                </Tabs.Trigger>
-                <Tabs.Trigger value="supplier" whiteSpace="nowrap">
-                  By Supplier
-                </Tabs.Trigger>
-                <Tabs.Trigger value="buyer" whiteSpace="nowrap">
-                  By Buyer
-                </Tabs.Trigger>
-                <Tabs.Trigger value="department" whiteSpace="nowrap">
-                  By Department
-                </Tabs.Trigger>
-                <Tabs.Trigger value="category" whiteSpace="nowrap">
-                  By Category
-                </Tabs.Trigger>
-                <Tabs.Trigger value="subcategory" whiteSpace="nowrap">
-                  By Subcategory
-                </Tabs.Trigger>
-                <Tabs.Trigger value="purchase_type" whiteSpace="nowrap">
-                  By Purchase Type
-                </Tabs.Trigger>
-                <Tabs.Trigger value="chain_bill_count_level" whiteSpace="nowrap">
-                  By Chain Bill Count Level
-                </Tabs.Trigger>
-                <Tabs.Trigger value="status" whiteSpace="nowrap">
-                  By Item Status
-                </Tabs.Trigger>
-              </Tabs.List>
-            </ScrollableTabsList>
-            <Tabs.Content value="products" pt={4}>
+            onChange={setGroupedTab}
+            tabs={[
+            { value: "products", label: "Products" },
+            { value: "branch", label: "By Branch" },
+            { value: "distributor", label: "By Distributor" },
+            { value: "supplier", label: "By Supplier" },
+            { value: "buyer", label: "By Buyer" },
+            { value: "department", label: "By Department" },
+            { value: "category", label: "By Category" },
+            { value: "subcategory", label: "By Subcategory" },
+            { value: "purchase_type", label: "By Purchase Type" },
+            { value: "chain_bill_count_level", label: "By Bill Level" },
+            { value: "status", label: "By Status" },
+            ]}
+          />
+        </Box>
+        <DashboardCard title={groupedTitle}>
+          <Tabs.Root value={groupedTab} onValueChange={(d) => setGroupedTab(d.value)}>
+            <Tabs.Content pt={0} value="products">
               <AgGrid
+                bare
                 key={gridKey(`${STOCK_HOLDING_ITEMS_TABLE_KEY}-products`)}
                 tableKey={`${STOCK_HOLDING_ITEMS_TABLE_KEY}-products`}
                 rowData={filteredRows}
                 columnDefs={productsColumnDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="branch" pt={4}>
+            <Tabs.Content pt={0} value="branch">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-grouped-branch")}
                 tableKey="stock-holding-dashboard-grouped-branch"
                 rowData={branchTableRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="distributor" pt={4}>
+            <Tabs.Content pt={0} value="distributor">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-grouped-distributor")}
                 tableKey="stock-holding-dashboard-grouped-distributor"
                 rowData={distributorTableRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="supplier" pt={4}>
+            <Tabs.Content pt={0} value="supplier">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-grouped-supplier")}
                 tableKey="stock-holding-dashboard-grouped-supplier"
                 rowData={supplierTableRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="buyer" pt={4}>
+            <Tabs.Content pt={0} value="buyer">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-grouped-buyer")}
                 tableKey="stock-holding-dashboard-grouped-buyer"
                 rowData={buyerTableRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="department" pt={4}>
+            <Tabs.Content pt={0} value="department">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-grouped-department")}
                 tableKey="stock-holding-dashboard-grouped-department"
                 rowData={departmentTableRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="category" pt={4}>
+            <Tabs.Content pt={0} value="category">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-grouped-category")}
                 tableKey="stock-holding-dashboard-grouped-category"
                 rowData={categoryTableRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="subcategory" pt={4}>
+            <Tabs.Content pt={0} value="subcategory">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-grouped-subcategory")}
                 tableKey="stock-holding-dashboard-grouped-subcategory"
                 rowData={subcategoryTableRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="purchase_type" pt={4}>
+            <Tabs.Content pt={0} value="purchase_type">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-grouped-purchase-type")}
                 tableKey="stock-holding-dashboard-grouped-purchase-type"
                 rowData={purchaseTypeTableRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="chain_bill_count_level" pt={4}>
+            <Tabs.Content pt={0} value="chain_bill_count_level">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-grouped-chain-level")}
                 tableKey="stock-holding-dashboard-grouped-chain-level"
                 rowData={chainLevelTableRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="status" pt={4}>
+            <Tabs.Content pt={0} value="status">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-grouped-status")}
                 tableKey="stock-holding-dashboard-grouped-status"
                 rowData={statusTableRows}
@@ -339,8 +334,8 @@ export default function HoldingDashboardView() {
               />
             </Tabs.Content>
           </Tabs.Root>
-        </CustomContainer>
-      </Box>
+        </DashboardCard>
+      </Flex>
     </>
   );
 }

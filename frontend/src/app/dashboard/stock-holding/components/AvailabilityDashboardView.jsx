@@ -11,6 +11,13 @@ import {
 } from "@/utils/stockHoldingDashboard";
 import { useStockHoldingDashboard } from "../StockHoldingDashboardContext";
 import BarChartCard from "./BarChartCard";
+import DonutChartCard from "./DonutChartCard";
+import { LuCircleAlert, LuCircleCheck, LuTriangleAlert } from "react-icons/lu";
+import {
+  DashboardCard,
+  DashboardMetricCard,
+  DashboardTabs,
+} from "@/components/dashboard/DashboardUI";
 import ScrollableTabsList from "./ScrollableTabsList";
 import {
   getStockHoldingItemsColumnDefs,
@@ -261,173 +268,172 @@ export default function AvailabilityDashboardView() {
 
   const gridKey = (tableKey) => `${tableKey}-${gridResetKey}`;
 
+  const AVAILABILITY_TONE = { available: "green", out_of_stock: "red", low_stock: "amber" };
+  const AVAILABILITY_ICON = {
+    available: <LuCircleCheck />,
+    out_of_stock: <LuTriangleAlert />,
+    low_stock: <LuCircleAlert />,
+  };
+  const groupedTitle =
+    {
+      products: "Products",
+      branch: "By Branch",
+      distributor: "By Distributor",
+      supplier: "By Supplier",
+      buyer: "By Buyer",
+      department: "By Department",
+      category: "By Category",
+      subcategory: "By Subcategory",
+      purchase_type: "By Purchase Type",
+      chain_bill_count_level: "By Bill Level",
+      product_availability: "By Status",
+    }[groupedTab] ?? "Products";
+
   return (
     <>
-      <Grid
-        templateColumns={{
-          base: "1fr",
-          lg: "minmax(0, 1fr) minmax(220px, 280px)",
-        }}
-        gap={4}
-        alignItems="stretch"
-      >
-        <BarChartCard
+      {/* Figma "Stock Availability / Products": donut card beside the tinted
+          Available / Out of Stock cards, pill tabs, then the table card. */}
+      <Grid templateColumns={{ base: "1fr", lg: "repeat(2, minmax(0, 1fr))" }} gap="16px">
+        <DonutChartCard
           title="Stock Availability by Status"
           data={stockAvailabilityBarData}
-          onBarClick={handleAvailabilityBarClick}
-          valueFormatter={chartNumberFormatter}
-          legendValueFormatter={chartNumberFormatter}
-          showPctInTooltip
+          onSliceClick={handleAvailabilityBarClick}
+          valueFormatter={formatFullNumber}
+          legendColumns={2}
         />
-
-        <Flex
-          direction="column"
-          gap={4}
-          w="100%"
-          maxW={{ base: "100%", lg: "280px" }}
-          justifySelf={{ lg: "end" }}
-          alignSelf="stretch"
-          minH={{ base: "auto", lg: "320px" }}
+        <Grid
+          templateColumns={{ base: "1fr", md: `repeat(${Math.max(availabilityStatCards.length, 1)}, minmax(0, 1fr))` }}
+          gap="16px"
         >
           {availabilityStatCards.map((entry) => (
-            <AvailabilityStatCard
+            <DashboardMetricCard
               key={entry.key}
-              title={entry.name}
-              pct={entry.pct}
-              count={entry.count}
-              color={entry.color}
+              tone={AVAILABILITY_TONE[entry.key] ?? "blue"}
+              icon={AVAILABILITY_ICON[entry.key]}
+              label={entry.name}
+              value={formatFullNumber(entry.count)}
+              caption={`Items · ${entry.pct}%`}
+              onClick={() => handleAvailabilityBarClick({ filterValue: entry.key })}
             />
           ))}
-        </Flex>
+        </Grid>
       </Grid>
 
-      <Box>
-        <CustomContainer title="Grouped Totals" size="sm" color="secondary">
-          <Tabs.Root
+      <Flex direction="column" gap="16px">
+        <Box overflowX="auto" css={{ scrollbarWidth: "none" }}>
+          <DashboardTabs
             value={groupedTab}
-            onValueChange={(details) => setGroupedTab(details.value)}
-            variant="line"
-            colorPalette="secondary"
-          >
-            <ScrollableTabsList>
-              <Tabs.List flexWrap="nowrap" w="max-content" minW="100%" gap={1}>
-                <Tabs.Trigger value="products" whiteSpace="nowrap">
-                  Products
-                </Tabs.Trigger>
-                <Tabs.Trigger value="branch" whiteSpace="nowrap">
-                  By Branch
-                </Tabs.Trigger>
-                <Tabs.Trigger value="distributor" whiteSpace="nowrap">
-                  By Distributor
-                </Tabs.Trigger>
-                <Tabs.Trigger value="supplier" whiteSpace="nowrap">
-                  By Supplier
-                </Tabs.Trigger>
-                <Tabs.Trigger value="buyer" whiteSpace="nowrap">
-                  By Buyer
-                </Tabs.Trigger>
-                <Tabs.Trigger value="department" whiteSpace="nowrap">
-                  By Department
-                </Tabs.Trigger>
-                <Tabs.Trigger value="category" whiteSpace="nowrap">
-                  By Category
-                </Tabs.Trigger>
-                <Tabs.Trigger value="subcategory" whiteSpace="nowrap">
-                  By Subcategory
-                </Tabs.Trigger>
-                <Tabs.Trigger value="purchase_type" whiteSpace="nowrap">
-                  By Purchase Type
-                </Tabs.Trigger>
-                <Tabs.Trigger value="chain_bill_count_level" whiteSpace="nowrap">
-                  By Chain Bill Count Level
-                </Tabs.Trigger>
-                <Tabs.Trigger value="product_availability" whiteSpace="nowrap">
-                  By Product Availability
-                </Tabs.Trigger>
-              </Tabs.List>
-            </ScrollableTabsList>
-            <Tabs.Content value="products" pt={4}>
+            onChange={setGroupedTab}
+            tabs={[
+              { value: "products", label: "Products" },
+              { value: "branch", label: "By Branch" },
+              { value: "distributor", label: "By Distributor" },
+              { value: "supplier", label: "By Supplier" },
+              { value: "buyer", label: "By Buyer" },
+              { value: "department", label: "By Department" },
+              { value: "category", label: "By Category" },
+              { value: "subcategory", label: "By Subcategory" },
+              { value: "purchase_type", label: "By Purchase Type" },
+              { value: "chain_bill_count_level", label: "By Bill Level" },
+              { value: "product_availability", label: "By Status" },
+            ]}
+          />
+        </Box>
+        <DashboardCard title={groupedTitle}>
+          <Tabs.Root value={groupedTab} onValueChange={(d) => setGroupedTab(d.value)}>
+            <Tabs.Content value="products">
               <AgGrid
+                bare
                 key={gridKey(`${STOCK_HOLDING_ITEMS_TABLE_KEY}-availability-products`)}
                 tableKey={`${STOCK_HOLDING_ITEMS_TABLE_KEY}-availability-products`}
                 rowData={filteredRows}
                 columnDefs={productsColumnDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="branch" pt={4}>
+            <Tabs.Content value="branch">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-availability-branch")}
                 tableKey="stock-holding-dashboard-availability-branch"
                 rowData={branchRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="distributor" pt={4}>
+            <Tabs.Content value="distributor">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-availability-distributor")}
                 tableKey="stock-holding-dashboard-availability-distributor"
                 rowData={distributorRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="supplier" pt={4}>
+            <Tabs.Content value="supplier">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-availability-supplier")}
                 tableKey="stock-holding-dashboard-availability-supplier"
                 rowData={supplierRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="buyer" pt={4}>
+            <Tabs.Content value="buyer">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-availability-buyer")}
                 tableKey="stock-holding-dashboard-availability-buyer"
                 rowData={buyerRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="department" pt={4}>
+            <Tabs.Content value="department">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-availability-department")}
                 tableKey="stock-holding-dashboard-availability-department"
                 rowData={departmentRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="category" pt={4}>
+            <Tabs.Content value="category">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-availability-category")}
                 tableKey="stock-holding-dashboard-availability-category"
                 rowData={categoryRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="subcategory" pt={4}>
+            <Tabs.Content value="subcategory">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-availability-subcategory")}
                 tableKey="stock-holding-dashboard-availability-subcategory"
                 rowData={subcategoryRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="purchase_type" pt={4}>
+            <Tabs.Content value="purchase_type">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-availability-purchase-type")}
                 tableKey="stock-holding-dashboard-availability-purchase-type"
                 rowData={purchaseTypeRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="chain_bill_count_level" pt={4}>
+            <Tabs.Content value="chain_bill_count_level">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-availability-chain-level")}
                 tableKey="stock-holding-dashboard-availability-chain-level"
                 rowData={chainLevelRows}
                 columnDefs={groupedTableColDefs}
               />
             </Tabs.Content>
-            <Tabs.Content value="product_availability" pt={4}>
+            <Tabs.Content value="product_availability">
               <AgGrid
+                bare
                 key={gridKey("stock-holding-dashboard-grouped-availability-status")}
                 tableKey="stock-holding-dashboard-grouped-availability-status"
                 rowData={availabilityStatusRows}
@@ -435,8 +441,8 @@ export default function AvailabilityDashboardView() {
               />
             </Tabs.Content>
           </Tabs.Root>
-        </CustomContainer>
-      </Box>
+        </DashboardCard>
+      </Flex>
     </>
   );
 }

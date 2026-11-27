@@ -39,7 +39,7 @@ export default function ChecklistFillBooleanChoice({ name, disabled }) {
         }}
       >
         <Box textAlign="center" w="100%">
-          <Text fontWeight="bold" fontSize="md" letterSpacing="-0.01em">
+          <Text fontWeight="bold" fontSize="md">
             Yes
           </Text>
           <Text fontSize="xs" color="gray.500" fontWeight="normal" mt={0.5}>
@@ -68,7 +68,7 @@ export default function ChecklistFillBooleanChoice({ name, disabled }) {
         }}
       >
         <Box textAlign="center" w="100%">
-          <Text fontWeight="bold" fontSize="md" letterSpacing="-0.01em">
+          <Text fontWeight="bold" fontSize="md">
             No
           </Text>
           <Text fontSize="xs" color="gray.500" fontWeight="normal" mt={0.5}>

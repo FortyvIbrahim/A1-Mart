@@ -236,7 +236,7 @@ function IncentiveGeneratorForm({ params }) {
   if (batchLoading && (isEditMode || isViewMode)) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm headerBand title={getTitle()}>
           <Text>Loading...</Text>
         </CustomContainer>
       </GlobalWrapper>
@@ -561,7 +561,7 @@ function IncentiveGeneratorForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer
+      <CustomContainer pageForm headerBand
         title={getTitle()}
         rightSection={
           batch?.status === "approved" &&

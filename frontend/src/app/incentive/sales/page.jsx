@@ -2,6 +2,7 @@
 
 import useSalesIncentive from "@/api/customHooks/useSalesIncentive";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import CustomMenu from "@/components/CustomMenu";
 import GlobalWrapper from "@/components/GlobalWrapper";
@@ -176,18 +177,26 @@ function SalesIncentive() {
     },
   ];
 
+  // Figma INC/04 filters: Search · Cluster type · Incentive Type (no labels).
+  const { filtered: filteredIncentives, filterCard } = useListFilters(incentives, [
+    { key: "q", type: "search", placeholder: "Search...", getText: (r) => `${r.incentive_sales_id ?? ""} ${r.cluster_type ?? ""}` },
+    { key: "kind", type: "select", placeholder: "Cluster type", getValue: (r) => r.cluster_type },
+    { key: "itype", type: "select", placeholder: "Incentive Type", getValue: (r) => r.incentive_type, getLabel: (v) => formatIncentiveType(v) },
+  ], { columns: 3 });
+
   return (
     <GlobalWrapper permissionKey="view_sales_incentive">
-      <CustomContainer
+      <CustomContainer headerBand
         title="Sales Incentive"
         rightSection={
           <Link href="/incentive/sales/create">
-            <Button>Add</Button>
+            <Button h="39px" px="16px" fontSize="12px">Add</Button>
           </Link>
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={incentives}
+          rowData={filteredIncentives}
           columnDefs={colDefs}
           loading={loading}
           tableKey="sales-incentive"

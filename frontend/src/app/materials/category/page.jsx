@@ -3,6 +3,7 @@
 import useMaterials from "@/api/customHooks/useMaterials";
 import useMaterialsCategory from "@/api/customHooks/useMaterialsCategory";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import CustomMenu from "@/components/CustomMenu";
 import GlobalWrapper from "@/components/GlobalWrapper";
@@ -11,6 +12,13 @@ import { Badge, Button, Flex } from "@chakra-ui/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
+
+
+/** Figma list filters for this page. */
+const LIST_FILTERS = [
+  { key: "q", type: "search", label: "Search", placeholder: "Search records...", getText: (r) => `${r.material_category_id ?? ""} ${r.category_name ?? ""}` },
+  { key: "status", type: "select", label: "Status", placeholder: "All statuses", getValue: (r) => (r.is_active ? "Active" : "Inactive") },
+];
 
 function MaterialsCategory() {
   const router = useRouter();
@@ -87,9 +95,11 @@ function MaterialsCategory() {
     },
   ];
 
+  const { filtered: filteredRows, filterCard } = useListFilters(materialsCategory, LIST_FILTERS, { reset: true });
+
   return (
     <GlobalWrapper permissionKey="view_materials_category">
-      <CustomContainer
+      <CustomContainer headerBand
         title="Materials Category"
         rightSection={
           <Link href="/materials/category/create">
@@ -97,8 +107,9 @@ function MaterialsCategory() {
           </Link>
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={materialsCategory}
+          rowData={filteredRows}
           columnDefs={colDefs}
           tableKey="materials-category"
         />

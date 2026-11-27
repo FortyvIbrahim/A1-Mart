@@ -53,6 +53,8 @@ function CustomFileUploader({
   size = "md",
   placeholder = "Drag & drop files here, or click to select",
   acceptedFileTypes = "Only .xlsx, .xls, and .csv files are accepted",
+  // Figma "Upload Excel or CSV" drop zone: 1px orange border, r8, no icon.
+  title,
   showClipboardButton = false,
   triggerOnly = false,
   onOpenReady,
@@ -482,8 +484,38 @@ function CustomFileUploader({
         </Box>
       )}
 
+      {/* Figma drop zone */}
+      {title && !uploadedFile && !isProcessing && (
+        <Box
+          {...getRootProps()}
+          py="24px"
+          px="16px"
+          borderWidth="1px"
+          borderStyle={isDragActive ? "dashed" : "solid"}
+          borderColor={isDragReject ? "red.400" : "#EFA46D"}
+          borderRadius="8px"
+          bg={isDragActive ? "#FFF5ED" : "white"}
+          cursor="pointer"
+          textAlign="center"
+          _hover={{ bg: "#FFFBF8" }}
+        >
+          <input {...getInputProps()} />
+          <VStack gap="8px">
+            <Text fontSize="13px" fontWeight="500" color="#C95C18">
+              {title}
+            </Text>
+            <Text fontSize="11px" color="fg">
+              {isDragActive ? "Drop the file here..." : placeholder}
+            </Text>
+            <Text fontSize="10px" fontStyle="italic" color="fg.muted">
+              {acceptedFileTypes}
+            </Text>
+          </VStack>
+        </Box>
+      )}
+
       {/* File Upload Area */}
-      {!uploadedFile && !isProcessing && (
+      {!title && !uploadedFile && !isProcessing && (
         <Box
           {...getRootProps()}
           p={sizeStyles[size].padding}

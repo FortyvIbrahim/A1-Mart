@@ -17,7 +17,8 @@ export const employeeColDefs = ({
     {
       field: "profile_img_url",
       headerName: "Image",
-      type: "image",
+      type: "avatar",
+      avatarSize: 40,
     },
     {
       field: "employee_name",

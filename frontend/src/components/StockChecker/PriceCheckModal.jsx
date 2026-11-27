@@ -499,7 +499,6 @@ function PriceCheckModal({
                         fontWeight="semibold"
                         color="brand.700"
                         textTransform="uppercase"
-                        letterSpacing="wider"
                       >
                         ID
                       </Text>
@@ -527,7 +526,6 @@ function PriceCheckModal({
                         fontWeight="semibold"
                         color="gray.600"
                         textTransform="uppercase"
-                        letterSpacing="wider"
                       >
                         Available
                       </Text>

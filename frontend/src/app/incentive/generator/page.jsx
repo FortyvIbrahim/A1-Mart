@@ -2,6 +2,7 @@
 
 import useIncentiveGenerated from "@/api/customHooks/useIncentiveGenerated";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import CustomMenu from "@/components/CustomMenu";
 import GlobalWrapper from "@/components/GlobalWrapper";
@@ -12,6 +13,21 @@ import { useRouter } from "next/navigation";
 import React from "react";
 import moment from "moment";
 import usePermission from "@/customHooks/usePermission";
+
+
+/** Figma INC/01 (generator): Search · Branches · Type, no labels. */
+const GENERATOR_FILTERS = [
+  { key: "q", type: "search", placeholder: "Search by ID or branch", getText: (r) => `${r.incentive_generated_id ?? ""} ${r.branch_name ?? ""}` },
+  { key: "branch", type: "select", placeholder: "All Branches", getValue: (r) => r.branch_name },
+  { key: "type", type: "select", placeholder: "All Type", getValue: (r) => r.incentive_type, getLabel: (v) => INCENTIVE_TYPES[v]?.label ?? v },
+];
+
+/** Figma IA01 (approvals): Branch · Designation · Status · Reset. */
+const APPROVAL_FILTERS = [
+  { key: "branch", type: "select", label: "Branch", placeholder: "All branches", getValue: (r) => r.branch_name },
+  { key: "designation", type: "select", label: "Designation", placeholder: "All designations", getValue: (r) => (r.designations ?? []).map((d) => d.designation_name).join(", ") },
+  { key: "status", type: "select", label: "Status", placeholder: "All statuses", getValue: (r) => r.status },
+];
 
 function IncentiveGeneratorList({ type = "normal" }) {
   const { batches, loading, handleDelete } = useIncentiveGenerated();
@@ -148,20 +164,30 @@ function IncentiveGeneratorList({ type = "normal" }) {
     return "Incentive Generator";
   };
 
+  const { filtered: filteredBatches, filterCard } = useListFilters(
+    batches,
+    isApprovalMode ? APPROVAL_FILTERS : GENERATOR_FILTERS,
+    isApprovalMode ? { reset: true } : { columns: 3 }
+  );
+
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
       <CustomContainer
+        headerBand={!isApprovalMode}
+        breadcrumb={isApprovalMode ? "Approvals  /  Incentive Approvals" : undefined}
         title={getTitle()}
         rightSection={
-          canAdd && (
+          // Figma IA01 (approvals) has no Add button.
+          canAdd && !isApprovalMode && (
             <Link href="/incentive/generator/create">
               <Button>Add</Button>
             </Link>
           )
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={batches}
+          rowData={filteredBatches}
           columnDefs={colDefs}
           loading={loading}
           tableKey="incentive-generator"

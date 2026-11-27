@@ -257,7 +257,7 @@ function GRNForm({ params }) {
   if (grnLoading && (isEditMode || isViewMode)) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Text>Loading...</Text>
         </CustomContainer>
       </GlobalWrapper>
@@ -266,7 +266,7 @@ function GRNForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={getGRNValidationSchema()}
@@ -392,9 +392,11 @@ function GRNForm({ params }) {
                     </Grid>
                   )}
                 </Flex>
-                <Flex gap="22px" justifyContent="flex-end" mt="22px">
+                <Flex gap="12px" justifyContent="flex-end" mt="24px">
                   <Link href="/wms/grn">
-                    <Button variant="subtle">Back</Button>
+                    <Button variant="outline">
+                      {isCreateMode || isEditMode ? "Cancel" : "Back"}
+                    </Button>
                   </Link>
                   {(isCreateMode || isEditMode) && (
                     <Button onClick={handleSubmit}>

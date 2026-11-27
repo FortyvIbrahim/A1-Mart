@@ -4,12 +4,21 @@ import React, { useMemo, useState } from "react";
 import { Button } from "@chakra-ui/react";
 import useApiCallLogs from "@/api/customHooks/useApiCallLogs";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import CustomDialog from "@/components/CustomDialog";
 import GlobalWrapper from "@/components/GlobalWrapper";
 
 const isLogSuccess = (row) =>
   row?.is_success === 1 || row?.is_success === true;
+
+
+/** Figma list filters for this page. */
+const LIST_FILTERS = [
+  { key: "q", type: "search", label: "Search  ID", placeholder: "Search...", getText: (r) => `${r.api_type ?? ""} ${r.secondary_type ?? ""}` },
+  { key: "api", type: "select", label: "API Type", placeholder: "Type", getValue: (r) => r.api_type },
+  { key: "secondary", type: "select", label: "Secondary Type", placeholder: "Secondary Type", getValue: (r) => r.secondary_type },
+];
 
 function formatDuration(ms) {
   const n = Number(ms);
@@ -196,6 +205,8 @@ function ApiCallLogsPage() {
     []
   );
 
+  const { filtered: filteredRows, filterCard } = useListFilters(summaryRows, LIST_FILTERS, { reset: true });
+
   return (
     <GlobalWrapper permissionKey="view_logs_list">
       <CustomContainer
@@ -206,8 +217,9 @@ function ApiCallLogsPage() {
           </Button>
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={summaryRows}
+          rowData={filteredRows}
           columnDefs={colDefs}
           tableKey="api-call-logs"
           loading={loading}

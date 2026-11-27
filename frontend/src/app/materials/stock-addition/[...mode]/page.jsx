@@ -148,7 +148,7 @@ export default function MaterialsForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm headerBand title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}
@@ -158,7 +158,7 @@ export default function MaterialsForm({ params }) {
           {({ handleSubmit, values }) => {
             return (
               <Flex flexDirection="column" gap="22px">
-                <CustomContainer
+                <CustomContainer pageForm headerBand
                   title="Invoice Details"
                   size="sm"
                   color="secondary"
@@ -197,7 +197,7 @@ export default function MaterialsForm({ params }) {
                   </Grid>
                 </CustomContainer>
 
-                <CustomContainer title="Items" size="sm" color="secondary">
+                <CustomContainer pageForm headerBand title="Items" size="sm" color="secondary">
                   {values.stock_addition && values.stock_addition.length > 0 ? (
                     <FieldArray name="stock_addition">
                       {(arrayHelpers) => (

@@ -2,6 +2,7 @@
 
 import usePurchaseOrders from "@/api/customHooks/usePurchaseOrders";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import useDeleteModal from "@/customHooks/useDeleteModal";
@@ -12,6 +13,15 @@ import { useRouter } from "next/navigation";
 import React from "react";
 import moment from "moment";
 import usePermission from "@/customHooks/usePermission";
+
+
+/** Figma list filters for this page. */
+const LIST_FILTERS = [
+  { key: "q", type: "search", label: "Search", placeholder: "Search purchase order...", getText: (r) => `${r.purchase_order_id ?? ""} ${r.purchase_order_ref ?? ""} ${r.vendor_name ?? ""}` },
+  { key: "vendor", type: "select", label: "Vendor", placeholder: "All vendors", getValue: (r) => r.vendor_name },
+  { key: "date", type: "date", label: "Date", getValue: (r) => r.date },
+  { key: "status", type: "select", label: "Status", placeholder: "All statuses", getValue: (r) => r.status },
+];
 
 function PurchaseOrders() {
   const router = useRouter();
@@ -209,10 +219,12 @@ function PurchaseOrders() {
     },
   ];
 
+  const { filtered: filteredRows, filterCard } = useListFilters(purchaseOrders, LIST_FILTERS, { reset: true });
+
   return (
     <GlobalWrapper permissionKey="view_purchase_order">
       <DeleteModalComponent />
-      <CustomContainer
+      <CustomContainer headerBand
         title="Purchase Orders"
         rightSection={
           allowAdd && (
@@ -222,8 +234,9 @@ function PurchaseOrders() {
           )
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={purchaseOrders}
+          rowData={filteredRows}
           colDefs={colDefs}
           tableKey="purchase-order"
         />

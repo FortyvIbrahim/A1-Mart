@@ -1778,6 +1778,8 @@ function PayrollEntryList({ type = "entry" }) {
     <GlobalWrapper permissionKey={getPermissionKey()}>
       <DeleteModalComponent />
       <CustomContainer
+        headerBand={!isApprovalMode}
+        breadcrumb={isApprovalMode ? "Approvals  /  Payroll Approval" : undefined}
         title={getTitle()}
         rightSection={
           <Flex gap="8px" alignItems="center" flexWrap="wrap">
@@ -1791,14 +1793,19 @@ function PayrollEntryList({ type = "entry" }) {
         }
       >
         <Flex flexDirection="column" gap="16px">
+          {/* Figma "Calendar View (2026)": white, radius 8, padding 24, 16/600 title. */}
           <Box
             bg="white"
             borderWidth="1px"
             borderColor="border"
-            borderRadius="14px"
-            px={{ base: "14px", md: "18px" }}
-            py="14px"
+            borderRadius="8px"
+            p={{ base: "16px", md: "24px" }}
           >
+            {isApprovalMode && (
+              <Text fontSize="16px" fontWeight="600" lineHeight="23px" color="fg" mb="16px">
+                Calendar View ({selectedYear})
+              </Text>
+            )}
             <PayrollMonthCalendar
               payrollsByMonth={payrollsByMonth}
               selectedYear={selectedYear}
@@ -1823,22 +1830,25 @@ function PayrollEntryList({ type = "entry" }) {
               selectedMonth &&
               !existingForSelectedMonth &&
               !loadingExisting && (
-                <Flex
-                  direction="column"
-                  alignItems="center"
-                  gap="6px"
-                  bg="white"
-                  borderWidth="1px"
-                  borderColor="border"
-                  borderRadius="14px"
-                  py="36px"
-                >
-                  <Text fontSize="15px" fontWeight="600" color="gray.700">
-                    No payroll for {moment(selectedMonth).format("MMM YYYY")}
+                <Flex direction="column" gap="24px">
+                  {/* Figma: "Payroll - Nov 2026" heading, then an empty-month card. */}
+                  <Text fontSize="18px" fontWeight="600" lineHeight="26px" color="fg">
+                    Payroll - {moment(selectedMonth).format("MMM YYYY")}
                   </Text>
-                  <Text fontSize="13px" color="gray.500">
-                    Payroll entries appear here once they are imported.
-                  </Text>
+                  <Flex
+                    align="center"
+                    justify="center"
+                    minH="160px"
+                    bg="white"
+                    borderWidth="1px"
+                    borderColor="border"
+                    borderRadius="8px"
+                    p="24px"
+                  >
+                    <Text fontSize="14px" color="fg.muted">
+                      No payroll for this month.
+                    </Text>
+                  </Flex>
                 </Flex>
               )}
             {showFileUpload && (

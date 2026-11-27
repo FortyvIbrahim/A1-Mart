@@ -153,7 +153,8 @@ function Header() {
         alignItems="center"
         gap={{ base: "10px", md: "16px" }}
         px={{ base: "14px", md: "28px" }}
-        py={{ base: "10px", md: "14px" }}
+        py={{ base: "10px", md: "0" }}
+        minH={{ md: "80px" }}
         bg="rgba(255, 251, 248, 0.92)"
         backdropFilter="saturate(1.2) blur(8px)"
       >

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Box, Text, VStack } from "@chakra-ui/react";
+import { Flex, Text, VStack } from "@chakra-ui/react";
 import CustomInput from "@/components/CustomInput";
 import {
   formatStockCircleDepartments,
@@ -34,8 +34,8 @@ function StockCircleFilter({
   value,
   onChange,
   label = "Circle",
-  placeholder = "All circles - select to narrow",
-  width = { base: "100%", md: "220px" },
+  placeholder = "All circles — select to narrow",
+  width = { base: "100%", md: "310px" },
   disabled = false,
 }) {
   const options = useMemo(
@@ -95,8 +95,8 @@ function StockCircleFilter({
   };
 
   return (
-    <Box minW={width}>
-      <Text fontSize="xs" mb={1} color="gray.500">
+    <Flex direction="column" gap="7px" w={width} minW={0}>
+      <Text fontSize="10px" lineHeight="12px" fontWeight="500" color="fg.muted">
         {label}
       </Text>
       <CustomInput
@@ -116,8 +116,10 @@ function StockCircleFilter({
           overflow: "hidden",
         }}
         customRender={renderCircleOption}
+        h="40px"
+        fontSize="12px"
       />
-    </Box>
+    </Flex>
   );
 }
 

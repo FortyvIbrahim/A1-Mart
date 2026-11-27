@@ -102,11 +102,11 @@ function MasterPage() {
     },
   ], [router]);
 
-  const { filtered: filteredRows, filterCard } = useListFilters(masterList, LIST_FILTERS);
+  const { filtered: filteredRows } = useListFilters(masterList, LIST_FILTERS);
 
   return (
     <GlobalWrapper permissionKey="view_master_list">
-      <CustomContainer
+      <CustomContainer mainCard
         title="Master List"
         rightSection={
           canAdd && (
@@ -116,7 +116,6 @@ function MasterPage() {
           )
         }
       >
-        <div style={{ marginBottom: 16 }}>{filterCard}</div>
         <AgGrid
           rowData={filteredRows}
           columnDefs={colDefs}

@@ -3,8 +3,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import moment from "moment";
 import GlobalWrapper from "@/components/GlobalWrapper";
-import CustomContainer from "@/components/CustomContainer";
-import { Flex, Grid, Stack, Text, Spinner, Button } from "@chakra-ui/react";
+import { Flex, Grid, Stack, Text, Spinner } from "@chakra-ui/react";
+import {
+  DashboardCard,
+  DashboardFilterPanel,
+} from "@/components/dashboard/DashboardUI";
 import AgGrid from "@/components/AgGrid";
 import usePayrolls from "@/api/customHooks/usePayrolls";
 import { getPayrollById } from "@/api/helpers/payroll";
@@ -31,6 +34,8 @@ function PayrollDashboard() {
   const [loadingStats, setLoadingStats] = useState(false);
   const [paymentFilter, setPaymentFilter] = useState(null); // "Paid" | "Unpaid" | "On Hold" | null
   const [selectedYear, setSelectedYear] = useState(() => moment().year());
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("net_pay");
 
   // Fetch per-month aggregates (gross, net, deductions, employee count and payment buckets)
   useEffect(() => {
@@ -229,16 +234,35 @@ function PayrollDashboard() {
 
   const filteredEmployees = useMemo(() => {
     if (!selectedEmployees || selectedEmployees.length === 0) return [];
-    if (!paymentFilter) return selectedEmployees;
-
-    return selectedEmployees.filter((emp) => {
-      const s = emp.payment_details?.status?.toLowerCase();
-      const done = s === "processed" || s === "done";
-      const isOnHold = emp.on_hold == true;
-      const status = isOnHold ? "On Hold" : done ? "Paid" : "Unpaid";
-      return status === paymentFilter;
+    const q = search.trim().toLowerCase();
+    const rows = selectedEmployees.filter((emp) => {
+      if (paymentFilter) {
+        const s = emp.payment_details?.status?.toLowerCase();
+        const done = s === "processed" || s === "done";
+        const isOnHold = emp.on_hold == true;
+        const status = isOnHold ? "On Hold" : done ? "Paid" : "Unpaid";
+        if (status !== paymentFilter) return false;
+      }
+      if (q) {
+        const name = emp.employee_name ?? emp.employee?.employee_name ?? "";
+        if (!`${name} ${emp.employee_code ?? ""}`.toLowerCase().includes(q)) return false;
+      }
+      return true;
     });
-  }, [selectedEmployees, paymentFilter]);
+    const num = (v) => parseFloat(v) || 0;
+    if (sortBy === "name") {
+      rows.sort((a, b) =>
+        String(a.employee_name ?? a.employee?.employee_name ?? "").localeCompare(
+          String(b.employee_name ?? b.employee?.employee_name ?? "")
+        )
+      );
+    } else if (sortBy === "gross_pay") {
+      rows.sort((a, b) => num(b.gross_pay) - num(a.gross_pay));
+    } else {
+      rows.sort((a, b) => num(b.net_pay) - num(a.net_pay));
+    }
+    return rows;
+  }, [selectedEmployees, paymentFilter, search, sortBy]);
 
   const isLoading = loadingPayrolls || loadingEmployees || loadingStats;
 
@@ -269,78 +293,108 @@ function PayrollDashboard() {
 
   return (
     <GlobalWrapper permissionKey="view_payroll_dashboard">
-      <Stack gap={6}>
-        <DashboardTitleSection>
-          <Flex
-            w="100%"
-            align={{ base: "stretch", md: "center" }}
-            justify="space-between"
-            gap={3}
-            flexWrap="wrap"
-          >
-            <DashboardPageTitle title="Payroll Dashboard" />
-            {availableYears.length > 0 ? (
+      <Stack gap="24px">
+        <DashboardPageTitle
+          title="Payroll Dashboard"
+          rightSection={
+            availableYears.length > 0 ? (
               <YearSelector
                 selectedYear={selectedYear}
                 availableYears={availableYears}
                 onChange={setSelectedYear}
               />
-            ) : null}
-          </Flex>
-        </DashboardTitleSection>
-        <Flex direction="column" gap={6}>
-          <MonthsList
-            months={months}
-            monthlyStats={monthlyStats}
-            selectedPayrollId={selectedPayrollId}
-            onSelectPayrollId={setSelectedPayrollId}
-            maxH="360px"
+            ) : null
+          }
+        />
+
+        <DashboardFilterPanel
+          columns={3}
+          fields={[
+            {
+              key: "search",
+              type: "search",
+              label: "Search",
+              placeholder: "Search employee name or code…",
+              value: search,
+              onChange: setSearch,
+            },
+            {
+              key: "payment",
+              label: "Payment Status",
+              placeholder: "All payment statuses",
+              value: paymentFilter ?? "",
+              onChange: (v) => setPaymentFilter(v || null),
+              options: [
+                { value: "Paid", label: "Paid" },
+                { value: "On Hold", label: "On Hold" },
+                { value: "Unpaid", label: "Unpaid" },
+              ],
+            },
+            {
+              key: "sortBy",
+              label: "Sort by",
+              placeholder: false,
+              value: sortBy,
+              onChange: setSortBy,
+              options: [
+                { value: "net_pay", label: "Net Pay" },
+                { value: "gross_pay", label: "Gross Pay" },
+                { value: "name", label: "Employee name" },
+              ],
+            },
+          ]}
+        />
+
+        <MonthsList
+          months={months}
+          monthlyStats={monthlyStats}
+          selectedPayrollId={selectedPayrollId}
+          onSelectPayrollId={setSelectedPayrollId}
+        />
+
+        <Grid
+          templateColumns={{ base: "1fr", lg: "311px 324px minmax(0, 1fr)" }}
+          gap="16px"
+          alignItems="stretch"
+        >
+          <PayrollDetailsCard
+            selectedStats={selectedStats}
+            paymentFilter={paymentFilter}
+            onFilterChange={setPaymentFilter}
           />
 
-          <Grid templateColumns={{ base: "1fr", md: "1.5fr 1.5fr 2fr" }} gap={6}>
-            <PayrollDetailsCard
-              selectedStats={selectedStats}
-              paymentFilter={paymentFilter}
-              onFilterChange={setPaymentFilter}
-            />
+          <PaymentDetailsCard selectedStats={selectedStats} />
 
-            <PaymentDetailsCard selectedStats={selectedStats} />
+          <PayrollComparisonCard
+            selectedStats={selectedStats}
+            comparisonStats={comparisonStats}
+            months={monthsWithData}
+            comparisonPayrollId={comparisonPayrollId}
+            onComparisonChange={setComparisonPayrollId}
+          />
+        </Grid>
 
-            <PayrollComparisonCard
-              selectedStats={selectedStats}
-              comparisonStats={comparisonStats}
-              months={monthsWithData}
-              comparisonPayrollId={comparisonPayrollId}
-              onComparisonChange={setComparisonPayrollId}
-            />
-          </Grid>
-        </Flex>
-
-        {/* Employees table */}
-        <CustomContainer
+        {/* Figma "Card / Payroll Employees" with the employee-count pill. */}
+        <DashboardCard
           title="Payroll Employees"
-          size="sm"
-          containerStyle={{ mt: "22px" }}
+          subtitle="Pay, deductions and payment status for each employee."
           rightSection={
-            <Flex gap={3} align="center">
-              {paymentFilter && (
-                <Text fontSize="sm" color="brand600" fontWeight="medium">
-                  Filters: Payment Status = {paymentFilter}
-                </Text>
-              )}
-              {paymentFilter && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPaymentFilter(null)}
-                >
-                  Clear Filters
-                </Button>
-              )}
-            </Flex>
+            <Text
+              as="span"
+              px="12px"
+              py="6px"
+              borderRadius="8px"
+              bg="app.tableHeader"
+              color="#C95C18"
+              fontSize="12px"
+              fontWeight="500"
+            >
+              {filteredEmployees.length} employees
+            </Text>
           }
         >
           <AgGrid
+            bare
             rowData={filteredEmployees}
             columnDefs={[
             {
@@ -391,7 +445,7 @@ function PayrollDashboard() {
                 if (isOnHold) {
                   return {
                     label: "On Hold",
-                    colorScheme: "blue",
+                    colorScheme: "orange",
                   };
                 }
 
@@ -405,7 +459,7 @@ function PayrollDashboard() {
             tableKey="payroll-dashboard-employees"
             defaultRows={50}
           />
-        </CustomContainer>
+        </DashboardCard>
       </Stack>
     </GlobalWrapper>
   );

@@ -19,7 +19,7 @@ import {
   Tabs,
   Text,
 } from "@chakra-ui/react";
-import { FaFileInvoiceDollar, FaIndianRupeeSign } from "react-icons/fa6";
+import { LuIndianRupee, LuUndo2, LuWallet } from "react-icons/lu";
 import moment from "moment";
 import toast from "react-hot-toast";
 import GlobalWrapper from "@/components/GlobalWrapper";
@@ -30,6 +30,11 @@ import DashboardPageTitle, {
   DashboardTitleSection,
 } from "@/components/dashboard/DashboardPageTitle";
 import DashboardBarChart from "@/components/dashboard/DashboardBarChart";
+import {
+  DashboardCard,
+  DashboardMetricCard,
+  DashboardStripTabs,
+} from "@/components/dashboard/DashboardUI";
 import { DASHBOARD_ROUTES } from "@/constants/routes/index";
 import { getLatestOutstandingReportByDate } from "@/api/helpers/outstanding_report";
 import ViewInvoicesModal from "./components/ViewInvoicesModal";
@@ -54,10 +59,14 @@ import useBranchFilterAccess, {
   getLockedBranchFilterByKey,
 } from "@/customHooks/useBranchFilterAccess";
 
-const CATEGORY_CHART_COLORS = ["#ED8936", "#3182CE", "#9F7AEA"];
+// Figma: Return #F47721 · Purchase #11976A · Advance #526FA8.
+const CATEGORY_CHART_COLORS = ["#F47721", "#11976A", "#526FA8"];
 
 const CATEGORY_CHART_AXIS_LABEL = {
+  "Purchase Return": "Return",
   "Purchase Outstanding": "Purchase",
+  "On Account": "Advance",
+  "Advance Payment": "Advance",
 };
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -95,10 +104,10 @@ function CategoryBarCard({
   }, [barData]);
 
   return (
-    <CustomContainer title={title} size="sm" color={color} fullWidth>
+    <DashboardCard title={title} p="16px" gap="12px">
       {!hasData ? (
         <Center minH="200px">
-          <Text color="gray.500" fontSize="sm">
+          <Text color="fg.muted" fontSize="12px">
             No data available
           </Text>
         </Center>
@@ -108,8 +117,7 @@ function CategoryBarCard({
           xDataKey="chartLabel"
           bars={[{ dataKey: "value", perBarColor: true }]}
           legendItems={chartData.map((d) => ({
-            name: d.name,
-            value: formatSignedChartValue(d.displayValue),
+            name: `${d.chartLabel} · ${formatSignedChartValue(d.displayValue)}`,
             fill: d.fill,
           }))}
           legendColumns={1}
@@ -162,7 +170,7 @@ function CategoryBarCard({
           }
         />
       )}
-    </CustomContainer>
+    </DashboardCard>
   );
 }
 
@@ -592,28 +600,26 @@ export default function OutstandingDashboardPage() {
 
   const invoiceColumnDefs = useMemo(
     () => [
-      { field: "ref_no", headerName: "Ref No", flex: 1 },
-      { field: "invoice_no", headerName: "Invoice No" },
+      // Figma: Ref no · Invoice no · Supplier · Buyer · Category ·
+      // Invoice date · Net balance · Days · Age.
+      { field: "ref_no", headerName: "Ref no", flex: 1 },
+      { field: "invoice_no", headerName: "Invoice no" },
       { field: "supplier_name", headerName: "Supplier", flex: 1 },
       { field: "buyer_name", headerName: "Buyer", flex: 1 },
-      { field: "branch_name", headerName: "Branch", flex: 1 },
       {
         field: "category_key",
         headerName: "Category",
-        type: "badge-column",
-        minWidth: 180,
-        width: 180,
-        valueGetter: (p) => getCategoryBadge(p.data?.category_key),
+        valueGetter: (p) => getCategoryBadge(p.data?.category_key)?.label ?? "",
       },
       {
         field: "invoice_date",
-        headerName: "Invoice Date",
+        headerName: "Invoice date",
         valueGetter: (p) => formatDateDisplay(p.data?.invoice_date),
       },
-      { field: "net_balance", headerName: "Net Balance", type: "number" },
+      { field: "net_balance", headerName: "Net balance", type: "currency" },
       {
         field: "age_days",
-        headerName: "No. of Days",
+        headerName: "Days",
         type: "number",
         valueGetter: (p) => {
           const days = p.data?.age_days;
@@ -655,7 +661,7 @@ export default function OutstandingDashboardPage() {
     <GlobalWrapper permissionKey={DASHBOARD_ROUTES.outstanding.permissionKey}>
       <Flex
         direction="column"
-        gap="22px"
+        gap="24px"
         w="100%"
         maxW="100%"
         overflow="hidden"
@@ -668,50 +674,29 @@ export default function OutstandingDashboardPage() {
             flexWrap="wrap"
             alignItems="flex-end"
           >
-            <DashboardPageTitle title="Outstanding Dashboard" />
-            <Flex align="flex-end" gap={3} flexWrap="wrap">
-              <Box w={{ base: "100%", md: "220px" }}>
-                <Text fontSize="sm" mb={1} color="gray.600">
-                  Report Date
-                </Text>
-                <Input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                />
-              </Box>
-              <Box>
-                <Text fontSize="xs" mb={1} color="gray.500">
-                  Last sync
-                </Text>
-                <Text fontSize="sm" color="gray.700">
-                  {loading
-                    ? "Loading..."
-                    : lastSyncFormatted || "No sync data"}
-                </Text>
-              </Box>
+            {/* Figma: 22px title, no subtitle; last sync + date on the right. */}
+            <DashboardPageTitle title="Outstanding Dashboard" subtitle="" size="sm" />
+            <Flex align="center" gap="12px" flexWrap="wrap">
+              <Text fontSize="11px" color="fg.muted">
+                Last sync:{" "}
+                {loading ? "Loading..." : lastSyncFormatted || "No sync data"}
+              </Text>
+              <Input
+                type="date"
+                aria-label="Report date"
+                w={{ base: "100%", md: "160px" }}
+                h="40px"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
             </Flex>
           </Flex>
         </DashboardTitleSection>
 
-        <CustomContainer
-          title="Filters"
-          size="sm"
-          color="secondary"
-          rightSection={
-            <Button
-              size="xs"
-              variant="outline"
-              colorPalette="secondary"
-              onClick={clearFilters}
-            >
-              Clear Filters
-            </Button>
-          }
-        >
+        <DashboardCard title="Filters" gap="12px">
           <Grid
             templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }}
-            gap={3}
+            gap="16px"
           >
             <CustomInput
               label="Buyer"
@@ -751,7 +736,7 @@ export default function OutstandingDashboardPage() {
               }
             />
           </Grid>
-        </CustomContainer>
+        </DashboardCard>
 
         <Grid
           templateColumns={{
@@ -759,49 +744,49 @@ export default function OutstandingDashboardPage() {
             md: "repeat(2, 1fr)",
             lg: "repeat(4, 1fr)",
           }}
-          gap={4}
+          gap="16px"
         >
-          <StatCard
-            title="Net Balance"
-            color="teal"
-            icon={<FaIndianRupeeSign />}
+          <DashboardMetricCard
+            tone="blue"
+            icon={<LuWallet />}
+            label="Net Balance"
             value={formatCurrency(totalNetBalance)}
-            invoiceCount={filteredRows.length}
+            caption={`${Number(filteredRows.length).toLocaleString()} invoices`}
           />
-          <StatCard
-            title="Purchase Outstanding"
-            color="blue"
-            icon={<FaIndianRupeeSign />}
+          <DashboardMetricCard
+            tone="purple"
+            icon={<LuIndianRupee />}
+            label="Purchase Outstanding"
             value={formatCurrency(categoryTotals.purchase_outstanding)}
-            invoiceCount={categoryBillCounts.purchase_outstanding}
+            caption={`${Number(categoryBillCounts.purchase_outstanding || 0).toLocaleString()} invoices`}
           />
-          <StatCard
-            title="Purchase Return"
-            color="orange"
-            icon={<FaFileInvoiceDollar />}
+          <DashboardMetricCard
+            tone="orange"
+            icon={<LuUndo2 />}
+            label="Purchase Return"
             value={formatCurrency(categoryTotals.purchase_return)}
-            invoiceCount={categoryBillCounts.purchase_return}
+            caption={`${Number(categoryBillCounts.purchase_return || 0).toLocaleString()} invoices`}
           />
-          <StatCard
-            title="Advance Payment"
-            color="purple"
-            icon={<FaIndianRupeeSign />}
+          <DashboardMetricCard
+            tone="purple"
+            icon={<LuIndianRupee />}
+            label="Advance Payment"
             value={formatCurrency(categoryTotals.on_account)}
-            invoiceCount={categoryBillCounts.on_account}
+            caption={`${Number(categoryBillCounts.on_account || 0).toLocaleString()} invoices`}
           />
         </Grid>
 
         <Box overflowX="auto" w="100%">
           <Grid
             templateColumns="repeat(5, minmax(0, 1fr))"
-            gap={4}
+            gap="16px"
             minW={{ base: "900px", xl: "100%" }}
             w="100%"
           >
             {ageBucketCharts.map(({ bucket, data }) => (
               <CategoryBarCard
                 key={bucket.key}
-                title={bucket.label}
+                title={bucket.label.replace(/^(\d+) to (\d+)/, "$1–$2")}
                 data={data}
                 color={bucket.key === "gt_31" ? "red" : "secondary"}
                 ageBucketKey={bucket.key}
@@ -811,100 +796,80 @@ export default function OutstandingDashboardPage() {
           </Grid>
         </Box>
 
-        <Box ref={groupedTableRef}>
-          <CustomContainer
-            title="Grouped Totals"
-            size="sm"
-            color="secondary"
+        {/* Figma: strip tabs, then the table card ("Invoices" / grouped). */}
+        <Flex ref={groupedTableRef} direction="column" gap="16px">
+          <DashboardStripTabs
+            value={groupedTab}
+            onChange={setGroupedTab}
+            tabs={[
+              { value: "invoices", label: "Invoices" },
+              { value: "category", label: "By Category" },
+              { value: "supplier", label: "By Supplier" },
+              { value: "buyer", label: "By Buyer" },
+              { value: "branch", label: "By Branch" },
+            ]}
+          />
+          <DashboardCard
+            title={
+              {
+                invoices: "Invoices",
+                category: "By Category",
+                supplier: "By Supplier",
+                buyer: "By Buyer",
+                branch: "By Branch",
+              }[groupedTab]
+            }
             rightSection={
               hasChartFilter ? (
-                <Flex gap={3} align="center" flexWrap="wrap" justify="flex-end">
-                  <Text fontSize="sm" color="secondary600" fontWeight="medium">
-                    Filters:
-                    {chartFilterPeriodLabel
-                      ? ` Period = ${chartFilterPeriodLabel}`
-                      : ""}
-                    {chartFilterCategoryLabel
-                      ? ` Category = ${chartFilterCategoryLabel}`
-                      : ""}
+                <Flex
+                  as="button"
+                  type="button"
+                  onClick={clearChartFilter}
+                  align="center"
+                  gap="6px"
+                  h="28px"
+                  px="10px"
+                  borderRadius="8px"
+                  bg="#FFF5ED"
+                  color="#C95C18"
+                  fontSize="11px"
+                  fontWeight="500"
+                >
+                  {[chartFilterPeriodLabel, chartFilterCategoryLabel]
+                    .filter(Boolean)
+                    .join(" · ")}
+                  <Text as="span" aria-hidden>
+                    ×
                   </Text>
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    colorPalette="secondary"
-                    onClick={clearChartFilter}
-                  >
-                    Clear
-                  </Button>
                 </Flex>
               ) : null
             }
           >
-            <Tabs.Root
-              value={groupedTab}
-              onValueChange={(details) => setGroupedTab(details.value)}
-              variant="line"
-              colorPalette="secondary"
-            >
-              <Tabs.List>
-                <Tabs.Trigger value="invoices">Invoices</Tabs.Trigger>
-                <Tabs.Trigger value="category">
-                  Grouped by Category
-                </Tabs.Trigger>
-                <Tabs.Trigger value="supplier">
-                  Grouped by Supplier
-                </Tabs.Trigger>
-                <Tabs.Trigger value="buyer">Grouped by Buyer</Tabs.Trigger>
-                <Tabs.Trigger value="branch">Grouped by Branches</Tabs.Trigger>
-              </Tabs.List>
-              <Tabs.Content value="invoices" pt={4}>
-                <AgGrid
-                  tableKey="outstanding-dashboard-invoices"
-                  rowData={chartFilteredRows}
-                  columnDefs={invoiceColumnDefs}
-                  pagination={true}
-                  paginationPageSize={15}
-                />
-              </Tabs.Content>
-              <Tabs.Content value="category" pt={4}>
-                <AgGrid
-                  tableKey="outstanding-dashboard-grouped-category"
-                  rowData={categoryTableRows}
-                  columnDefs={groupedTableColDefs}
-                  pagination={true}
-                  paginationPageSize={10}
-                />
-              </Tabs.Content>
-              <Tabs.Content value="supplier" pt={4}>
-                <AgGrid
-                  tableKey="outstanding-dashboard-grouped-supplier"
-                  rowData={supplierTableRows}
-                  columnDefs={groupedTableColDefs}
-                  pagination={true}
-                  paginationPageSize={10}
-                />
-              </Tabs.Content>
-              <Tabs.Content value="buyer" pt={4}>
-                <AgGrid
-                  tableKey="outstanding-dashboard-grouped-buyer"
-                  rowData={buyerTableRows}
-                  columnDefs={groupedTableColDefs}
-                  pagination={true}
-                  paginationPageSize={10}
-                />
-              </Tabs.Content>
-              <Tabs.Content value="branch" pt={4}>
-                <AgGrid
-                  tableKey="outstanding-dashboard-grouped-branch"
-                  rowData={branchTableRows}
-                  columnDefs={groupedTableColDefs}
-                  pagination={true}
-                  paginationPageSize={10}
-                />
-              </Tabs.Content>
-            </Tabs.Root>
-          </CustomContainer>
-        </Box>
+            <AgGrid
+              bare
+              key={groupedTab}
+              tableKey={
+                groupedTab === "invoices"
+                  ? "outstanding-dashboard-invoices"
+                  : `outstanding-dashboard-grouped-${groupedTab}`
+              }
+              rowData={
+                {
+                  invoices: chartFilteredRows,
+                  category: categoryTableRows,
+                  supplier: supplierTableRows,
+                  buyer: buyerTableRows,
+                  branch: branchTableRows,
+                }[groupedTab]
+              }
+              columnDefs={
+                groupedTab === "invoices" ? invoiceColumnDefs : groupedTableColDefs
+              }
+              pagination={true}
+              paginationPageSize={10}
+            />
+          </DashboardCard>
+        </Flex>
 
         <ViewInvoicesModal
           open={invoiceModalOpen}

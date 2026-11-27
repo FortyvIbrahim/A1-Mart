@@ -1,6 +1,7 @@
 "use client";
 
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import { PayslipDetailsDrawer } from "@/components/payroll";
@@ -30,7 +31,7 @@ function PayslipPage({ type = "all_payslips" }) {
     },
     {
       field: "employee.employee_code",
-      headerName: "Employee",
+      headerName: "Employee Code",
     },
     {
       field: "net_pay",
@@ -100,6 +101,21 @@ function PayslipPage({ type = "all_payslips" }) {
     },
   ];
 
+  // Figma PSL/01 filters: Payroll month · Select employee · Payslip status · Payment status.
+  const isDone = (r) => {
+    const st = r?.payment_details?.status?.toLowerCase();
+    return st === "processed" || st === "done";
+  };
+  const filterFields = [
+    { key: "month", type: "select", label: "Payroll month", placeholder: "All months", getValue: (r) => (r.payroll?.payroll_month ? moment(r.payroll.payroll_month).format("MMM YYYY") : "") },
+    ...(type === "all_payslips"
+      ? [{ key: "employee", type: "select", label: "Select employee", placeholder: "All employees", getValue: (r) => r.employee?.employee_name }]
+      : []),
+    { key: "payslip", type: "select", label: "Payslip status", placeholder: "All statuses", getValue: (r) => (r.is_payslip_available == true ? "Generated" : "Not Generated") },
+    { key: "payment", type: "select", label: "Payment status", placeholder: "All statuses", getValue: (r) => (isDone(r) ? "Done" : "Pending") },
+  ];
+  const { filtered: filteredPayrolls, filterCard } = useListFilters(payrolls, filterFields);
+
   const getTitle = () => {
     return type === "all_payslips" ? "All Payslips" : "My Payslips";
   };
@@ -110,9 +126,10 @@ function PayslipPage({ type = "all_payslips" }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer headerBand title={getTitle()}>
+        {filterCard}
         <AgGrid
-          rowData={payrolls}
+          rowData={filteredPayrolls}
           columnDefs={columnDefs}
           tableKey="payslips"
         />

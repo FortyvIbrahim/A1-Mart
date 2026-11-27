@@ -67,7 +67,7 @@ const SummaryData = ({ items, totalAmount, totalQty }) => {
 
   return (
     <Flex justifyContent="flex-end">
-      <CustomContainer
+      <CustomContainer pageForm
         title="Summary"
         size="sm"
         color="secondary"
@@ -526,7 +526,7 @@ export default function WMSPurchaseEntryForm({ params }) {
   if (loading && (isEditMode || isViewMode)) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Text>Loading...</Text>
         </CustomContainer>
       </GlobalWrapper>
@@ -537,7 +537,7 @@ export default function WMSPurchaseEntryForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}
@@ -631,7 +631,7 @@ export default function WMSPurchaseEntryForm({ params }) {
                 {(dataParsed || isViewMode || isEditMode) &&
                   mappedFileData.length > 0 && (
                     <>
-                      <CustomContainer
+                      <CustomContainer pageForm
                         title="Items"
                         size="sm"
                         color="secondary"
@@ -690,9 +690,9 @@ export default function WMSPurchaseEntryForm({ params }) {
                   </Box>
                 )}
 
-                <Flex gap="22px" justifyContent="flex-end">
+                <Flex gap="12px" justifyContent="flex-end">
                   <Link href="/wms/purchase-entry">
-                    <Button variant="subtle">Back</Button>
+                    <Button variant="outline">{isViewMode ? "Back" : "Cancel"}</Button>
                   </Link>
                   {!isViewMode && (
                     <Button onClick={handleSubmit}>

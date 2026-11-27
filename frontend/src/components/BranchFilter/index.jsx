@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { Box, Text, NativeSelect } from "@chakra-ui/react";
+import { Flex, Text, NativeSelect } from "@chakra-ui/react";
+import { LuChevronDown } from "react-icons/lu";
 import useBranches from "@/api/customHooks/useBranches";
 import { useUser } from "@/contexts/UserContext";
 import usePermission from "@/customHooks/usePermission";
@@ -11,7 +12,10 @@ function BranchFilter({
   onChange,
   label = "Branch",
   allLabel = "All Branches",
-  width = { base: "100%", md: "220px" },
+  width = { base: "100%", md: "219px" },
+  // "header": Figma page-heading filter (10/500 label, 7px gap)
+  // "panel":  Figma "Record filters" field (12/500 label, 6px gap)
+  variant = "header",
 }) {
   const { branches } = useBranches();
   const { employeeData } = useUser();
@@ -36,22 +40,37 @@ function BranchFilter({
       ? String(employeeData.branch_id)
       : "";
 
+  const panel = variant === "panel";
+
   return (
-    <Box minW={width}>
-      <Text fontSize="xs" mb={1} color="gray.500">
+    <Flex direction="column" gap={panel ? "6px" : "7px"} w={width} minW={0}>
+      <Text
+        fontSize={panel ? "12px" : "10px"}
+        lineHeight={panel ? "18px" : "12px"}
+        fontWeight="500"
+        color="fg.muted"
+      >
         {label}
       </Text>
       <NativeSelect.Root
-        width={width}
+        width="100%"
         disabled={!canAccessAllBranches && !!employeeData?.branch_id}
       >
         <NativeSelect.Field
+          h="40px"
+          ps="12px"
+          pe="34px"
+          fontSize="12px"
+          borderRadius="8px"
+          borderColor="border"
+          bg="white"
           value={displayValue}
-          color={!displayValue ? "gray.400" : "black"}
+          color={!displayValue ? "fg.muted" : "fg"}
           onChange={(e) => {
             const v = e.target.value;
             onChange?.(v || "");
           }}
+          aria-label={label}
         >
           <option value="">{allLabel}</option>
           {(branches || []).map((branch) => (
@@ -60,9 +79,11 @@ function BranchFilter({
             </option>
           ))}
         </NativeSelect.Field>
-        <NativeSelect.Indicator />
+        <NativeSelect.Indicator right="12px" color="#C95C18">
+          <LuChevronDown size={14} />
+        </NativeSelect.Indicator>
       </NativeSelect.Root>
-    </Box>
+    </Flex>
   );
 }
 

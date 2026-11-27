@@ -5,6 +5,7 @@ import { Button } from "@chakra-ui/react";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import CustomContainer from "@/components/CustomContainer";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import usePurchaseReturns from "@/api/customHooks/usePurchaseReturns";
 import useDeleteModal from "@/customHooks/useDeleteModal";
 import Link from "next/link";
@@ -71,6 +72,29 @@ function enrichRowWithBoxCounts(row) {
   };
 }
 
+/** Status label shared by the Status column and the Status filter. */
+export function purchaseReturnStatus(row) {
+  if (getNoOfBoxesPending(row) === 0) return "Done";
+  if (getNoOfBoxesDelivered(row) > 0) return "Return In Progress";
+  if (row?.receipt_entry_handled_by_employee) return "Receipt Entry Done";
+  return "Pending";
+}
+
+const driverName = (r) => r?.driver?.employee_name ?? r?.driver?.name ?? "";
+
+/** Figma 01 Issue Entry: Search · Branch · Status. */
+const ISSUE_FILTERS = [
+  { key: "q", type: "search", label: "Search", placeholder: "Search issue reference or driver...", getText: (r) => `${r.purchase_return_id ?? ""} ${driverName(r)}` },
+  { key: "branch", type: "select", label: "Branch", placeholder: "All receiving branches", getValue: (r) => r.receiving_branch_name },
+  { key: "status", type: "select", label: "Status", placeholder: "All statuses", getValue: (r) => purchaseReturnStatus(r) },
+];
+
+/** Figma 02 Receipt Entry: Search · Branch. */
+const RECEIPT_FILTERS = [
+  { key: "q", type: "search", label: "Search", placeholder: "Search receipt id...", getText: (r) => `${r.purchase_return_id ?? ""} ${driverName(r)}` },
+  { key: "branch", type: "select", label: "Branch", placeholder: "All receiving branches", getValue: (r) => r.receiving_branch_name },
+];
+
 function PurchaseReturnListing({
   title,
   permissionKey,
@@ -89,6 +113,12 @@ function PurchaseReturnListing({
   const rowData = useMemo(
     () => (purchaseReturns || []).map(enrichRowWithBoxCounts),
     [purchaseReturns]
+  );
+
+  const { filtered: filteredRows, filterCard } = useListFilters(
+    rowData,
+    type === "receipt-entry" ? RECEIPT_FILTERS : ISSUE_FILTERS,
+    { columns: type === "receipt-entry" ? 2 : 3 }
   );
 
   const handleDeleteClick = useCallback(
@@ -224,17 +254,19 @@ function PurchaseReturnListing({
   return (
     <GlobalWrapper permissionKey={permissionKey}>
       <CustomContainer
-        title={title}
+        headerBand
+        title={title?.replace(" - ", " – ")}
         rightSection={
           addLink &&
           canAdd && (
             <Link href={addLink}>
-              <Button size="sm">Add</Button>
+              <Button h="39px" px="16px" fontSize="12px">Add</Button>
             </Link>
           )
         }
       >
-        <AgGrid rowData={rowData} columnDefs={colDefs} tableKey={tableKey} />
+        {filterCard}
+        <AgGrid rowData={filteredRows} columnDefs={colDefs} tableKey={tableKey} />
       </CustomContainer>
       <DeleteModalComponent />
     </GlobalWrapper>

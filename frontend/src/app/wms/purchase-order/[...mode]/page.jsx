@@ -152,7 +152,7 @@ export default function PurchaseOrderModePage({ params }) {
   if (loading) {
     return (
       <GlobalWrapper permissionKey="view_po">
-        <CustomContainer title="Purchase Order">
+        <CustomContainer pageForm title="Purchase Order">
           <Flex justifyContent="center" p={8}>
             <Text color="gray.500">Loading...</Text>
           </Flex>
@@ -164,7 +164,7 @@ export default function PurchaseOrderModePage({ params }) {
   if (!po && (isViewMode || action === "edit")) {
     return (
       <GlobalWrapper permissionKey="view_po">
-        <CustomContainer title="Purchase Order">
+        <CustomContainer pageForm title="Purchase Order">
           <Flex flexDirection="column" gap={4} alignItems="center" p={8}>
             <Text>Purchase order not found.</Text>
             <Link href="/wms/purchase-order">
@@ -179,7 +179,7 @@ export default function PurchaseOrderModePage({ params }) {
   if (!isViewMode && action !== "edit") {
     return (
       <GlobalWrapper permissionKey="view_po">
-        <CustomContainer title="Purchase Order">
+        <CustomContainer pageForm title="Purchase Order">
           <Flex flexDirection="column" gap={4} alignItems="center" p={8}>
             <Text>Invalid mode.</Text>
             <Link href="/wms/purchase-order">
@@ -199,7 +199,7 @@ export default function PurchaseOrderModePage({ params }) {
   return (
     <GlobalWrapper permissionKey="view_po">
       <DeleteModalComponent />
-      <CustomContainer
+      <CustomContainer pageForm
         title={title}
         rightSection={
           <Flex gap={2}>
@@ -251,7 +251,7 @@ export default function PurchaseOrderModePage({ params }) {
           </Grid>
 
           {hasStock && (
-            <CustomContainer
+            <CustomContainer pageForm
               title="Stock sent to each branch"
               size="sm"
               color="secondary"

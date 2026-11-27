@@ -65,22 +65,25 @@ export default function Home() {
   return (
     <GlobalWrapper permissionKey="view_employees">
       <CustomContainer
+        mainCard
         title="Employees List"
         rightSection={
-          <Flex gap={4} align="center">
-            <Text fontSize="sm" color="brand600" fontWeight="medium">
-              Last Sync : {getLastSync()}
+          <Flex gap="12px" align="center">
+            <Text fontSize="13px" color="#30384B">
+              Last sync: {getLastSync()}
             </Text>
 
-            <Button variant="outline" onClick={sync}>
+            <Button h="36px" px="14px" fontSize="13px" fontWeight="600" borderRadius="6px" onClick={sync}>
               <i className="fa fa-sync" />
               Sync Now
             </Button>
           </Flex>
         }
       >
-        <Flex mb="22px" w="200px">
+        <Flex mb="16px" w={{ base: "100%", md: "309px" }}>
           <CustomInput
+            label="Status"
+            name="employee_status_filter"
             method="dropdown"
             options={[
               { label: "Active", value: "active" },

@@ -13,7 +13,7 @@ import usePermission from "@/customHooks/usePermission";
 
 
 const LIST_FILTERS = [
-  { key: "q", type: "search", placeholder: "Search asset...", getText: (r) => `${r.account_asset_id} ${r.label ?? ""}` },
+  { key: "q", type: "search", label: "Search", placeholder: "Search asset...", getText: (r) => `${r.account_asset_id} ${r.label ?? ""}` },
 ];
 
 function AssetsList() {
@@ -76,7 +76,7 @@ function AssetsList() {
 
   return (
     <GlobalWrapper permissionKey="view_account_assets">
-      <CustomContainer
+      <CustomContainer contentCard
         title="Current Assets"
         rightSection={
           canAdd && (
@@ -86,7 +86,7 @@ function AssetsList() {
           )
         }
       >
-        <div style={{ marginBottom: 16 }}>{filterCard}</div>
+        {filterCard}
         <AgGrid
           rowData={filteredRows}
           columnDefs={colDefs}

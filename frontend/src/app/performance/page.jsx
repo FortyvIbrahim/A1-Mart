@@ -6,6 +6,7 @@ import CustomContainer from "@/components/CustomContainer";
 import GlobalWrapper from "@/components/GlobalWrapper";
 import { capitalizeWords } from "@/utils/string";
 import {
+  Button,
   Flex,
   FormatNumber,
   IconButton,
@@ -13,7 +14,10 @@ import {
   Portal,
   Text,
 } from "@chakra-ui/react";
-import React, { useRef } from "react";
+import React, { useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import usePermission from "@/customHooks/usePermission";
+import { DashboardFilterField } from "@/components/dashboard/DashboardUI";
 import { Tooltip } from "@/components/ui/tooltip";
 import moment from "moment";
 import CustomMenu from "@/components/CustomMenu";
@@ -49,6 +53,39 @@ function Accounts() {
   const { accountSheets, handleDeleteAccountSheet } = useAccountsSheet();
 
   const { openDeleteModal, DeleteModalComponent } = useDeleteModal();
+  const canAdd = usePermission("add_accounts_sheet");
+
+  // Figma "Record filters / Search, Branch, Billing Counter, Date".
+  const [search, setSearch] = useState("");
+  const [branch, setBranch] = useState("");
+  const [counter, setCounter] = useState("");
+  const [date, setDate] = useState(null);
+
+  const uniq = (key) =>
+    [...new Set((accountSheets || []).map((r) => r[key]).filter(Boolean))]
+      .sort((a, b) => String(a).localeCompare(String(b)))
+      .map((v) => ({ value: v, label: capitalizeWords(String(v)) }));
+  const branchOptions = useMemo(() => uniq("branch_name"), [accountSheets]);
+  const counterOptions = useMemo(() => uniq("counter_name"), [accountSheets]);
+
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const day = date ? moment(date).format("YYYY-MM-DD") : null;
+    return (accountSheets || []).filter((r) => {
+      if (branch && r.branch_name !== branch) return false;
+      if (counter && r.counter_name !== counter) return false;
+      if (day && moment(r.date).format("YYYY-MM-DD") !== day) return false;
+      if (q && !`${r.id ?? ""} ${r.employee_name ?? ""}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [accountSheets, search, branch, counter, date]);
+
+  const resetFilters = () => {
+    setSearch("");
+    setBranch("");
+    setCounter("");
+    setDate(null);
+  };
 
   const handleDelete = (id) => {
     openDeleteModal({
@@ -182,10 +219,83 @@ function Accounts() {
   return (
     <GlobalWrapper permissionKey="view_accounts_sheet">
       <DeleteModalComponent />
-      <CustomContainer title="Performance Entry">
+      <CustomContainer
+        headerBand
+        title="Performance Entry"
+        rightSection={
+          canAdd ? (
+            <Link href="/performance/create">
+              <Button h="39px" px="16px" fontSize="12px">
+                Add
+              </Button>
+            </Link>
+          ) : null
+        }
+      >
+        <Flex gap="12px" align="flex-end" wrap="wrap">
+          <DashboardFilterField
+            size="lg"
+            field={{
+              key: "search",
+              type: "search",
+              label: "Search",
+              placeholder: "Search ID or employee…",
+              value: search,
+              onChange: setSearch,
+              width: { base: "100%", md: "300px" },
+            }}
+          />
+          <DashboardFilterField
+            size="lg"
+            field={{
+              key: "branch",
+              label: "Branch",
+              placeholder: "All branches",
+              value: branch,
+              onChange: setBranch,
+              options: branchOptions,
+              width: { base: "100%", md: "200px" },
+            }}
+          />
+          <DashboardFilterField
+            size="lg"
+            field={{
+              key: "counter",
+              label: "Billing Counter",
+              placeholder: "All counters",
+              value: counter,
+              onChange: setCounter,
+              options: counterOptions,
+              width: { base: "100%", md: "180px" },
+            }}
+          />
+          <DashboardFilterField
+            size="lg"
+            field={{
+              key: "date",
+              type: "date",
+              label: "Date",
+              placeholder: "All dates",
+              value: date,
+              onChange: setDate,
+              width: { base: "100%", md: "260px" },
+            }}
+          />
+          <Button
+            h="44px"
+            px="16px"
+            fontSize="12px"
+            bg="#FFF5ED"
+            color="#C95C18"
+            _hover={{ bg: "#FDE9DA" }}
+            onClick={resetFilters}
+          >
+            Reset
+          </Button>
+        </Flex>
         <AgGrid
           ref={gridRef}
-          rowData={accountSheets}
+          rowData={rows}
           columnDefs={colDefs}
           tableKey="performance-entry"
         />

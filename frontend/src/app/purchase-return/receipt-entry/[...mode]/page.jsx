@@ -357,7 +357,7 @@ function ReceiptEntryForm({ params }) {
   if ((isEditMode || isViewMode) && loadingRecord) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()} fullWidth>
+        <CustomContainer pageForm headerBand title={getTitle()} fullWidth>
           <Flex justifyContent="center" p={8}>
             <Text>Loading...</Text>
           </Flex>
@@ -369,7 +369,7 @@ function ReceiptEntryForm({ params }) {
   if ((isEditMode || isViewMode) && !purchaseReturn && !loadingRecord) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()} fullWidth>
+        <CustomContainer pageForm headerBand title={getTitle()} fullWidth>
           <Flex flexDirection="column" gap={4} alignItems="center" p={8}>
             <Text>Purchase return not found</Text>
             <Link href="/purchase-return/receipt-entry">
@@ -385,7 +385,7 @@ function ReceiptEntryForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()} fullWidth>
+      <CustomContainer pageForm headerBand title={getTitle()} fullWidth>
         <Formik
           initialValues={initialValues}
           enableReinitialize

@@ -140,7 +140,7 @@ function ChecklistFormPage({ params }) {
   if (loading && !isCreateMode) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Flex p="22px">Loading…</Flex>
         </CustomContainer>
       </GlobalWrapper>
@@ -149,7 +149,7 @@ function ChecklistFormPage({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={FORM_SCHEMA}
@@ -193,7 +193,7 @@ function ChecklistFormPage({ params }) {
                   />
                 </Grid>
 
-                <CustomContainer title="Questions" size="sm">
+                <CustomContainer pageForm title="Questions" size="sm">
                   <FieldArray
                     name="questions"
                     render={(arrayHelpers) => {

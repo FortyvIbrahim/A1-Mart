@@ -65,10 +65,19 @@ function CustomMenu({ items, colorPalette = "secondary", customButton }) {
         {customButton ? (
           customButton
         ) : (
+          // Figma row-action trigger: 32px, radius 8, #FFF5ED fill, orange dots.
           <IconButton
             colorPalette={colorPalette}
             variant="ghost"
             size="2xs"
+            w="32px"
+            h="32px"
+            minW="32px"
+            borderRadius="8px"
+            bg="#FFF5ED"
+            color="#C95C18"
+            _hover={{ bg: "#FDE9DA" }}
+            aria-label="Row actions"
             disabled={items.length === 0}
           >
             <i className="fa fa-ellipsis-v" aria-hidden="true"></i>

@@ -1,46 +1,29 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import moment from "moment";
-import DatePicker from "react-datepicker";
 import GlobalWrapper from "@/components/GlobalWrapper";
-import CustomContainer from "@/components/CustomContainer";
-import { CustomDateTimeInput } from "@/components/CustomInput";
 import AgGrid from "@/components/AgGrid";
 import useAttendance from "@/api/customHooks/useAttendance";
 import useEmployee from "@/api/customHooks/useEmployee";
 import useEmployeeAllocations from "@/api/customHooks/useEmployeeAllocations";
-import useBranches from "@/api/customHooks/useBranches";
 import BranchFilter from "@/components/BranchFilter";
-import {
-  Box,
-  Flex,
-  Text,
-  Spinner,
-  Grid,
-  GridItem,
-  Tabs,
-  Button,
-  IconButton,
-  Checkbox,
-} from "@chakra-ui/react";
+import { Box, Flex, Text, Spinner, Checkbox } from "@chakra-ui/react";
 import DashboardBarChart from "@/components/dashboard/DashboardBarChart";
 import AttendanceHistoryDrawer from "@/components/dashboard/attendance/AttendanceHistoryDrawer";
-import useLatestApiCallTime from "@/api/customHooks/useLatestApiCallTime";
-import usePermission from "@/customHooks/usePermission";
 import DashboardChartLegend from "@/components/dashboard/DashboardChartLegend";
-import DashboardPageTitle, {
-  DashboardTitleSection,
-} from "@/components/dashboard/DashboardPageTitle";
-import DesignationEmployeesModal from "@/components/dashboard/attendance/DesignationEmployeesModal";
-import { Tooltip } from "@/components/ui/tooltip";
-import { employeeColDefs } from "@/colDefs/employee";
+import DashboardPageTitle from "@/components/dashboard/DashboardPageTitle";
+import {
+  DashboardCard,
+  DashboardFilterPanel,
+  DashboardMetricCard,
+  DashboardMetricRow,
+  DashboardTabs,
+  DashboardTwoColumn,
+} from "@/components/dashboard/DashboardUI";
 import {
   buildRestDayPieChartData,
-  REST_DAY_BADGE_COLOR_BY_NAME,
-  getRestDayBadgeValue,
   REST_DAY_PIE_FULL_LABEL,
-  REST_DAY_PIE_SHORT_LABEL,
 } from "@/utils/restDayBadges";
 import RestDayDistributionPie from "@/components/dashboard/attendance/RestDayDistributionPie";
 
@@ -116,67 +99,83 @@ function buildAttendanceByDate(records) {
   return byDate;
 }
 
-function SessionsCellRenderer(props) {
-  const list = props.data?.sessionsList;
-  if (!list || list.length === 0) {
+/**
+ * Figma "Allocation by Designation": label (150px, 11/400 #637188), 8px track
+ * (#F1E3D9, radius 4) with a red unfilled bar, value 11/600 at the end.
+ * With "Show Filled" the filled part is drawn in green ahead of the red part.
+ */
+function AllocationBars({ rows, showFilled, activeDesignation, onSelect }) {
+  if (!rows.length) {
     return (
-      <Text as="span" fontSize="xs" color="gray.500">
-        {props.data?.status === "Absent" ? "—" : "—"}
-      </Text>
+      <Flex h="216px" align="center" justify="center">
+        <Text fontSize="12px" color="fg.muted">
+          No allocation data
+        </Text>
+      </Flex>
     );
   }
+  const max = Math.max(
+    1,
+    ...rows.map((r) => (showFilled ? r.total : r.unfilled) || 0)
+  );
   return (
-    <Flex flexDirection="column" gap={0.5} py={0.5} fontSize="xs">
-      {list.map((item, idx) => (
-        <Flex key={idx} direction="column" gap={0.25}>
-          <Flex align="center" gap={1.5} flexWrap="wrap">
-            <Box as="span" color="green.600" title="Clock in">
-              <i className="fa fa-sign-in-alt" style={{ marginRight: "4px" }} />
-            </Box>
-            <Text as="span" color="gray.700" fontWeight="medium">
-              {item.inStr}
+    <Flex direction="column" gap="16px" maxH="216px" overflowY="auto" pr="4px">
+      {rows.map((r) => {
+        const active = activeDesignation === r.name;
+        const filledPct = showFilled ? ((r.filled || 0) / max) * 100 : 0;
+        const unfilledPct = ((r.unfilled || 0) / max) * 100;
+        return (
+          <Flex
+            key={r.name}
+            as="button"
+            type="button"
+            onClick={() => onSelect?.(r)}
+            align="center"
+            gap="12px"
+            minH="13px"
+            textAlign="left"
+            cursor="pointer"
+            opacity={activeDesignation && !active ? 0.55 : 1}
+          >
+            <Text
+              w="150px"
+              flexShrink={0}
+              fontSize="11px"
+              lineHeight="13px"
+              color={active ? "fg" : "fg.muted"}
+              fontWeight={active ? "600" : "400"}
+              truncate
+              title={r.name}
+            >
+              {r.name}
             </Text>
-            <Box as="span" color="gray.400">
-              <i className="fa fa-arrow-right" style={{ fontSize: "10px" }} />
-            </Box>
-            {item.isOpen ? (
-              <Text as="span" color="orange.600" fontWeight="semibold">
-                Till now
-              </Text>
-            ) : (
-              <>
-                <Box as="span" color="red.500" title="Clock out">
-                  <i
-                    className="fa fa-sign-out-alt"
-                    style={{ marginRight: "4px" }}
-                  />
-                </Box>
-                <Text as="span" color="gray.700">
-                  {item.outStr}
-                </Text>
-              </>
-            )}
-            <Text as="span" color="green.600" fontWeight="semibold">
-              ({item.durationStr})
+            <Flex flex="1" h="8px" bg="border" borderRadius="4px" overflow="hidden">
+              {filledPct > 0 && (
+                <Box w={`${filledPct}%`} h="100%" bg="#11976A" />
+              )}
+              {unfilledPct > 0 && (
+                <Box
+                  w={`${unfilledPct}%`}
+                  h="100%"
+                  bg="#E7474D"
+                  borderRadius="4px"
+                />
+              )}
+            </Flex>
+            <Text
+              w="24px"
+              flexShrink={0}
+              textAlign="right"
+              fontSize="11px"
+              fontWeight="600"
+              lineHeight="13px"
+              color="fg"
+            >
+              {showFilled ? r.total : r.unfilled}
             </Text>
           </Flex>
-          {item.breakAfterStr && (
-            <Flex
-              align="center"
-              gap={1}
-              flexWrap="wrap"
-              lineHeight="1"
-              color="secondary.500"
-              marginBlock="4px"
-            >
-              <Box as="span" title="Break">
-                <i className="fa fa-pause" style={{ marginRight: "4px" }} />
-              </Box>
-              <Text as="span">Break {item.breakAfterStr}</Text>
-            </Flex>
-          )}
-        </Flex>
-      ))}
+        );
+      })}
     </Flex>
   );
 }
@@ -184,18 +183,15 @@ function SessionsCellRenderer(props) {
 function AttendanceDashboard() {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [selectedBranchId, setSelectedBranchId] = useState("");
-  const [detailsTab, setDetailsTab] = useState("list");
+  const [searchText, setSearchText] = useState("");
+  const [sortBy, setSortBy] = useState("total");
   const [detailsFilters, setDetailsFilters] = useState({
     status: null, // "Present" | "Rest Day - P" | "Absent" | "Rest Day" | null
     designation: null, // string | null
     restDay: null, // 1–7 (Sun–Sat) | "unset" | null
-    timeliness: null, // "late" | "early" | null
+    timeliness: null, // "late" | "early" | "ontime" | null
   });
   const [selectedEmployeeCode, setSelectedEmployeeCode] = useState(null);
-  const [selectedDesignationModalContext, setSelectedDesignationModalContext] =
-    useState(null);
-  const [hoveredRestDayDesignation, setHoveredRestDayDesignation] =
-    useState(null);
   const [showAllocationFilled, setShowAllocationFilled] = useState(false);
 
   const dateStr = moment(selectedDate).format("YYYY-MM-DD");
@@ -210,8 +206,6 @@ function AttendanceDashboard() {
     records,
     processedAttendanceByEmployeeCode,
     loading: loadingAttendance,
-    sync: syncAttendance,
-    isSyncing,
   } = useAttendance({
     fromDate,
     toDate,
@@ -223,20 +217,6 @@ function AttendanceDashboard() {
     }
   );
   const { allocations, loading: loadingAllocations } = useEmployeeAllocations();
-  const { branches } = useBranches();
-
-  const canSyncAttendance = usePermission("sync_attendance");
-  const allowAddEmployees = usePermission("add_employees");
-  const allowMFAToggle = usePermission("allow_mfa_toggle");
-
-  const {
-    latestCall: latestAttendanceSync,
-    loading: loadingAttendanceSync,
-    refetch: refetchLatestAttendanceSync,
-  } = useLatestApiCallTime({
-    api_type: "DIGISME",
-    secondary_type: "ATTENDANCE",
-  });
 
   const byDate = useMemo(() => buildAttendanceByDate(records), [records]);
 
@@ -274,11 +254,6 @@ function AttendanceDashboard() {
     () => buildRestDayPieChartData(employeesForAttendanceScope),
     [employeesForAttendanceScope]
   );
-
-  useEffect(() => {
-    if (isSyncing) return;
-    refetchLatestAttendanceSync();
-  }, [isSyncing]);
 
   const dayData = useMemo(() => {
     const day = byDate[dateStr];
@@ -419,21 +394,18 @@ function AttendanceDashboard() {
     const restDay = filteredGridRows.filter(
       (r) => r.status === "Rest Day"
     ).length;
-    const chartData = [
-      { name: "Present", count: present, fill: "#38A169" },
-      ...(restDayPresent > 0
-        ? [
-            {
-              name: "Rest Day - P",
-              count: restDayPresent,
-              fill: "#2C7A7B",
-            },
-          ]
-        : []),
-      { name: "Rest Day", count: restDay, fill: "#ED8936" },
-      { name: "Absent", count: absent, fill: "#718096" },
+    // Figma "Present vs Absent" bars (always all four).
+    return [
+      { name: "Present", status: "Present", count: present, fill: "#11976A" },
+      {
+        name: "Rest Day – P",
+        status: "Rest Day - P",
+        count: restDayPresent,
+        fill: "#526FA8",
+      },
+      { name: "Rest Day", status: "Rest Day", count: restDay, fill: "#F47721" },
+      { name: "Absent", status: "Absent", count: absent, fill: "#9AAAC1" },
     ];
-    return chartData;
   }, [filteredGridRows]);
 
   const attendanceStatsData = useMemo(() => {
@@ -443,8 +415,8 @@ function AttendanceDashboard() {
     const late = presentRows.filter((r) => r.is_late).length;
     const early = presentRows.filter((r) => r.is_early).length;
     return [
-      { name: "Late", count: late, fill: "#E53E3E" },
-      { name: "Early", count: early, fill: "#D69E2E" },
+      { name: "Late", count: late, fill: "#E7474D" },
+      { name: "Early", count: early, fill: "#E3B63E" },
     ];
   }, [filteredGridRows]);
 
@@ -469,118 +441,6 @@ function AttendanceDashboard() {
     if (showAllocationFilled) return allocationByDesignationData;
     return allocationByDesignationData.filter((r) => (r.unfilled ?? 0) > 0);
   }, [allocationByDesignationData, showAllocationFilled]);
-
-  const getBranchName = (branchId) => {
-    if (branchId == null || branchId === "") return "—";
-    const b = (branches || []).find(
-      (x) => String(x.branch_id) === String(branchId)
-    );
-    return b?.branch_name ?? String(branchId);
-  };
-
-  const designationSummary = useMemo(() => {
-    const key = (des, branchId) => `${des}|${branchId ?? ""}`;
-    const byKey = {};
-    filteredGridRows.forEach((r) => {
-      const des = empCodeToDesignation[r.employee_code] ?? "—";
-      const bid = empCodeToBranch[r.employee_code]?.branch_id ?? null;
-      const k = key(des, bid);
-      if (!byKey[k]) {
-        byKey[k] = {
-          designation: des,
-          branch_id: bid,
-          branch_name: getBranchName(bid),
-          present: 0,
-          rest_day_present: 0,
-          absent: 0,
-          rest_day_absent: 0,
-          filled: 0,
-          unfilled: 0,
-          required: 0,
-        };
-      }
-      if (r.status === "Present" || r.status === "Rest Day - P")
-        byKey[k].present += 1;
-      else if (r.status === "Rest Day" || r.status === "Absent")
-        byKey[k].absent += 1;
-      if (r.status === "Rest Day - P") byKey[k].rest_day_present += 1;
-      if (r.status === "Rest Day") byKey[k].rest_day_absent += 1;
-    });
-    filteredAllocations.forEach((a) => {
-      const name = a.designation_name ?? "—";
-      const bid = a.branch_id ?? null;
-      const k = key(name, bid);
-      if (!byKey[k]) {
-        byKey[k] = {
-          designation: name,
-          branch_id: bid,
-          branch_name: a.branch_name ?? getBranchName(bid),
-          present: 0,
-          rest_day_present: 0,
-          absent: 0,
-          rest_day_absent: 0,
-          filled: 0,
-          unfilled: 0,
-          required: 0,
-        };
-      }
-      const filled = Number(a.existing_count) || 0;
-      const required = Number(a.required_count) || 0;
-      byKey[k].filled += filled;
-      byKey[k].unfilled += Math.max(0, required - filled);
-      byKey[k].required += required;
-    });
-
-    // When there is no allocation data (required = 0 and filled = 0),
-    // still show how many employees are actually in that designation
-    // by using attendance-based headcount (present + absent).
-    Object.values(byKey).forEach((row) => {
-      if ((row.required ?? 0) === 0 && (row.filled ?? 0) === 0) {
-        const headcount = (row.present ?? 0) + (row.absent ?? 0);
-        if (headcount > 0) {
-          row.filled = headcount;
-          row.unfilled = 0;
-        }
-      }
-    });
-
-    return Object.values(byKey).sort((a, b) => {
-      const c = (a.designation || "").localeCompare(b.designation || "");
-      if (c !== 0) return c;
-      return (a.branch_name || "").localeCompare(b.branch_name || "");
-    });
-  }, [
-    filteredGridRows,
-    filteredAllocations,
-    empCodeToDesignation,
-    empCodeToBranch,
-    branches,
-  ]);
-
-  const allocationLegendItems = useMemo(() => {
-    if (!allocationChartData?.length) return [];
-    const unfilled = allocationChartData.reduce((s, r) => s + r.unfilled, 0);
-    if (!showAllocationFilled) {
-      return [{ name: "Unfilled", value: unfilled, fill: "#E53E3E" }];
-    }
-    const filled = allocationChartData.reduce((s, r) => s + r.filled, 0);
-    return [
-      { name: "Filled", value: filled, fill: "#38A169" },
-      { name: "Unfilled", value: unfilled, fill: "#E53E3E" },
-    ];
-  }, [allocationChartData, showAllocationFilled]);
-
-  const allocationChartHeight = useMemo(() => {
-    const count = allocationChartData?.length ?? 0;
-    const rowHeight = 28;
-    const minHeight = 280;
-    const axisAndMargin = 80;
-    const maxHeight = 1200;
-    return Math.min(
-      maxHeight,
-      Math.max(minHeight, count * rowHeight + axisAndMargin)
-    );
-  }, [allocationChartData?.length]);
 
   const listRows = useMemo(() => {
     let rows = filteredGridRows;
@@ -610,137 +470,50 @@ function AttendanceDashboard() {
       rows = rows.filter((r) => Boolean(r.is_late));
     } else if (detailsFilters.timeliness === "early") {
       rows = rows.filter((r) => Boolean(r.is_early));
+    } else if (detailsFilters.timeliness === "ontime") {
+      rows = rows.filter(
+        (r) =>
+          (r.status === "Present" || r.status === "Rest Day - P") &&
+          !r.is_late &&
+          !r.is_early
+      );
     }
 
-    return rows;
+    const q = searchText.trim().toLowerCase();
+    if (q) {
+      rows = rows.filter(
+        (r) =>
+          String(r.employee_name ?? "").toLowerCase().includes(q) ||
+          String(r.employee_code ?? "").toLowerCase().includes(q)
+      );
+    }
+
+    const sorted = [...rows];
+    if (sortBy === "employee") {
+      sorted.sort((a, b) =>
+        String(a.employee_name ?? "").localeCompare(String(b.employee_name ?? ""))
+      );
+    } else if (sortBy === "code") {
+      sorted.sort((a, b) =>
+        String(a.employee_code ?? "").localeCompare(
+          String(b.employee_code ?? ""),
+          undefined,
+          { numeric: true }
+        )
+      );
+    } else {
+      sorted.sort((a, b) => (b.totalHours ?? -1) - (a.totalHours ?? -1));
+    }
+    return sorted;
   }, [
+    searchText,
+    sortBy,
     filteredGridRows,
     detailsFilters.status,
     detailsFilters.designation,
     detailsFilters.restDay,
     detailsFilters.timeliness,
   ]);
-
-  const designationTableRows = useMemo(() => {
-    let rows = designationSummary;
-
-    if (detailsFilters.designation) {
-      rows = rows.filter(
-        (r) => (r.designation ?? "") === detailsFilters.designation
-      );
-    }
-
-    if (
-      detailsFilters.status === "Present" ||
-      detailsFilters.status === "Rest Day - P"
-    ) {
-      rows = rows.filter((r) => (r.present ?? 0) > 0);
-    } else if (detailsFilters.status === "Absent") {
-      rows = rows.filter((r) => (r.absent ?? 0) > 0);
-    }
-
-    return rows;
-  }, [designationSummary, detailsFilters.status, detailsFilters.designation]);
-
-  const restDayDesignationStats = useMemo(() => {
-    const order = [1, 2, 3, 4, 5, 6, 7];
-    const groups = {};
-    const designationLimitMap = {};
-    const hasSelectedBranchScope = Boolean(selectedBranchId);
-
-    if (hasSelectedBranchScope) {
-      (filteredAllocations || []).forEach((a) => {
-        const designation = a?.designation_name ?? "—";
-        const existing = Number(a?.existing_count);
-        const workingDays = Number(a?.working_days);
-        if (!Number.isFinite(existing) || !Number.isFinite(workingDays)) return;
-        if (workingDays <= 0) return;
-        const limit = Math.ceil(existing / workingDays);
-        if (!Number.isFinite(limit)) return;
-        designationLimitMap[designation] =
-          (designationLimitMap[designation] ?? 0) + limit;
-      });
-    }
-    order.forEach((key) => {
-      groups[key] = {
-        restDayKey: key,
-        restDayLabel: REST_DAY_PIE_FULL_LABEL[key] ?? String(key),
-        total: 0,
-        byDesignation: {},
-      };
-    });
-
-    (employeesForAttendanceScope || []).forEach((emp) => {
-      const n = Number(emp?.rest_day);
-      const key = Number.isFinite(n) && n >= 1 && n <= 7 ? n : "unset";
-      const designation =
-        emp?.designation_name ?? emp?.designation?.designation_name ?? "—";
-      const group = groups[key];
-      if (!group) return;
-      group.total += 1;
-      group.byDesignation[designation] =
-        (group.byDesignation[designation] ?? 0) + 1;
-    });
-
-    const filteredOrder =
-      detailsFilters.restDay != null
-        ? order.filter(
-            (key) =>
-              groups[key] != null &&
-              String(key) === String(detailsFilters.restDay)
-          )
-        : order;
-
-    return filteredOrder
-      .map((key) => groups[key])
-      .filter(Boolean)
-      .filter((group) => group.total > 0)
-      .map((group) => ({
-        ...group,
-        colorScheme: REST_DAY_BADGE_COLOR_BY_NAME[group.restDayLabel] ?? "gray",
-        designationRows: Object.entries(group.byDesignation)
-          .map(([designation, count]) => {
-            const maxAllowedRestDayCount = designationLimitMap[designation];
-            const hasLimit =
-              hasSelectedBranchScope && Number.isFinite(maxAllowedRestDayCount);
-            const extraCount = hasLimit ? count - maxAllowedRestDayCount : null;
-            return {
-              designation,
-              count,
-              showLimit: hasSelectedBranchScope,
-              maxAllowedRestDayCount: hasLimit ? maxAllowedRestDayCount : null,
-              extraCount,
-              isOverLimit: hasLimit ? count > maxAllowedRestDayCount : false,
-            };
-          })
-          .sort((a, b) => {
-            const diff = Number(b.count) - Number(a.count);
-            if (diff !== 0) return diff;
-            return String(a.designation).localeCompare(String(b.designation));
-          }),
-      }));
-  }, [
-    employeesForAttendanceScope,
-    detailsFilters.restDay,
-    filteredAllocations,
-    selectedBranchId,
-  ]);
-
-  const hasDetailsFilter = Boolean(
-    detailsFilters.status ||
-      detailsFilters.designation ||
-      detailsFilters.restDay != null ||
-      detailsFilters.timeliness
-  );
-
-  const handleClearDetailsFilters = useCallback(() => {
-    setDetailsFilters({
-      status: null,
-      designation: null,
-      restDay: null,
-      timeliness: null,
-    });
-  }, []);
 
   const toggleStatusFilter = useCallback((status) => {
     setDetailsFilters((prev) => ({
@@ -770,34 +543,6 @@ function AttendanceDashboard() {
     }));
   }, []);
 
-  const allocationBars = useMemo(
-    () =>
-      showAllocationFilled
-        ? [
-            {
-              dataKey: "unfilled",
-              fill: "#E53E3E",
-              stackId: "stack",
-            },
-            {
-              dataKey: "filled",
-              fill: "#38A169",
-              stackId: "stack",
-              labelOnTop: true,
-              labelDataKey: "total",
-            },
-          ]
-        : [
-            {
-              dataKey: "unfilled",
-              fill: "#E53E3E",
-              labelOnTop: true,
-              labelDataKey: "unfilled",
-            },
-          ],
-    [showAllocationFilled]
-  );
-
   const presentAbsentBars = useMemo(
     () => [{ dataKey: "count", perBarColor: true }],
     []
@@ -817,8 +562,7 @@ function AttendanceDashboard() {
 
   const handlePresentAbsentBarClick = useCallback(
     (entry) => {
-      toggleStatusFilter(entry.name);
-      setDetailsTab("list");
+      toggleStatusFilter(entry.status ?? entry.name);
     },
     [toggleStatusFilter]
   );
@@ -831,229 +575,83 @@ function AttendanceDashboard() {
       } else {
         return;
       }
-      setDetailsTab("list");
     },
     [toggleTimelinessFilter]
   );
 
-  const designationColumnDefs = useMemo(
-    () => [
-      {
-        field: "designation",
-        headerName: "Designation",
-        flex: 1,
-        minWidth: 120,
-      },
-      { field: "branch_name", headerName: "Branch", flex: 1, minWidth: 120 },
-      {
-        field: "present",
-        headerName: "Present",
-        width: 90,
-        type: "number",
-        valueGetter: (params) => {
-          const present = params.data?.present ?? 0;
-          const restDayPresent = params.data?.rest_day_present ?? 0;
-          return present - restDayPresent;
-        },
-      },
-      {
-        field: "rest_day_present",
-        headerName: "Rest Day Present",
-        width: 140,
-        type: "number",
-      },
-      {
-        field: "absent",
-        headerName: "Absent",
-        width: 90,
-        type: "number",
-        valueGetter: (params) => {
-          const absent = params.data?.absent ?? 0;
-          const restDayAbsent = params.data?.rest_day_absent ?? 0;
-          return absent - restDayAbsent;
-        },
-      },
-      {
-        field: "rest_day_absent",
-        headerName: "Rest Day Absent",
-        width: 140,
-        type: "number",
-      },
-      { field: "required", headerName: "Required", width: 90, type: "number" },
-      {
-        field: "to_be_filled",
-        headerName: "To Be Filled",
-        type: "number",
-        valueGetter: (params) => {
-          const required = params.data?.required ?? 0;
-          const filled = params.data?.filled ?? 0;
-          return required - filled;
-        },
-        cellRenderer: (params) => {
-          const value = params.value;
-          let color = "gray.500";
-          if (value > 0) color = "green.500";
-          else if (value < 0) color = "red.500";
-          return <Text color={color}>{value ?? "-"}</Text>;
-        },
-      },
-      {
-        field: "filled",
-        headerName: "Filled",
-        type: "number",
-        hideByDefault: true,
-      },
-      {
-        field: "unfilled",
-        headerName: "Unfilled",
-        type: "number",
-        hideByDefault: true,
-      },
-      {
-        field: "actions",
-        headerName: "Action",
-        type: "action-column",
-        valueGetter: (params) => [
-          {
-            label: "View Employees",
-            value: "view-employees",
-            onClick: () =>
-              setSelectedDesignationModalContext({
-                designation: params.data?.designation ?? "—",
-                branch_id: params.data?.branch_id ?? null,
-                branch_name: params.data?.branch_name ?? "—",
-                restDayKey: null,
-                restDayLabel: null,
-              }),
-          },
-        ],
-      },
-    ],
-    []
-  );
-
-  const branchGroupedColumnDefs = useMemo(
-    () => [
-      {
-        field: "designation",
-        headerName: "Designation",
-        flex: 1,
-        minWidth: 140,
-      },
-      {
-        field: "branch_name",
-        headerName: "Branch",
-        flex: 1,
-        minWidth: 140,
-      },
-      {
-        field: "required",
-        headerName: "Required",
-        width: 100,
-        type: "number",
-      },
-      {
-        field: "filled",
-        headerName: "Filled",
-        width: 100,
-        type: "number",
-      },
-      {
-        field: "unfilled",
-        headerName: "Unfilled",
-        width: 100,
-        type: "number",
-      },
-    ],
-    []
-  );
-
+  // Figma "Attendance Details" columns: Code · Image · Employee · Designation ·
+  // Branch · Rest Day · Status · Timeliness · Sessions · Total · Action.
   const columnDefs = useMemo(
     () => [
-      { field: "employee_code", headerName: "Code", type: "id" },
+      { field: "employee_code", headerName: "Code", type: "id", minWidth: 70, maxWidth: 90 },
       {
         field: "profile_img_url",
         headerName: "Image",
-        type: "image",
-        imageSettings: { objectFit: "contain" },
+        type: "avatar",
+        avatarSize: 28,
+        width: 66,
       },
-      {
-        field: "employee_name",
-        headerName: "Employee",
-        type: "capitalize",
-      },
-      {
-        field: "designation",
-        headerName: "Designation",
-        type: "capitalize",
-      },
-      {
-        field: "branch_name",
-        headerName: "Branch",
-        type: "capitalize",
-      },
+      { field: "employee_name", headerName: "Employee", minWidth: 120 },
+      { field: "designation", headerName: "Designation", minWidth: 120 },
+      { field: "branch_name", headerName: "Branch", minWidth: 150 },
       {
         field: "rest_day",
         headerName: "Rest Day",
-        type: "badge-column",
-        valueGetter: (params) => getRestDayBadgeValue(params.data?.rest_day),
+        minWidth: 82,
+        valueGetter: (params) => {
+          const n = Number(params.data?.rest_day);
+          return n >= 1 && n <= 7 ? REST_DAY_PIE_FULL_LABEL[n] : "—";
+        },
       },
       {
         field: "status",
         headerName: "Status",
+        minWidth: 78,
         type: "badge-column",
         valueGetter: (params) => {
           const status = params.data.status;
-          let colorScheme = "gray";
-          if (status === "Present") {
-            colorScheme = "green";
-          } else if (status === "Rest Day - P") {
-            colorScheme = "pink";
-          } else if (status === "Rest Day") {
-            colorScheme = "orange";
-          }
-          return {
-            label: status,
-            colorScheme,
-          };
+          const colorScheme =
+            status === "Present"
+              ? "green"
+              : status === "Absent"
+              ? "red"
+              : status === "Rest Day - P"
+              ? "teal"
+              : "orange";
+          return { label: status, colorScheme };
         },
       },
       {
         field: "timeliness",
         headerName: "Timeliness",
-        minWidth: 160,
-        type: "badge-column",
+        minWidth: 94,
         valueGetter: (params) => {
-          const isLate = Boolean(params.data?.is_late);
-          const isEarly = Boolean(params.data?.is_early);
-          if (!isLate && !isEarly) {
-            return null;
-          }
-          if (isLate && isEarly) {
-            return { label: "Late, Early", colorScheme: "orange" };
-          }
-          return isLate
-            ? { label: "Late", colorScheme: "red" }
-            : { label: "Early", colorScheme: "yellow" };
+          const r = params.data ?? {};
+          if (r.status !== "Present" && r.status !== "Rest Day - P") return "—";
+          if (r.is_late && r.is_early) return "Late, Early";
+          if (r.is_late) return "Late";
+          if (r.is_early) return "Early";
+          return "On time";
         },
       },
       {
-        field: "sessionsList",
+        field: "sessions",
         headerName: "Sessions",
-        flex: 2,
-        minWidth: 280,
-        autoHeight: true,
-        wrapText: false,
-        cellRenderer: SessionsCellRenderer,
+        type: "number",
+        minWidth: 82,
+        valueGetter: (params) => params.data?.sessionsList?.length ?? 0,
       },
-      { field: "total", headerName: "Total", width: 85 },
+      { field: "total", headerName: "Total", type: "rightAligned", minWidth: 80 },
       {
         field: "actions",
         headerName: "Action",
         type: "action-column",
+        width: 77,
+        minWidth: 77,
+        maxWidth: 77,
         valueGetter: (params) => [
           {
-            label: "View Details",
+            label: "View",
             value: "view-details",
             onClick: () => setSelectedEmployeeCode(params.data.employee_code),
           },
@@ -1093,88 +691,6 @@ function AttendanceDashboard() {
     empCodeToDesignation,
     empCodeToBranch,
   ]);
-
-  const designationEmployeeRows = useMemo(() => {
-    if (!selectedDesignationModalContext) return [];
-    const selectedDesignation =
-      selectedDesignationModalContext.designation ?? "—";
-    const selectedBranchId = selectedDesignationModalContext.branch_id ?? null;
-    const selectedRestDayKey = selectedDesignationModalContext.restDayKey;
-    const shouldFilterByBranch =
-      selectedBranchId !== null &&
-      selectedBranchId !== undefined &&
-      selectedBranchId !== "";
-    return (employeesForAttendanceScope || [])
-      .filter((emp) => {
-        const designation =
-          emp.designation_name ?? emp.designation?.designation_name ?? "—";
-        const empBranchId = emp.branch_id ?? emp.branch?.branch_id ?? null;
-        if (String(designation || "—") !== String(selectedDesignation))
-          return false;
-        if (
-          shouldFilterByBranch &&
-          String(empBranchId ?? "") !== String(selectedBranchId ?? "")
-        ) {
-          return false;
-        }
-        if (selectedRestDayKey == null) return true;
-        const restDay = Number(emp?.rest_day);
-        return (
-          Number.isFinite(restDay) && restDay === Number(selectedRestDayKey)
-        );
-      })
-      .sort((a, b) =>
-        (a.employee_name || "").localeCompare(b.employee_name || "")
-      );
-  }, [selectedDesignationModalContext, employeesForAttendanceScope]);
-
-  const attendanceStatusByEmployeeCode = useMemo(
-    () =>
-      new Map(
-        (filteredGridRows || []).map((row) => [
-          String(row.employee_code),
-          row.status,
-        ])
-      ),
-    [filteredGridRows]
-  );
-
-  const designationEmployeeColDefs = useMemo(() => {
-    const baseDefs = employeeColDefs({
-      allowAdd: allowAddEmployees,
-      allowMFAToggle,
-    });
-    const attendanceStatusCol = {
-      field: "attendance_status",
-      headerName: "Status",
-      type: "badge-column",
-      valueGetter: (params) => {
-        const status =
-          attendanceStatusByEmployeeCode.get(
-            String(params.data?.employee_code ?? "")
-          ) ?? "Absent";
-        if (status === "Rest Day - P") {
-          return {
-            label: "Rest Day - P",
-            colorScheme: "pink",
-          };
-        }
-        if (status === "Rest Day") {
-          return {
-            label: "Rest Day",
-            colorScheme: "orange",
-          };
-        }
-        return {
-          label: status === "Present" ? "Present" : "Absent",
-          colorScheme: status === "Present" ? "green" : "red",
-        };
-      },
-    };
-    return baseDefs.flatMap((col) =>
-      col.field === "rest_day" ? [col, attendanceStatusCol] : [col]
-    );
-  }, [allowAddEmployees, allowMFAToggle, attendanceStatusByEmployeeCode]);
 
   const monthDays = useMemo(() => {
     const days = [];
@@ -1283,520 +799,280 @@ function AttendanceDashboard() {
     };
   }, [selectedEmployeeCode, monthDays, byDate, monthStart, monthEnd]);
 
+  const statusCounts = useMemo(() => {
+    const byStatus = Object.fromEntries(
+      presentAbsentData.map((d) => [d.status, d.count])
+    );
+    return byStatus;
+  }, [presentAbsentData]);
+
+  const designationOptions = useMemo(() => {
+    const names = new Set();
+    (filteredGridRows || []).forEach((r) => {
+      if (r.designation && r.designation !== "—") names.add(r.designation);
+    });
+    return [...names]
+      .sort((a, b) => a.localeCompare(b))
+      .map((n) => ({ value: n, label: n }));
+  }, [filteredGridRows]);
+
+
+  const setFilter = (key) => (value) =>
+    setDetailsFilters((prev) => ({
+      ...prev,
+      [key]: value === "" || value === undefined ? null : value,
+    }));
+
+  // Figma "Record filters": two rows of four.
+  const filterFields = [
+    {
+      key: "search",
+      type: "search",
+      label: "Search",
+      placeholder: "Search employee name or code…",
+      value: searchText,
+      onChange: setSearchText,
+    },
+    {
+      key: "date",
+      type: "date",
+      label: "Date / Period",
+      placeholder: "Selected period",
+      value: selectedDate,
+      onChange: (d) => setSelectedDate(d ?? new Date()),
+    },
+    {
+      key: "branch",
+      render: (
+        <BranchFilter
+          variant="panel"
+          width="100%"
+          label="Branch"
+          allLabel="All branches"
+          value={selectedBranchId}
+          onChange={setSelectedBranchId}
+        />
+      ),
+    },
+    {
+      key: "designation",
+      label: "Designation",
+      placeholder: "All designations",
+      value: detailsFilters.designation ?? "",
+      onChange: setFilter("designation"),
+      options: designationOptions,
+    },
+    {
+      key: "status",
+      label: "Status",
+      placeholder: "All attendance statuses",
+      value: detailsFilters.status ?? "",
+      onChange: setFilter("status"),
+      options: [
+        { value: "Present", label: "Present" },
+        { value: "Rest Day - P", label: "Rest Day – Present" },
+        { value: "Rest Day", label: "Rest Day" },
+        { value: "Absent", label: "Absent" },
+      ],
+    },
+    {
+      key: "timeliness",
+      label: "Timeliness",
+      placeholder: "All timeliness",
+      value: detailsFilters.timeliness ?? "",
+      onChange: setFilter("timeliness"),
+      options: [
+        { value: "ontime", label: "On time" },
+        { value: "late", label: "Late" },
+        { value: "early", label: "Early" },
+      ],
+    },
+    {
+      key: "restDay",
+      label: "Rest Day",
+      placeholder: "All rest days",
+      value: detailsFilters.restDay ?? "",
+      onChange: (v) =>
+        setFilter("restDay")(v === "" ? null : v === "unset" ? "unset" : Number(v)),
+      options: [
+        ...[1, 2, 3, 4, 5, 6, 7].map((n) => ({
+          value: n,
+          label: REST_DAY_PIE_FULL_LABEL[n],
+        })),
+        { value: "unset", label: "Unset" },
+      ],
+    },
+    {
+      key: "sortBy",
+      label: "Sort by",
+      placeholder: false,
+      value: sortBy,
+      onChange: setSortBy,
+      options: [
+        { value: "total", label: "Total" },
+        { value: "employee", label: "Employee" },
+        { value: "code", label: "Code" },
+      ],
+    },
+  ];
+
+  const presentAbsentLegend = presentAbsentData.map((d) => ({
+    name: d.name,
+    value: d.count,
+    fill: d.status === "Absent" ? "#BC3745" : d.status === "Present" ? "#147D52" : d.fill,
+    labelColor:
+      d.status === "Present" ? "#147D52" : d.status === "Absent" ? "#BC3745" : undefined,
+    onClick: () => toggleStatusFilter(d.status),
+  }));
+
+  const unfilledTotal = allocationByDesignationData.reduce(
+    (sum, r) => sum + (r.unfilled || 0),
+    0
+  );
+
+  const metricCards = [
+    { status: "Present", label: "Present" },
+    { status: "Rest Day - P", label: "Rest Day – Present" },
+    { status: "Rest Day", label: "Rest Day" },
+    { status: "Absent", label: "Absent" },
+  ];
+
+  const loading = loadingAttendance || loadingEmployees || loadingAllocations;
+
   return (
     <GlobalWrapper permissionKey="view_attendance_dashboard">
-      <Flex flexDirection="column" gap="22px">
-        <DashboardTitleSection>
-          <Flex
-            w="100%"
-            align={{ base: "flex-start", md: "center" }}
-            justify="space-between"
-            gap={3}
-            flexWrap="wrap"
-            rowGap={3}
-          >
-            <DashboardPageTitle title="Attendance Dashboard" />
-            <Flex
-              align="flex-end"
-              gap={3}
-              flexWrap="wrap"
-              w={{ base: "100%", md: "auto" }}
-              justify={{ base: "flex-start", md: "flex-end" }}
-              flex={{ md: 1 }}
-              minW={0}
-            >
-              <Flex
-                align="flex-end"
-                gap={3}
-                flexWrap="wrap"
-                flex={{ base: "1 1 100%", md: "0 1 auto" }}
-                minW={0}
-              >
-                <Box>
-                  <Text fontSize="xs" mb={1} color="gray.500">
-                    Date
-                  </Text>
-                  <DatePicker
-                    selected={selectedDate}
-                    onChange={(date) => setSelectedDate(date ?? new Date())}
-                    customInput={
-                      <CustomDateTimeInput
-                        placeholder="DD/MM/YYYY"
-                        type="date"
-                      />
-                    }
-                    portalId="root-portal"
-                  />
-                </Box>
-                <BranchFilter
-                  value={selectedBranchId}
-                  onChange={setSelectedBranchId}
-                  label="Branch"
-                  allLabel="All Branches"
-                />
-              </Flex>
-              <Box
-                display={{ base: "none", sm: "block" }}
-                w="1px"
-                alignSelf="stretch"
-                minH="36px"
-                my="auto"
-                bg="gray.200"
-                mt="24px"
-                _dark={{ bg: "gray.600" }}
-                flexShrink={0}
-                aria-hidden
-              />
-              <Flex align="flex-end" gap={3} flexWrap="nowrap" flexShrink={0}>
-                {canSyncAttendance ? (
-                  <IconButton
-                    onClick={syncAttendance}
-                    aria-label="Sync Attendance"
-                    variant="outline"
-                    size="sm"
-                    disabled={isSyncing}
-                  >
-                    <i className={`fa fa-sync ${isSyncing ? "fa-spin" : ""}`} />
-                  </IconButton>
-                ) : null}
+      <Flex direction="column" gap="24px">
+        <DashboardPageTitle title="Attendance Dashboard" />
 
-                <Box>
-                  <Text fontSize="xs" mb={1} color="gray.500">
-                    Last sync
-                  </Text>
-                  <Text fontSize="sm" color="gray.700">
-                    {loadingAttendanceSync
-                      ? "Loading..."
-                      : latestAttendanceSync?.formatted || "No sync data"}
-                  </Text>
-                </Box>
-              </Flex>
-            </Flex>
-          </Flex>
-        </DashboardTitleSection>
+        <DashboardFilterPanel fields={filterFields} />
 
-        {loadingAttendance || loadingEmployees || loadingAllocations ? (
+        {loading ? (
           <Flex justify="center" py={8}>
             <Spinner size="sm" />
           </Flex>
         ) : gridRows.length === 0 ? (
-          <Text color="gray.500" fontSize="sm">
+          <Text color="fg.muted" fontSize="12px">
             No active employees to show.
           </Text>
         ) : (
           <>
-            <Grid
-              templateColumns={{ base: "1fr", md: "1fr 2fr 1fr 2fr" }}
-              gap="22px"
-            >
-              <GridItem minW={0}>
-                <CustomContainer title="Rest Day Stats" size="sm">
-                  <RestDayDistributionPie
-                    data={restDayPieData}
-                    height={270}
-                    emptyMessage="No employees in scope"
-                    onSliceClick={(entry) => {
-                      const key = entry?.restDayKey;
-                      if (key === undefined || key === null) return;
-                      toggleRestDayFilter(key);
-                      setDetailsTab("list");
-                    }}
-                  />
-                </CustomContainer>
-              </GridItem>
-
-              <CustomContainer
-                title="Present vs Absent"
-                size="sm"
-                containerStyle={{ height: "100%" }}
-              >
-                <DashboardBarChart
-                  data={presentAbsentData}
-                  xDataKey="name"
-                  bars={presentAbsentBars}
-                  showLegend={true}
-                  emptyMessage="No data to display"
-                  onBarClick={handlePresentAbsentBarClick}
-                  legendColumns={3}
+            <DashboardMetricRow>
+              {metricCards.map((m) => (
+                <DashboardMetricCard
+                  key={m.status}
+                  label={m.label}
+                  value={statusCounts[m.status] ?? 0}
+                  caption="Selected attendance date"
+                  active={detailsFilters.status === m.status}
+                  onClick={() => toggleStatusFilter(m.status)}
                 />
-              </CustomContainer>
+              ))}
+            </DashboardMetricRow>
 
-              <GridItem minW={0}>
-                <CustomContainer
-                  title="Attendance Stats"
-                  size="sm"
-                  containerStyle={{ height: "100%" }}
-                >
+            <DashboardTwoColumn>
+              <DashboardCard title="Present vs Absent">
+                <Box>
                   <DashboardBarChart
-                    barCategoryGap={8}
+                    data={presentAbsentData}
+                    xDataKey="name"
+                    bars={presentAbsentBars}
+                    height="216px"
+                    showLegend={false}
+                    emptyMessage="No data to display"
+                    onBarClick={handlePresentAbsentBarClick}
+                  />
+                  <DashboardChartLegend items={presentAbsentLegend} columns={2} />
+                </Box>
+              </DashboardCard>
+
+              <DashboardCard title="Allocation by Designation">
+                <Flex align="center" justify="space-between" gap="16px">
+                  <Text
+                    as="span"
+                    bg="app.tableHeader"
+                    color="#C95C18"
+                    fontSize="10px"
+                    fontWeight="500"
+                    lineHeight="12px"
+                    px="8px"
+                    py="5px"
+                    borderRadius="8px"
+                  >
+                    Unfilled · {unfilledTotal}
+                  </Text>
+                  <Checkbox.Root
+                    size="xs"
+                    checked={showAllocationFilled}
+                    onCheckedChange={(e) =>
+                      setShowAllocationFilled(e.checked ?? false)
+                    }
+                    gap="7px"
+                  >
+                    <Checkbox.HiddenInput />
+                    <Checkbox.Control
+                      boxSize="12px"
+                      borderRadius="2px"
+                      borderColor="border"
+                    />
+                    <Checkbox.Label fontSize="11px" fontWeight="400" color="fg.muted">
+                      Show Filled
+                    </Checkbox.Label>
+                  </Checkbox.Root>
+                </Flex>
+                <AllocationBars
+                  rows={allocationChartData}
+                  showFilled={showAllocationFilled}
+                  activeDesignation={detailsFilters.designation}
+                  onSelect={handleAllocationBarClick}
+                />
+              </DashboardCard>
+            </DashboardTwoColumn>
+
+            <DashboardTwoColumn>
+              <DashboardCard title="Rest Day Stats">
+                <RestDayDistributionPie
+                  data={restDayPieData}
+                  emptyMessage="No employees in scope"
+                  onSliceClick={(entry) => {
+                    const key = entry?.restDayKey;
+                    if (key === undefined || key === null) return;
+                    toggleRestDayFilter(key);
+                  }}
+                />
+              </DashboardCard>
+
+              <DashboardCard title="Attendance Stats">
+                <Box>
+                  <DashboardBarChart
                     data={attendanceStatsData}
                     xDataKey="name"
                     bars={attendanceStatsBars}
+                    height="190px"
                     showLegend={true}
                     legendColumns={2}
                     emptyMessage="No data to display"
                     onBarClick={handleAttendanceStatsBarClick}
                   />
-                </CustomContainer>
-              </GridItem>
+                </Box>
+              </DashboardCard>
+            </DashboardTwoColumn>
 
-              <CustomContainer
-                title="Allocation by Designation"
-                size="sm"
-                containerStyle={{ height: "100%" }}
-                rightSection={
-                  <Flex align="center">
-                    <Checkbox.Root
-                      size="xs"
-                      checked={showAllocationFilled}
-                      onCheckedChange={(e) =>
-                        setShowAllocationFilled(e.checked ?? false)
-                      }
-                    >
-                      <Checkbox.HiddenInput />
-                      <Checkbox.Control />
-                      <Checkbox.Label fontSize="xs" color="brand700">
-                        Show Filled
-                      </Checkbox.Label>
-                    </Checkbox.Root>
-                  </Flex>
-                }
-              >
-                <DashboardBarChart
-                  data={allocationChartData}
-                  xDataKey="name"
-                  layout="horizontal"
-                  yAxisWidth={140}
-                  barCategoryGap={4}
-                  scrollable
-                  graphHeight={`${allocationChartHeight}px`}
-                  bars={allocationBars}
-                  legendItems={allocationLegendItems}
-                  showLegend={true}
-                  emptyMessage="No allocation data"
-                  onBarClick={handleAllocationBarClick}
-                />
-              </CustomContainer>
-            </Grid>
+            <DashboardTabs
+              tabs={[{ value: "list", label: "List" }]}
+              value="list"
+            />
 
-            <CustomContainer
+            <DashboardCard
               title="Attendance Details"
-              size="sm"
-              rightSection={
-                <Flex gap={3} align="center">
-                  {hasDetailsFilter && (
-                    <Text fontSize="sm" color="brand600" fontWeight="medium">
-                      Filters:
-                      {detailsFilters.status
-                        ? ` Status = ${detailsFilters.status}`
-                        : ""}
-                      {detailsFilters.designation
-                        ? ` Designation = ${detailsFilters.designation}`
-                        : ""}
-                      {detailsFilters.restDay != null
-                        ? ` Rest day = ${
-                            detailsFilters.restDay === "unset"
-                              ? REST_DAY_PIE_SHORT_LABEL.unset
-                              : REST_DAY_PIE_SHORT_LABEL[
-                                  detailsFilters.restDay
-                                ] ?? detailsFilters.restDay
-                          }`
-                        : ""}
-                      {detailsFilters.timeliness
-                        ? ` Timeliness = ${
-                            detailsFilters.timeliness === "late"
-                              ? "Late"
-                              : "Early"
-                          }`
-                        : ""}
-                    </Text>
-                  )}
-                  {hasDetailsFilter && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleClearDetailsFilters}
-                    >
-                      Clear Filters
-                    </Button>
-                  )}
-                </Flex>
-              }
+              subtitle="Use search, filters and sorting to narrow records."
             >
-              <Tabs.Root
-                value={detailsTab}
-                onValueChange={(e) => {
-                  const next =
-                    typeof e === "string" ? e : e?.value ?? e?.target?.value;
-                  setDetailsTab(next ?? "list");
-                }}
-              >
-                <Tabs.List>
-                  <Tabs.Trigger value="list">List</Tabs.Trigger>
-                  <Tabs.Trigger value="by_designation">
-                    Grouped By Designation
-                  </Tabs.Trigger>
-                  <Tabs.Trigger value="by_branch">
-                    Grouped by Branch
-                  </Tabs.Trigger>
-                  <Tabs.Trigger value="rest_day_stats">
-                    Rest Day Stats
-                  </Tabs.Trigger>
-                </Tabs.List>
-                <Tabs.Content value="list">
-                  <Box w="100%" minH="200px" pt={2}>
-                    <AgGrid
-                      tableKey="attendance-dashboard"
-                      rowData={listRows}
-                      columnDefs={columnDefs}
-                    />
-                  </Box>
-                </Tabs.Content>
-                <Tabs.Content value="by_designation">
-                  <Box w="100%" minH="200px" pt={2}>
-                    <AgGrid
-                      tableKey="attendance-dashboard-by-designation"
-                      rowData={designationTableRows}
-                      columnDefs={designationColumnDefs}
-                    />
-                  </Box>
-                </Tabs.Content>
-                <Tabs.Content value="by_branch">
-                  <Box w="100%" minH="200px" pt={2}>
-                    <AgGrid
-                      tableKey="attendance-dashboard-by-branch"
-                      rowData={designationTableRows}
-                      columnDefs={branchGroupedColumnDefs}
-                    />
-                  </Box>
-                </Tabs.Content>
-                <Tabs.Content value="rest_day_stats">
-                  <Box w="100%" minH="200px" pt={2}>
-                    {restDayDesignationStats.length === 0 ? (
-                      <Text fontSize="sm" color="gray.500">
-                        No rest day assignments found for employees in scope.
-                      </Text>
-                    ) : (
-                      <Grid
-                        templateColumns={Array.from(
-                          { length: restDayDesignationStats.length },
-                          (_, i) => i + 1
-                        )
-                          .map(() => "1fr")
-                          .join(" ")}
-                        gap={3}
-                      >
-                        {restDayDesignationStats.map((group) => (
-                          <Box
-                            key={String(group.restDayKey)}
-                            borderWidth="1px"
-                            borderColor={`${group.colorScheme}.200`}
-                            borderRadius="md"
-                            overflow="hidden"
-                            bg="white"
-                          >
-                            <Flex
-                              px={3}
-                              py={2}
-                              borderBottomWidth="1px"
-                              borderBottomColor={`${group.colorScheme}.200`}
-                              align="center"
-                              justify="space-between"
-                              bg={`${group.colorScheme}.50`}
-                            >
-                              <Text
-                                fontSize="sm"
-                                fontWeight="semibold"
-                                color={`${group.colorScheme}.800`}
-                              >
-                                {group.restDayLabel}
-                              </Text>
-                              <Text
-                                fontSize="xs"
-                                color={`${group.colorScheme}.700`}
-                                fontWeight="semibold"
-                                px={2}
-                                py={0.5}
-                                borderRadius="full"
-                                bg={`${group.colorScheme}.100`}
-                              >
-                                Total: {group.total}
-                              </Text>
-                            </Flex>
-                            <Box px={2.5} py={2}>
-                              <Grid templateColumns={"1fr"} gap={1}>
-                                {group.designationRows.map((row) => (
-                                  <Flex
-                                    key={`${group.restDayKey}-${row.designation}`}
-                                    align="center"
-                                    justify="space-between"
-                                    gap={2}
-                                    px={2}
-                                    py={1}
-                                    borderRadius="sm"
-                                    bg={
-                                      row.isOverLimit
-                                        ? "red.50"
-                                        : hoveredRestDayDesignation &&
-                                          hoveredRestDayDesignation ===
-                                            row.designation
-                                        ? `${group.colorScheme}.100`
-                                        : "gray.50"
-                                    }
-                                    borderWidth={
-                                      row.isOverLimit ? "1px" : "0px"
-                                    }
-                                    borderColor={
-                                      row.isOverLimit
-                                        ? "red.200"
-                                        : `${group.colorScheme}.300`
-                                    }
-                                    cursor="pointer"
-                                    transition="background-color 120ms ease, border-color 120ms ease"
-                                    onMouseEnter={() =>
-                                      setHoveredRestDayDesignation(
-                                        row.designation
-                                      )
-                                    }
-                                    onMouseLeave={() =>
-                                      setHoveredRestDayDesignation(null)
-                                    }
-                                    onClick={() =>
-                                      setSelectedDesignationModalContext({
-                                        designation: row.designation,
-                                        branch_id: selectedBranchId || null,
-                                        branch_name: selectedBranchId
-                                          ? getBranchName(selectedBranchId)
-                                          : "All Branches",
-                                        restDayKey: group.restDayKey,
-                                        restDayLabel: group.restDayLabel,
-                                      })
-                                    }
-                                  >
-                                    <Text
-                                      fontSize="xs"
-                                      color={
-                                        row.isOverLimit ? "red.700" : "gray.700"
-                                      }
-                                      minW={0}
-                                      flex={1}
-                                      fontWeight={
-                                        hoveredRestDayDesignation &&
-                                        hoveredRestDayDesignation ===
-                                          row.designation
-                                          ? "semibold"
-                                          : "medium"
-                                      }
-                                      lineClamp={1}
-                                      title={row.designation}
-                                    >
-                                      {row.designation}
-                                    </Text>
-                                    <Flex
-                                      align="center"
-                                      gap={1.5}
-                                      flexShrink={0}
-                                      whiteSpace="nowrap"
-                                    >
-                                      {row.showLimit ? (
-                                        <>
-                                          <Text fontSize="2xs" color="gray.600">
-                                            Curr.:{" "}
-                                            <Text
-                                              as="span"
-                                              fontWeight="semibold"
-                                              color="gray.700"
-                                            >
-                                              {row.count}
-                                            </Text>
-                                          </Text>
-                                          <Text fontSize="2xs" color="gray.600">
-                                            Max:{" "}
-                                            <Text
-                                              as="span"
-                                              fontWeight="semibold"
-                                              color="gray.700"
-                                            >
-                                              {row.maxAllowedRestDayCount !=
-                                              null
-                                                ? row.maxAllowedRestDayCount
-                                                : "-"}
-                                            </Text>
-                                          </Text>
-                                          <Tooltip
-                                            content={
-                                              row.extraCount == null
-                                                ? "Extra cannot be calculated for this designation."
-                                                : row.extraCount > 0
-                                                ? `${row.extraCount} people are extra.`
-                                                : row.extraCount < 0
-                                                ? `Need ${Math.abs(
-                                                    row.extraCount
-                                                  )} people.`
-                                                : "Balanced."
-                                            }
-                                          >
-                                            <Text
-                                              as="span"
-                                              fontSize="2xs"
-                                              fontWeight="semibold"
-                                              px={1.5}
-                                              py={0.5}
-                                              borderRadius="full"
-                                              color={
-                                                row.extraCount == null
-                                                  ? "gray.700"
-                                                  : row.extraCount > 0
-                                                  ? "red.700"
-                                                  : row.extraCount < 0
-                                                  ? "green.700"
-                                                  : "gray.700"
-                                              }
-                                              bg={
-                                                row.extraCount == null
-                                                  ? "gray.100"
-                                                  : row.extraCount > 0
-                                                  ? "red.100"
-                                                  : row.extraCount < 0
-                                                  ? "green.100"
-                                                  : "gray.100"
-                                              }
-                                              cursor="help"
-                                            >
-                                              {row.extraCount == null
-                                                ? "-"
-                                                : row.extraCount > 0
-                                                ? `+${row.extraCount}`
-                                                : row.extraCount < 0
-                                                ? row.extraCount
-                                                : "-"}
-                                            </Text>
-                                          </Tooltip>
-                                        </>
-                                      ) : (
-                                        <Text fontSize="2xs" color="gray.600">
-                                          <Text
-                                            as="span"
-                                            fontWeight="semibold"
-                                            color="gray.700"
-                                          >
-                                            {row.count}
-                                          </Text>
-                                        </Text>
-                                      )}
-                                    </Flex>
-                                  </Flex>
-                                ))}
-                              </Grid>
-                            </Box>
-                          </Box>
-                        ))}
-                      </Grid>
-                    )}
-                  </Box>
-                </Tabs.Content>
-              </Tabs.Root>
-            </CustomContainer>
+              <AgGrid
+                bare
+                tableKey="attendance-dashboard"
+                rowData={listRows}
+                columnDefs={columnDefs}
+              />
+            </DashboardCard>
 
             <AttendanceHistoryDrawer
               employeeCode={selectedEmployeeCode}
@@ -1809,29 +1085,6 @@ function AttendanceDashboard() {
               filteredGridRows={filteredGridRows}
               empCodeToDesignation={empCodeToDesignation}
               empCodeToBranch={empCodeToBranch}
-            />
-
-            <DesignationEmployeesModal
-              open={!!selectedDesignationModalContext}
-              onClose={() => setSelectedDesignationModalContext(null)}
-              title={
-                selectedDesignationModalContext
-                  ? `Employees - ${
-                      selectedDesignationModalContext.designation ?? "—"
-                    } (${selectedDesignationModalContext.branch_name ?? "—"})${
-                      selectedDesignationModalContext.restDayLabel
-                        ? ` - ${selectedDesignationModalContext.restDayLabel}`
-                        : ""
-                    }`
-                  : "Employees"
-              }
-              tableKey={`attendance-designation-employees-${
-                selectedDesignationModalContext?.designation ?? "x"
-              }-${selectedDesignationModalContext?.branch_id ?? "x"}-${
-                selectedDesignationModalContext?.restDayKey ?? "all"
-              }`}
-              rowData={designationEmployeeRows}
-              columnDefs={designationEmployeeColDefs}
             />
           </>
         )}

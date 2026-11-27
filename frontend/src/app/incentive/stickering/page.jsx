@@ -2,6 +2,7 @@
 
 import useStickeringIncentive from "@/api/customHooks/useStickeringIncentive";
 import AgGrid from "@/components/AgGrid";
+import { useListFilters } from "@/components/ListFilters";
 import CustomContainer from "@/components/CustomContainer";
 import CustomMenu from "@/components/CustomMenu";
 import GlobalWrapper from "@/components/GlobalWrapper";
@@ -164,18 +165,26 @@ function StickeringIncentive() {
     },
   ];
 
+  // Figma INC/04 filters: Search · Material type · Incentive Type (no labels).
+  const { filtered: filteredIncentives, filterCard } = useListFilters(incentives, [
+    { key: "q", type: "search", placeholder: "Search...", getText: (r) => `${r.incentive_stickering_id ?? ""} ${r.material_type ?? ""}` },
+    { key: "kind", type: "select", placeholder: "Material type", getValue: (r) => r.material_type },
+    { key: "itype", type: "select", placeholder: "Incentive Type", getValue: (r) => r.incentive_type, getLabel: (v) => formatIncentiveType(v) },
+  ], { columns: 3 });
+
   return (
     <GlobalWrapper permissionKey="view_stickering_incentive">
-      <CustomContainer
+      <CustomContainer headerBand
         title="Stickering Incentive"
         rightSection={
           <Link href="/incentive/stickering/create">
-            <Button>Add</Button>
+            <Button h="39px" px="16px" fontSize="12px">Add</Button>
           </Link>
         }
       >
+        {filterCard}
         <AgGrid
-          rowData={incentives}
+          rowData={filteredIncentives}
           columnDefs={colDefs}
           loading={loading}
           tableKey="stickering-incentive"

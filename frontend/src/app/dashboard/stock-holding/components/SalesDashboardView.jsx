@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Center, Flex, Grid, Spinner, Tabs, Text } from "@chakra-ui/react";
 import CustomContainer from "@/components/CustomContainer";
+import { DashboardCard, DashboardStripTabs } from "@/components/dashboard/DashboardUI";
 import AgGrid from "@/components/AgGrid";
 import { formatDateDisplay, filterSalesItemsBySoldStatus, soldStatusFromBarName, SALES_SOLD_STATUS_KEYS } from "@/utils/salesDashboard";
 import { useStockHoldingDashboard } from "../StockHoldingDashboardContext";
@@ -230,14 +231,14 @@ export default function SalesDashboardView() {
         loading={modalLoading}
       />
 
-      <Flex direction="column" gap={4}>
+      <Flex direction="column" gap="24px">
         <Grid
           templateColumns={{
             base: "1fr",
             md: "repeat(2, 1fr)",
-            xl: "repeat(4, 1fr)",
+            xl: "repeat(3, 1fr)",
           }}
-          gap={4}
+          gap="16px"
         >
           <SalesWindowStatCard
             periodLabel="Today"
@@ -270,14 +271,7 @@ export default function SalesDashboardView() {
             windowSummary={window90}
             color="cyan"
           />
-          <Box gridColumn={{ base: "1", md: "span 2", xl: "span 2" }}>
-            <SalesSoldUnsoldBarChart
-              data={soldUnsoldBarData}
-              title={`Sold vs Unsold (${formatDateDisplay(salesSelectedDate)})`}
-              activeFilter={salesSoldStatusFilter}
-              onBarClick={handleSoldUnsoldBarClick}
-            />
-          </Box>
+
         </Grid>
 
         <Tabs.Root
@@ -286,34 +280,24 @@ export default function SalesDashboardView() {
           variant="line"
           colorPalette="brand"
         >
-          <ScrollableTabsList>
-            <Tabs.List flexWrap="nowrap" w="max-content" minW="100%" gap={1}>
-              <Tabs.Trigger value="daily" whiteSpace="nowrap">
-                Daily Sales
-              </Tabs.Trigger>
-              <Tabs.Trigger value="cumulative" whiteSpace="nowrap">
-                Cumulative Sales
-              </Tabs.Trigger>
-              {GROUP_TABS.map((tab) => (
-                <Tabs.Trigger key={tab.value} value={tab.value} whiteSpace="nowrap">
-                  {tab.label}
-                </Tabs.Trigger>
-              ))}
-            </Tabs.List>
-          </ScrollableTabsList>
+          <DashboardStripTabs
+            value={groupedTab}
+            onChange={setGroupedTab}
+            tabs={[
+              { value: "daily", label: "Daily Sales" },
+              { value: "cumulative", label: "Cumulative Sales" },
+              ...GROUP_TABS,
+            ]}
+          />
 
-          <Tabs.Content value="daily" pt={4}>
+          <Tabs.Content value="daily" pt="16px">
             <Flex direction="column" gap={4}>
               <SalesLineChartCard
                 data={lineChartData}
                 title="Daily Sales (Last 30 Days)"
               />
 
-              <CustomContainer
-                title={`Sales on ${formatDateDisplay(salesSelectedDate)}`}
-                size="sm"
-                color="secondary"
-              >
+              <DashboardCard title={`Sales on ${formatDateDisplay(salesSelectedDate)}`}>
                 {!selectedDateHasReport && !hasUnfilteredProductRows ? (
                   <Text fontSize="sm" color="gray.600">
                     No sales report uploaded for the selected date.
@@ -350,6 +334,7 @@ export default function SalesDashboardView() {
                       </Flex>
                     ) : null}
                     <AgGrid
+                      bare
                       tableKey={SALES_ITEMS_TABLE_KEY}
                       rowData={filteredDisplayItems}
                       columnDefs={itemsColumnDefs}
@@ -358,28 +343,25 @@ export default function SalesDashboardView() {
                     />
                   </Flex>
                 )}
-              </CustomContainer>
+              </DashboardCard>
             </Flex>
           </Tabs.Content>
 
-          <Tabs.Content value="cumulative" pt={4}>
-            <CustomContainer
-              title="Cumulative Sales (Last 30 Days)"
-              size="sm"
-              color="secondary"
-            >
+          <Tabs.Content value="cumulative" pt="16px">
+            <DashboardCard title="Cumulative Sales (Last 30 Days)">
               <AgGrid
+                bare
                 tableKey="sales-dashboard-cumulative"
                 rowData={cumulativeRows}
                 columnDefs={cumulativeColumnDefs}
                 pagination={true}
                 paginationPageSize={15}
               />
-            </CustomContainer>
+            </DashboardCard>
           </Tabs.Content>
 
           {GROUP_TABS.map((tab) => (
-            <Tabs.Content key={tab.value} value={tab.value} pt={4}>
+            <Tabs.Content key={tab.value} value={tab.value} pt="16px">
               <SalesGroupedTabPanel groupBy={tab.value} {...groupedPanelProps} />
             </Tabs.Content>
           ))}

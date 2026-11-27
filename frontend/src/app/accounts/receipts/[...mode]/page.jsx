@@ -243,7 +243,7 @@ function ReceiptsForm({ params }) {
   if ((isEditMode || isViewMode) && loading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Flex justifyContent="center" p={8}>
             Loading...
           </Flex>
@@ -255,7 +255,7 @@ function ReceiptsForm({ params }) {
   if ((isEditMode || isViewMode) && !receipt && !loading) {
     return (
       <GlobalWrapper permissionKey={getPermissionKey()}>
-        <CustomContainer title={getTitle()}>
+        <CustomContainer pageForm title={getTitle()}>
           <Flex flexDirection="column" gap="22px" alignItems="center" p={8}>
             <Text>Receipt Entry not found</Text>
             <Button
@@ -272,7 +272,7 @@ function ReceiptsForm({ params }) {
 
   return (
     <GlobalWrapper permissionKey={getPermissionKey()}>
-      <CustomContainer title={getTitle()}>
+      <CustomContainer pageForm title={getTitle()}>
         <Formik
           initialValues={initialValues}
           validationSchema={VALIDATION_SCHEMA}
@@ -340,7 +340,7 @@ function ReceiptsForm({ params }) {
               </Grid>
 
               <Box>
-                <CustomContainer
+                <CustomContainer pageForm
                   title="Receipt Entry Items"
                   size="sm"
                   color="secondary"
