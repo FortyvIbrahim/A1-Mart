@@ -116,7 +116,7 @@ function TOTPVerificationModal({
             </Button>
             <Button
               onClick={handleSubmit}
-              isLoading={isLoading}
+              loading={isLoading}
               loadingText="Verifying..."
               disabled={totpCode.length !== 6}
             >

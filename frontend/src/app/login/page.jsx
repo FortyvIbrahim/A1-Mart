@@ -26,7 +26,7 @@ function LoginPage() {
 
   const handleLoginClick = async () => {
     try {
-      const data = await handleLogin(username, password);
+      const data = await handleLogin(username.trim(), password);
 
       if (data.code !== 200) {
         toast.error("Incorrect username or password!");
@@ -143,15 +143,18 @@ function LoginPage() {
             }
           }}
         >
-          <AuthField label="Phone Number">
+          <AuthField label="Phone Number / Username">
             <Input
               {...authInputProps}
               value={username}
               onChange={(val) => setUsername(val.target.value)}
-              placeholder="Enter your phone number"
+              placeholder="Enter phone number or username"
               autoComplete="username"
-              inputMode="tel"
+              inputMode="text"
               type="text"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               required
             />
           </AuthField>

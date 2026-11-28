@@ -16,7 +16,8 @@ export function AuthShell({ title, subtitle, children, footer }) {
       px="16px"
       py="40px"
       position="relative"
-      overflow="hidden"
+      overflowX="hidden"
+      overflowY="auto"
     >
       <Box
         position="absolute"
