@@ -350,36 +350,53 @@ function page() {
   };
 
   const handleSubmit = async (values, { resetForm }) => {
+    const isMonthly = values.period_type === "monthly";
     const data = {
-      branch_id: values.branch_id,
+      branch_id: Number(values.branch_id),
       department_ids: values.department_ids.map(Number),
-      category_id: values.category_id ? values.category_id : null,
-      subcategory_id: values.subcategory_id ? values.subcategory_id : null,
+      category_id: values.category_id ? Number(values.category_id) : null,
+      subcategory_id: values.subcategory_id
+        ? Number(values.subcategory_id)
+        : null,
       period_type: values.period_type,
       period: values.period ? values.period : null,
       period_start_date: values.period_start_date
-        ? moment(values.period_start_date).format("YYYY-MM-DD")
+        ? (isMonthly
+            ? moment(values.period_start_date).startOf("month")
+            : moment(values.period_start_date)
+          ).format("YYYY-MM-DD")
         : null,
       period_end_date: values.period_end_date
-        ? moment(values.period_end_date).format("YYYY-MM-DD")
+        ? (isMonthly
+            ? moment(values.period_end_date).endOf("month")
+            : moment(values.period_end_date)
+          ).format("YYYY-MM-DD")
         : null,
     };
 
-    toast.promise(createStockCircle(data), {
-      loading: "Creating stock circle...",
-      success: (response) => {
-        if (response.code === 200 || response.success) {
-          resetForm();
-          setCreateOpen(false);
-          return "Stock circle created successfully!";
-        }
-        throw new Error(response.message || "Failed to create stock circle");
-      },
-      error: (err) => {
-        console.error("Error creating stock circle:", err);
-        return getCreateStockCircleErrorMessage(err);
-      },
-    });
+    try {
+      await toast.promise(createStockCircle(data), {
+        loading: "Creating stock circle...",
+        success: (response) => {
+          if (
+            response.code === 200 ||
+            response.code === 201 ||
+            response.success
+          ) {
+            resetForm();
+            setCreateOpen(false);
+            return "Stock circle created successfully!";
+          }
+          throw new Error(response.message || "Failed to create stock circle");
+        },
+        error: (err) => {
+          console.error("Error creating stock circle:", err);
+          return getCreateStockCircleErrorMessage(err);
+        },
+      });
+    } catch {
+      // Handled by toast.promise
+    }
   };
 
   const handleDelete = (id) => {
@@ -489,7 +506,14 @@ function page() {
         onSubmit={handleSubmit}
         enableReinitialize
       >
-        {({ handleSubmit, setFieldValue, values, resetForm }) => {
+        {({
+          handleSubmit,
+          setValues,
+          setFieldTouched,
+          values,
+          resetForm,
+          isSubmitting,
+        }) => {
           const periodOptions = generatePeriods(values.period_type);
 
           // Categories belonging to any selected department
@@ -498,14 +522,15 @@ function page() {
           );
           const filteredCategories = selectedDepartmentIds.size
             ? categories.filter((category) =>
-                selectedDepartmentIds.has(category.department_id)
+                selectedDepartmentIds.has(Number(category.department_id))
               )
             : [];
 
           // Subcategories of the selected category
           const filteredSubcategories = values.category_id
             ? subcategories.filter(
-                (subcategory) => subcategory.category_id === values.category_id
+                (subcategory) =>
+                  Number(subcategory.category_id) === Number(values.category_id)
               )
             : [];
 
@@ -531,7 +556,14 @@ function page() {
                   <Button variant="outline" h="42px" px="20px" fontSize="13px" onClick={close}>
                     Cancel
                   </Button>
-                  <Button h="40px" px="20px" fontSize="13px" onClick={handleSubmit}>
+                  <Button
+                    h="40px"
+                    px="20px"
+                    fontSize="13px"
+                    onClick={handleSubmit}
+                    loading={isSubmitting}
+                    disabled={isSubmitting}
+                  >
                     Create Circle
                   </Button>
                 </>
@@ -560,10 +592,20 @@ function page() {
                   method="dropdown"
                   options={periodTypeOptions}
                   onChange={(e) => {
-                    setFieldValue("period_type", e.target.value);
-                    setFieldValue("period", "");
-                    setFieldValue("period_start_date", "");
-                    setFieldValue("period_end_date", "");
+                    const nextType = e.target.value;
+                    setValues(
+                      (prev) => ({
+                        ...prev,
+                        period_type: nextType,
+                        period: "",
+                        period_start_date: "",
+                        period_end_date: "",
+                      }),
+                      false
+                    );
+                    setFieldTouched("period", false, false);
+                    setFieldTouched("period_start_date", false, false);
+                    setFieldTouched("period_end_date", false, false);
                   }}
                 />
                 {isDateRangePeriod ? (
@@ -612,9 +654,18 @@ function page() {
                     value: department.department_id,
                     label: capitalizeWords(department.department_name),
                   }))}
-                  onChange={() => {
-                    setFieldValue("category_id", "");
-                    setFieldValue("subcategory_id", "");
+                  onChange={(nextDeptIds) => {
+                    setValues(
+                      (prev) => ({
+                        ...prev,
+                        department_ids: Array.isArray(nextDeptIds)
+                          ? nextDeptIds
+                          : prev.department_ids,
+                        category_id: "",
+                        subcategory_id: "",
+                      }),
+                      false
+                    );
                   }}
                 />
                 <CustomInput
@@ -628,8 +679,14 @@ function page() {
                   }))}
                   disabled={selectedDepartmentIds.size === 0}
                   onChange={(value) => {
-                    setFieldValue("category_id", value);
-                    setFieldValue("subcategory_id", "");
+                    setValues(
+                      (prev) => ({
+                        ...prev,
+                        category_id: value ?? "",
+                        subcategory_id: "",
+                      }),
+                      false
+                    );
                   }}
                 />
                 <CustomInput

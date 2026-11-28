@@ -66,6 +66,9 @@ export const CustomDateTimeInput = forwardRef(
       value,
       onClick,
       onChange,
+      onBlur,
+      onFocus,
+      onKeyDown,
       variant = "outline",
       style,
       disabled,
@@ -88,7 +91,12 @@ export const CustomDateTimeInput = forwardRef(
         <Input
           value={value ? moment(value, format).format(getFormat()) : ""}
           onChange={onChange}
+          onBlur={onBlur}
+          onFocus={onFocus}
+          onKeyDown={onKeyDown}
           autoComplete="off"
+          readOnly
+          cursor={disabled ? "not-allowed" : "pointer"}
           ref={ref}
           onClick={onClick}
           variant={variant}
@@ -117,6 +125,12 @@ export const CustomDateTimeInput = forwardRef(
   }
 );
 CustomDateTimeInput.displayName = "CustomDateTimeInput";
+
+const parseValidDate = (val) => {
+  if (val == null || val === "") return null;
+  const parsed = val instanceof Date ? val : new Date(val);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
 
 function CustomInput({
   name,
@@ -202,6 +216,27 @@ function CustomInput({
       : dialogContainerRef.current
         ? dialogContainerRef
         : null;
+
+  const dialogDatePortalTarget = menuPortalRef || contextDialogPortalRef;
+  const dialogDatePopperContainer = React.useCallback(
+    ({ children }) => {
+      if (!children) return null;
+      if (!dialogDatePortalTarget?.current) return children;
+      return (
+        <Portal container={dialogDatePortalTarget}>
+          <Box
+            position="absolute"
+            inset={0}
+            pointerEvents="none"
+            zIndex={1850}
+          >
+            {children}
+          </Box>
+        </Portal>
+      );
+    },
+    [dialogDatePortalTarget]
+  );
 
   const updateMenuPosition = () => {
     if (inputRef.current) {
@@ -421,20 +456,23 @@ function CustomInput({
           </Flex>
         );
       }
-      case "date-picker":
+      case "date-picker": {
         const datePickerComponent = (
           <DatePicker
-            portalId="root-portal"
+            {...(dialogDatePortalTarget
+              ? { popperContainer: dialogDatePopperContainer }
+              : { portalId: "root-portal" })}
             showMonthYearPicker={props.type === "month"}
             placeholderText={placeholder}
             {...props}
             disabled={props.disabled || viewOnly}
             name={name}
-            selected={(fieldValue && new Date(fieldValue)) || null}
+            selected={parseValidDate(fieldValue)}
             onChange={(date) => {
               if (props.disabled || viewOnly) return;
               if (formikSetFieldValue) {
-                formikSetFieldValue(name, date);
+                formikSetFieldValue(name, date, true);
+                formik?.setFieldTouched?.(name, true, false);
               } else if (!hasExternalValue) {
                 setLocalValue(date);
               }
@@ -467,7 +505,12 @@ function CustomInput({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  setFieldValue(name, null);
+                  if (formikSetFieldValue) {
+                    formikSetFieldValue(name, null, true);
+                    formik?.setFieldTouched?.(name, true, false);
+                  } else if (!hasExternalValue) {
+                    setLocalValue(null);
+                  }
                   if (onChange) onChange(null);
                 }}
                 aria-label="Clear date"
@@ -480,6 +523,7 @@ function CustomInput({
         }
 
         return datePickerComponent;
+      }
       case "dropdown":
         return (
           <CustomSelect
@@ -499,7 +543,8 @@ function CustomInput({
               if (props.disabled || viewOnly) return;
               const syntheticEvent = { target: { name, value: val } };
               if (formikSetFieldValue) {
-                formikSetFieldValue(name, val);
+                formikSetFieldValue(name, val, true);
+                formik?.setFieldTouched?.(name, true, false);
               } else if (formikHandleChange) {
                 formikHandleChange(syntheticEvent);
               } else if (!hasExternalValue) {
@@ -513,7 +558,8 @@ function CustomInput({
         const handleClear = () => {
           if (props.disabled || viewOnly) return;
           if (formikSetFieldValue) {
-            formikSetFieldValue(name, null);
+            formikSetFieldValue(name, null, true);
+            formik?.setFieldTouched?.(name, true, false);
           } else if (!hasExternalValue) {
             setLocalValue(null);
           }
@@ -530,7 +576,8 @@ function CustomInput({
           // If user clears all text and there was a selected value, clear the selection
           if (newValue === "" && fieldValue !== null && fieldValue !== "") {
             if (formikSetFieldValue) {
-              formikSetFieldValue(name, null);
+              formikSetFieldValue(name, null, true);
+              formik?.setFieldTouched?.(name, true, false);
             } else if (!hasExternalValue) {
               setLocalValue(null);
             }
@@ -657,7 +704,8 @@ function CustomInput({
                             onClick={() => {
                               if (props.disabled || viewOnly) return;
                               if (formikSetFieldValue) {
-                                formikSetFieldValue(name, item.value);
+                                formikSetFieldValue(name, item.value, true);
+                                formik?.setFieldTouched?.(name, true, false);
                               } else if (!hasExternalValue) {
                                 setLocalValue(item.value);
                               }
@@ -697,7 +745,8 @@ function CustomInput({
             ? current.filter((v) => v != item.value)
             : [...current, item.value];
           if (formikSetFieldValue) {
-            formikSetFieldValue(name, next);
+            formikSetFieldValue(name, next, true);
+            formik?.setFieldTouched?.(name, true, false);
           } else if (!hasExternalValue) {
             setLocalValue(next);
           }
@@ -721,8 +770,10 @@ function CustomInput({
           const currentSet = new Set(selectedValuesArray.map(String));
           allFilteredValues.forEach((v) => currentSet.add(String(v)));
           const next = Array.from(currentSet).map(valueFromSetString);
-          if (formikSetFieldValue) formikSetFieldValue(name, next);
-          else if (!hasExternalValue) setLocalValue(next);
+          if (formikSetFieldValue) {
+            formikSetFieldValue(name, next, true);
+            formik?.setFieldTouched?.(name, true, false);
+          } else if (!hasExternalValue) setLocalValue(next);
           if (onChange) onChange(next);
         };
         const handleClearAll = () => {
@@ -730,8 +781,10 @@ function CustomInput({
           const currentSet = new Set(selectedValuesArray.map(String));
           allFilteredValues.forEach((v) => currentSet.delete(String(v)));
           const next = Array.from(currentSet).map(valueFromSetString);
-          if (formikSetFieldValue) formikSetFieldValue(name, next);
-          else if (!hasExternalValue) setLocalValue(next);
+          if (formikSetFieldValue) {
+            formikSetFieldValue(name, next, true);
+            formik?.setFieldTouched?.(name, true, false);
+          } else if (!hasExternalValue) setLocalValue(next);
           if (onChange) onChange(next);
         };
 

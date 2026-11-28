@@ -192,7 +192,6 @@ function CustomSelect({
     }
     onChange?.(optValue);
     setOpen(false);
-    onBlur?.();
   };
 
   const allItems = useMemo(() => {

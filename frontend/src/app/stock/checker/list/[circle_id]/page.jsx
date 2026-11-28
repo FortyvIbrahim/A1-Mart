@@ -45,8 +45,11 @@ function StockChecker({ params }) {
   const { categories, loading: categoriesLoading } = useProductCategories();
   const { subcategories, loading: subcategoriesLoading } =
     useProductSubcategories();
-  const { stockCircle, loading: stockCircleLoading } =
-    useStockCircleById(circle_id);
+  const {
+    stockCircle,
+    loading: stockCircleLoading,
+    error: stockCircleError,
+  } = useStockCircleById(circle_id);
   const {
     stockCirclesChecked,
     createStockCircleChecked,
@@ -231,7 +234,7 @@ function StockChecker({ params }) {
     [checkedStockMap, handleCreateStockCirclesChecked, stockCircle?.branch_id]
   );
 
-  if (isPageLoading || !stockCircle) {
+  if (isPageLoading) {
     return (
       <GlobalWrapper permissionKey="view_stock_checker">
         <CustomContainer title="Stock Checker" color="brand" size="sm">
@@ -242,6 +245,25 @@ function StockChecker({ params }) {
             py={10}
           >
             <Spinner size="lg" color="brand.500" />
+          </Flex>
+        </CustomContainer>
+      </GlobalWrapper>
+    );
+  }
+
+  if (!stockCircle) {
+    return (
+      <GlobalWrapper permissionKey="view_stock_checker">
+        <CustomContainer title="Stock Checker" color="brand" size="sm">
+          <Flex
+            justifyContent="center"
+            alignItems="center"
+            minH="240px"
+            py={10}
+          >
+            <Text color="gray.500" fontSize="sm">
+              {stockCircleError || "Stock circle not found"}
+            </Text>
           </Flex>
         </CustomContainer>
       </GlobalWrapper>
